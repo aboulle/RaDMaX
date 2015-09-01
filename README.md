@@ -23,7 +23,7 @@ For the moment, the wxpython library is not compatible with Python 3 and above. 
 
 
 ### GNU / Linux
- On most Linux systems the dependencies are available in the software repositories. For debian based systems run (as root): `apt-get install python python-scipy python-matplolib python-wxgtk2.8`. 
+ On most Linux systems the dependencies are available in the software repositories. For debian based systems run (as root): `apt-get install python python-scipy python-matplolib python-wxgtk3.0`. 
 
 
 
