@@ -27,7 +27,7 @@ For the moment, the wxpython library is not compatible with Python 3 and above. 
 
 
 
-## How to test the program
+## Quick test of the program
 1. In a text editor open the *.ini file located in the "examples/YSZ" or "examples/SiC-3C" folder. Modify lines 5-7: replace with the paths of the files on your system.
 2. Launch Radmax.py.
 3. In the "File" menu select "Load Project".
@@ -38,4 +38,14 @@ For the moment, the wxpython library is not compatible with Python 3 and above. 
 * The strain and damage profile can be scaled up or down with the mouse wheel + pressing the "u" key. The XRD curve is update when the "u" key is released.
 * Calculated XRD curves can be fitted to experimental data in the "Fitting window" tab.
 * Conventional least-squares (recommended) or generalized simulated annealing algorithm can be used.
-* The fitted curve, the strain and damage profiles are automatically saved (*.txt) in the folder selected above.
+* The fitted curve, the strain and damage profiles are automatically saved (*.txt) in the folder selected above. 
+
+## Data format
+XRD data can be loaded from the "File" menu. The data should be provided as a two-columns (2thêta, intensity) ASCII file in space- (or tab-) separated format. The 2thêta values have to be equally spaced (constant step). For the moment RaDMaX can only handle data recorded in symmetric coplanar geometry (conventional thêta-2thêta scan), as this is the most commonly used geometry in the analysis of irradiated materials.
+
+Guess strain/damage profile can be imported from the "File" menu. The data should be providedas a two-columns ASCII file with the depth below the surface (in Angstroms) as first column.
+
+## Screenshots
+RaDMaX running in Windows 10.
+
+## Screencast
