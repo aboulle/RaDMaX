@@ -20,22 +20,15 @@
 
     <section class="main-content">
       <h1>
-<a id="radmax" class="anchor" href="#radmax" aria-hidden="true"><span class="octicon octicon-link"></span></a>RaDMaX</h1>
-
-<p><strong>A graphical user inferface for the determination of strain and damage profiles in irradiated crystals from X-ray diffraction data</strong></p>
-
-<hr>
-
-<h2>
-<a id="installation-instructions" class="anchor" href="#installation-instructions" aria-hidden="true"><span class="octicon octicon-link"></span></a>Installation instructions</h2>
+<a id="installation-instructions" class="anchor" href="#installation-instructions" aria-hidden="true"><span class="octicon octicon-link"></span></a>Installation instructions</h1>
 
 <p>Download zip file and extract it to your disk. In a shell, run the Radmax.py file with <code>python Radmax.py</code>.</p>
 
 <p>Radmax requires <a href="http://www.python.org">python 2.7</a>, <a href="http://www.scipy.org">Scipy</a>, <a href="http://www.matplotlib.org">Matplotlib</a> and <a href="http://www.wxpython.org">wxpython</a>.
 For the moment, the wxpython library is not compatible with Python 3 and above. <strong>RaDMaX won't work with Python 3.</strong></p>
 
-<h3>
-<a id="ms-windows" class="anchor" href="#ms-windows" aria-hidden="true"><span class="octicon octicon-link"></span></a>MS Windows</h3>
+<h2>
+<a id="ms-windows" class="anchor" href="#ms-windows" aria-hidden="true"><span class="octicon octicon-link"></span></a>MS Windows</h2>
 
 <ol>
 <li>
@@ -56,13 +49,13 @@ For the moment, the wxpython library is not compatible with Python 3 and above. 
 <li><p>Download and install <a href="http://downloads.sourceforge.net/wxpython/wxPython3.0-win32-3.0.2.0-py27.exe">WxPython</a></p></li>
 </ol>
 
-<h3>
-<a id="gnu--linux" class="anchor" href="#gnu--linux" aria-hidden="true"><span class="octicon octicon-link"></span></a>GNU / Linux</h3>
+<h2>
+<a id="gnu--linux" class="anchor" href="#gnu--linux" aria-hidden="true"><span class="octicon octicon-link"></span></a>GNU / Linux</h2>
 
 <p>On most Linux systems the dependencies are available in the software repositories. For debian based systems run (as root): <code>apt-get install python python-scipy python-matplolib python-wxgtk3.0</code>. </p>
 
-<h2>
-<a id="how-to-test-the-program" class="anchor" href="#how-to-test-the-program" aria-hidden="true"><span class="octicon octicon-link"></span></a>How to test the program</h2>
+<h1>
+<a id="quick-test-of-the-program" class="anchor" href="#quick-test-of-the-program" aria-hidden="true"><span class="octicon octicon-link"></span></a>Quick test of the program</h1>
 
 <ol>
 <li>In a text editor open the *.ini file located in the "examples/YSZ" or "examples/SiC-3C" folder. Modify lines 5-7: replace with the paths of the files on your system.</li>
@@ -77,8 +70,23 @@ For the moment, the wxpython library is not compatible with Python 3 and above. 
 <li>The strain and damage profile can be scaled up or down with the mouse wheel + pressing the "u" key. The XRD curve is update when the "u" key is released.</li>
 <li>Calculated XRD curves can be fitted to experimental data in the "Fitting window" tab.</li>
 <li>Conventional least-squares (recommended) or generalized simulated annealing algorithm can be used.</li>
-<li>The fitted curve, the strain and damage profiles are automatically saved (*.txt) in the folder selected above.</li>
+<li>The fitted curve, the strain and damage profiles are automatically saved (*.txt) in the folder selected above. </li>
 </ul>
+
+<h2>
+<a id="data-format" class="anchor" href="#data-format" aria-hidden="true"><span class="octicon octicon-link"></span></a>Data format</h2>
+
+<p>XRD data can be loaded from the "File" menu. The data should be provided as a two-columns (2thêta, intensity) ASCII file in space- (or tab-) separated format. The 2thêta values have to be equally spaced (constant step). For the moment RaDMaX can only handle data recorded in symmetric coplanar geometry (conventional thêta-2thêta scan), as this is the most commonly used geometry in the analysis of irradiated materials.</p>
+
+<p>Guess strain/damage profile can be imported from the "File" menu. The data should be providedas a two-columns ASCII file with the depth below the surface (in Angstroms) as first column.</p>
+
+<h1>
+<a id="screenshots" class="anchor" href="#screenshots" aria-hidden="true"><span class="octicon octicon-link"></span></a>Screenshots</h1>
+
+<p>RaDMaX running in Windows 10.</p>
+
+<h1>
+<a id="screencast" class="anchor" href="#screencast" aria-hidden="true"><span class="octicon octicon-link"></span></a>Screencast</h1>
 
       <footer class="site-footer">
         <span class="site-footer-owner"><a href="https://github.com/aboulle/RaDMaX">RaDMaX</a> is maintained by <a href="https://github.com/aboulle">aboulle</a>.</span>
