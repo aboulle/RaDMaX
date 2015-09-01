@@ -4,8 +4,7 @@
 ___
 
 ## Installation instructions
-Download zip file and extract it to your disk. In a shell, run the Radmax.py file with `python Radmax.py`.
-
+Download zip file and extract it to your disk.
 
 Radmax requires [python 2.7] (http://www.python.org), [Scipy](http://www.scipy.org), [Matplotlib](http://www.matplotlib.org) and [wxpython] (http://www.wxpython.org).
 For the moment, the wxpython library is not compatible with Python 3 and above. **RaDMaX won't work with Python 3.**
@@ -20,15 +19,20 @@ For the moment, the wxpython library is not compatible with Python 3 and above. 
 
 
 2. Download and install [WxPython] (http://downloads.sourceforge.net/wxpython/wxPython3.0-win32-3.0.2.0-py27.exe)
+3. In a shell, run the Radmax.py file with `python Radmax.py`.
 
 
 ### GNU / Linux
- On most Linux systems the dependencies are available in the software repositories. For debian based systems run (as root): `apt-get install python python-scipy python-matplolib python-wxgtk3.0`. 
+1. On most Linux systems the dependencies are available in the software repositories. For debian based systems run (as root): `apt-get install python python-scipy python-matplolib python-wxgtk3.0`. 
+2. In a terminal, run the Radmax.py file with `python Radmax.py`.
 
 
 
 ## Quick test of the program
-1. In a text editor open the *.ini file located in the "examples/YSZ" or "examples/SiC-3C" folder. Modify lines 5-7: replace with the paths of the files on your system.
+1. In a text editor open the *.ini file located in the "examples/YSZ" or "examples/SiC-3C" folder. Modify lines 5-7: insert the paths of the files on your system. For instance, for a Radmax file located in the "documents" folder:
+
+   * Windows: C:\Users\User_name\Documents\
+   * Linux: /home/user_name/Documents/
 2. Launch Radmax.py.
 3. In the "File" menu select "Load Project".
 4. Navigate to the "examples/YSZ" or "examples/SiC-3C" folder and load the *.ini file.
