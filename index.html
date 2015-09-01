@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="UTF-8">
+    <title>RaDMaX by aboulle</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+  </head>
+  <body>
+    <section class="page-header">
+      <h1 class="project-name">RaDMaX</h1>
+      <h2 class="project-tagline">A graphical user inferface for the determination of strain and damage profiles in irradiated crystals from X-ray diffraction data.</h2>
+      <a href="https://github.com/aboulle/RaDMaX" class="btn">View on GitHub</a>
+      <a href="https://github.com/aboulle/RaDMaX/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/aboulle/RaDMaX/tarball/master" class="btn">Download .tar.gz</a>
+    </section>
+
+    <section class="main-content">
+      <h1>
+<a id="radmax" class="anchor" href="#radmax" aria-hidden="true"><span class="octicon octicon-link"></span></a>RaDMaX</h1>
+
+<p><strong>A graphical user inferface for the determination of strain and damage profiles in irradiated crystals from X-ray diffraction data</strong></p>
+
+<hr>
+
+<h2>
+<a id="installation-instructions" class="anchor" href="#installation-instructions" aria-hidden="true"><span class="octicon octicon-link"></span></a>Installation instructions</h2>
+
+<p>Download zip file and extract it to your disk. In a shell, run the Radmax.py file with <code>python Radmax.py</code>.</p>
+
+<p>Radmax requires <a href="http://www.python.org">python 2.7</a>, <a href="http://www.scipy.org">Scipy</a>, <a href="http://www.matplotlib.org">Matplotlib</a> and <a href="http://www.wxpython.org">wxpython</a>.
+For the moment, the wxpython library is not compatible with Python 3 and above. <strong>RaDMaX won't work with Python 3.</strong></p>
+
+<h3>
+<a id="ms-windows" class="anchor" href="#ms-windows" aria-hidden="true"><span class="octicon octicon-link"></span></a>MS Windows</h3>
+
+<ol>
+<li>
+<p>For most users, especially on Windows and Mac, the easiest way to install scientific Python is to download <strong>one</strong> of these Python distributions, which includes most of the key packages:</p>
+
+<ul>
+<li>
+<a href="http://continuum.io/downloads">Anaconda</a>: A free distribution for the SciPy stack. Supports Linux, Windows and Mac. <a href="https://3230d63b5fc54e62148e-c95ac804525aac4b6dba79b00b39d1d3.ssl.cf1.rackcdn.com/Anaconda-2.3.0-Windows-x86.exe">Download.</a>
+</li>
+<li>
+<a href="http://python-xy.github.io/">Python(x,y)</a>: A free distribution including the SciPy stack, based around the Spyder IDE. Windows only. <a href="http://ftp.ntua.gr/pub/devel/pythonxy/Python(x,y)-2.7.10.0.exe">Download.</a>
+</li>
+<li>
+<a href="http://winpython.github.io/">WinPython</a>: A free distribution including the SciPy stack. Windows only. <a href="http://sourceforge.net/projects/winpython/files/WinPython_2.7/2.7.9.5/WinPython-32bit-2.7.9.5.exe/download">Download.</a>
+</li>
+</ul>
+</li>
+<li><p>Download and install <a href="http://downloads.sourceforge.net/wxpython/wxPython3.0-win32-3.0.2.0-py27.exe">WxPython</a></p></li>
+</ol>
+
+<h3>
+<a id="gnu--linux" class="anchor" href="#gnu--linux" aria-hidden="true"><span class="octicon octicon-link"></span></a>GNU / Linux</h3>
+
+<p>On most Linux systems the dependencies are available in the software repositories. For debian based systems run (as root): <code>apt-get install python python-scipy python-matplolib python-wxgtk3.0</code>. </p>
+
+<h2>
+<a id="how-to-test-the-program" class="anchor" href="#how-to-test-the-program" aria-hidden="true"><span class="octicon octicon-link"></span></a>How to test the program</h2>
+
+<ol>
+<li>In a text editor open the *.ini file located in the "examples/YSZ" or "examples/SiC-3C" folder. Modify lines 5-7: replace with the paths of the files on your system.</li>
+<li>Launch Radmax.py.</li>
+<li>In the "File" menu select "Load Project".</li>
+<li><p>Navigate to the "examples/YSZ" or "examples/SiC-3C" folder and load the *.ini file.</p></li>
+</ol>
+
+<ul>
+<li>Any change in any of the upper panels has to be validated with the "Update" button to update the XRD curve.</li>
+<li>The strain and damage profiles can be modified by dragging the control points. The XRD curve is updated in real time.</li>
+<li>The strain and damage profile can be scaled up or down with the mouse wheel + pressing the "u" key. The XRD curve is update when the "u" key is released.</li>
+<li>Calculated XRD curves can be fitted to experimental data in the "Fitting window" tab.</li>
+<li>Conventional least-squares (recommended) or generalized simulated annealing algorithm can be used.</li>
+<li>The fitted curve, the strain and damage profiles are automatically saved (*.txt) in the folder selected above.</li>
+</ul>
+
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/aboulle/RaDMaX">RaDMaX</a> is maintained by <a href="https://github.com/aboulle">aboulle</a>.</span>
+
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
+      </footer>
+
+    </section>
+
+  
+  </body>
+</html>
