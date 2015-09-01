@@ -1,28 +1,36 @@
-<!DOCTYPE html>
-<html lang="en-us">
+<!doctype html>
+<html>
   <head>
-    <meta charset="UTF-8">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
     <title>RaDMaX by aboulle</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
-    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
-    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
-    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/github-dark.css">
+    <script src="javascripts/scale.fix.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
   </head>
   <body>
-    <section class="page-header">
-      <h1 class="project-name">RaDMaX</h1>
-      <h2 class="project-tagline">A graphical user inferface for the determination of strain and damage profiles in irradiated crystals from X-ray diffraction data.</h2>
-      <a href="https://github.com/aboulle/RaDMaX" class="btn">View on GitHub</a>
-      <a href="https://github.com/aboulle/RaDMaX/zipball/master" class="btn">Download .zip</a>
-      <a href="https://github.com/aboulle/RaDMaX/tarball/master" class="btn">Download .tar.gz</a>
-    </section>
-
-    <section class="main-content">
-      <h1>
+    <div class="wrapper">
+      <header>
+        <h1>RaDMaX</h1>
+        <p>A graphical user inferface for the determination of strain and damage profiles in irradiated crystals from X-ray diffraction data.</p>
+        <p class="view"><a href="https://github.com/aboulle/RaDMaX">View the Project on GitHub <small>aboulle/RaDMaX</small></a></p>
+        <ul>
+          <li><a href="https://github.com/aboulle/RaDMaX/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/aboulle/RaDMaX/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/aboulle/RaDMaX">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <h1>
 <a id="installation-instructions" class="anchor" href="#installation-instructions" aria-hidden="true"><span class="octicon octicon-link"></span></a>Installation instructions</h1>
 
-<p>Download zip file and extract it to your disk. In a shell, run the Radmax.py file with <code>python Radmax.py</code>.</p>
+<p>Download zip file and extract it to your disk.</p>
 
 <p>Radmax requires <a href="http://www.python.org">python 2.7</a>, <a href="http://www.scipy.org">Scipy</a>, <a href="http://www.matplotlib.org">Matplotlib</a> and <a href="http://www.wxpython.org">wxpython</a>.
 For the moment, the wxpython library is not compatible with Python 3 and above. <strong>RaDMaX won't work with Python 3.</strong></p>
@@ -47,18 +55,29 @@ For the moment, the wxpython library is not compatible with Python 3 and above. 
 </ul>
 </li>
 <li><p>Download and install <a href="http://downloads.sourceforge.net/wxpython/wxPython3.0-win32-3.0.2.0-py27.exe">WxPython</a></p></li>
+<li>In a shell, run the Radmax.py file with <code>python Radmax.py</code>.</li>
 </ol>
 
 <h2>
 <a id="gnu--linux" class="anchor" href="#gnu--linux" aria-hidden="true"><span class="octicon octicon-link"></span></a>GNU / Linux</h2>
 
-<p>On most Linux systems the dependencies are available in the software repositories. For debian based systems run (as root): <code>apt-get install python python-scipy python-matplolib python-wxgtk3.0</code>. </p>
+<ol>
+<li>On most Linux systems the dependencies are available in the software repositories. For debian based systems run (as root): <code>apt-get install python python-scipy python-matplolib python-wxgtk3.0</code>. </li>
+<li>In a terminal, run the Radmax.py file with <code>python Radmax.py</code>.</li>
+</ol>
 
 <h1>
 <a id="quick-test-of-the-program" class="anchor" href="#quick-test-of-the-program" aria-hidden="true"><span class="octicon octicon-link"></span></a>Quick test of the program</h1>
 
 <ol>
-<li>In a text editor open the *.ini file located in the "examples/YSZ" or "examples/SiC-3C" folder. Modify lines 5-7: replace with the paths of the files on your system.</li>
+<li>
+<p>In a text editor open the *.ini file located in the "examples/YSZ" or "examples/SiC-3C" folder. Modify lines 5-7: insert the paths of the files on your system. For instance, for a Radmax file located in the "documents" folder:</p>
+
+<ul>
+<li>Windows: C:\Users\User_name\Documents\</li>
+<li>Linux: /home/user_name/Documents/</li>
+</ul>
+</li>
 <li>Launch Radmax.py.</li>
 <li>In the "File" menu select "Load Project".</li>
 <li><p>Navigate to the "examples/YSZ" or "examples/SiC-3C" folder and load the *.ini file.</p></li>
@@ -73,8 +92,8 @@ For the moment, the wxpython library is not compatible with Python 3 and above. 
 <li>The fitted curve, the strain and damage profiles are automatically saved (*.txt) in the folder selected above. </li>
 </ul>
 
-<h2>
-<a id="data-format" class="anchor" href="#data-format" aria-hidden="true"><span class="octicon octicon-link"></span></a>Data format</h2>
+<h1>
+<a id="data-format" class="anchor" href="#data-format" aria-hidden="true"><span class="octicon octicon-link"></span></a>Data format</h1>
 
 <p>XRD data can be loaded from the "File" menu. The data should be provided as a two-columns (2thêta, intensity) ASCII file in space- (or tab-) separated format. The 2thêta values have to be equally spaced (constant step). For the moment RaDMaX can only handle data recorded in symmetric coplanar geometry (conventional thêta-2thêta scan), as this is the most commonly used geometry in the analysis of irradiated materials.</p>
 
@@ -87,15 +106,13 @@ For the moment, the wxpython library is not compatible with Python 3 and above. 
 
 <h1>
 <a id="screencast" class="anchor" href="#screencast" aria-hidden="true"><span class="octicon octicon-link"></span></a>Screencast</h1>
-
-      <footer class="site-footer">
-        <span class="site-footer-owner"><a href="https://github.com/aboulle/RaDMaX">RaDMaX</a> is maintained by <a href="https://github.com/aboulle">aboulle</a>.</span>
-
-        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
-      </footer>
-
-    </section>
-
-  
+      </section>
+    </div>
+    <footer>
+      <p>Project maintained by <a href="https://github.com/aboulle">aboulle</a></p>
+      <p>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></p>
+    </footer>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+    
   </body>
 </html>
