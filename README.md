@@ -23,16 +23,15 @@ For the moment, the wxpython library is not compatible with Python 3 and above. 
 
 
 ### GNU / Linux
-On most Linux systems the dependencies are available in the software repositories. For debian based systems run (as root): `apt-get install python python-scipy python-matplolib python-wxgtk2.8`. 
+ On most Linux systems the dependencies are available in the software repositories. For debian based systems run (as root): `apt-get install python python-scipy python-matplolib python-wxgtk2.8`. 
 
 
 
 ## How to test the program
-1. Navigate to the "examples/YSZ" or "examples/SiC-3C" folder
-2. In a text editor open the *.ini file and modify lines 5-7: enter the path of the files on your system.
-3. Launch Radmax.py
-4. In the "File" menu select "Load Project"
-5. Navigate to the "examples/YSZ" or "examples/SiC-3C" folder and load the *.ini file
+1. In a text editor open the *.ini file located in the "examples/YSZ" or "examples/SiC-3C" folder. Modify lines 5-7: replace with the paths of the files on your system.
+2. Launch Radmax.py.
+3. In the "File" menu select "Load Project".
+4. Navigate to the "examples/YSZ" or "examples/SiC-3C" folder and load the *.ini file.
 
 * Any change in any of the upper panels has to be validated with the "Update" button to update the XRD curve.
 * The strain and damage profiles can be modified by dragging the control points. The XRD curve is updated in real time.
