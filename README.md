@@ -52,6 +52,6 @@ Guess strain/damage profile can be imported from the "File" menu. The data shoul
 # Screenshots
 RaDMaX running in Windows 10
 
-![Screenshot](https://github.com/aboulle/RaDMaX/master/Screen1.png "Screenshot")
+![Alt text](https://github.com/aboulle/RaDMaX/blob/master/Screen1.png)
 
 # Screencast
