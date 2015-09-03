@@ -50,6 +50,8 @@ XRD data can be loaded from the "File" menu. The data should be provided as a tw
 Guess strain/damage profile can be imported from the "File" menu. The data should be providedas a two-columns ASCII file with the depth below the surface (in Angstroms) as first column.
 
 # Screenshots
-RaDMaX running in Windows 10.
+RaDMaX running in Windows 10
+
+![Screenshot](https://github.com/aboulle/RaDMaX/master/Screen1.png "Screenshot")
 
 # Screencast
