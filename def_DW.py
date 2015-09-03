@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # A_BOULLE & M_SOUILAH
-# Version du : 11/06/2015
 
-from numpy import *
+from numpy import array, append, ones
 from scipy.optimize import leastsq
-from B_Splines import *
+from B_Splines import cubicSpline, constantSpline
 
 # Debye-Waller Spline à N abscisses
 def f_DW_spline3_smooth(alt, dwp,t):

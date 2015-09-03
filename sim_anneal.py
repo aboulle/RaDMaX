@@ -1,18 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # A_BOULLE & M_SOUILAH
-# Version du : 11/06/2015
 
-from scipy import *
 import scipy.stats as stats
-from pylab import *
-from time import *
+from scipy import rand
+from pylab import normal
 
-from Parameters4Diff import *
-from def_XRD import *
+from Parameters4Radmax import P4Diff
+from def_XRD import f_Refl
+from numpy import append, ones, zeros, linspace, log10
+from wx.lib.pubsub import pub
 
 pubsub_Draw_Fit_Live_XRD = "DrawFitLiveXRD"
 pubsub_Update_Gauge = "UpdateGauge"
+pubsub_Update_Limit = "UpdateLimit"
 
 
 def temp_sch_stepped(cycle, Tmax, qv, nb_palier):
@@ -93,19 +94,21 @@ def randomize_old_FONCTIONNE(qv, T, D, fp_0, scale, limits):
 	return fp_t, depassements
 
 def randomize(qv, T, D, fp_0, scale, limits): 
-	depassements = zeros(D, dtype = float)
-	fp_t = zeros(len(fp_0))
-	fp_t[:] = fp_0[:]
-	for ii in range(len(fp_t)):
-		delta_fp = tsallis_rv(qv, T, 1)[0] * scale[ii]
-		fp_t[ii] = (fp_0[ii] + delta_fp)
-		while ((fp_t[ii]<limits[2*ii]) or (fp_t[ii]>limits[2*ii+1])):
-#			print('************ LIMIT EXCEEDED ON PARAMETER', ii, '************')
-			depassements[ii] = 1
-			fp_t[ii] = fp_0[ii]
-			delta_fp = tsallis_rv(qv, T, 1)[0] * scale[ii]
-			fp_t[ii] = (fp_0[ii] + delta_fp)
-	return fp_t, depassements
+    depassements = zeros(D, dtype = float)
+    fp_t = zeros(len(fp_0))
+    fp_t[:] = fp_0[:]
+    for ii in range(len(fp_t)):
+        delta_fp = tsallis_rv(qv, T, 1)[0] * scale[ii]
+        fp_t[ii] = (fp_0[ii] + delta_fp)
+        pub.sendMessage(pubsub_Update_Limit, val=-1)
+        while ((fp_t[ii]<limits[2*ii]) or (fp_t[ii]>limits[2*ii+1])):
+            pub.sendMessage(pubsub_Update_Limit, val=ii)
+#            print('************ LIMIT EXCEEDED ON PARAMETER', ii, '************')
+            depassements[ii] = 1
+            fp_t[ii] = fp_0[ii]
+            delta_fp = tsallis_rv(qv, T, 1)[0] * scale[ii]
+            fp_t[ii] = (fp_0[ii] + delta_fp)
+    return fp_t, depassements
    
 
 def residual_square(p, data):
@@ -155,9 +158,21 @@ def gsa(energy, data, args = ()):
 ## définition du tableau de refroidissement
 ##	temperature = temp_sch(cycle, Tmax, qt)
     temperature = temp_sch_stepped(cycle, tmax, data['qt'], data['nb_palier'])
-    val4gauge = cycle[-1]/20
-    gauge_counter = 0
-
+    val4gauge = int(cycle[-1])/20
+    if int(cycle[-1]) <= 100:
+        val4gaugetemp = int(cycle[-1])/5
+        P4Diff.gaugeUpdate = 100/5
+    elif  100 < int(cycle[-1]) <= 1000:
+        val4gaugetemp = int(cycle[-1])/20
+        P4Diff.gaugeUpdate = 100/20
+    elif  1000 < int(cycle[-1]) <= 10000:
+        val4gaugetemp = int(cycle[-1])/100
+        P4Diff.gaugeUpdate = 100/100
+    if type(val4gaugetemp) != int:
+        val4gauge = ceil(val4gaugetemp)
+    else:
+        val4gauge = val4gaugetemp
+            
 ## début de la boucle de recuit
     for iteration in cycle:
         if a.gsa_loop == 1:

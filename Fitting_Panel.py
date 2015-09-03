@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # A_BOULLE & M_SOUILAH
-# Version du : 22/06/2015
 
 from  threading import Thread, Event
 from scipy.optimize import leastsq
 
-from Read4Diff import LogSaver
-from Parameters4Diff import *
-from def_XRD import *
+from Read4Radmax import LogSaver
+from Parameters4Radmax import *
+from def_XRD import f_Refl
 from sim_anneal import gsa
+from sys import platform as _platform
 
 New_project_initial_data = {0:10, 1:1000, 2:10, 3:0.99, 4:2.6, 5:1.001}
 
@@ -18,12 +18,16 @@ pubsub_Read_field_paramters_panel = "ReadParametersPanel"
 pubsub_Re_Read_field_paramters_panel = "ReReadParametersPanel"
 pubsub_Refresh_fitting_panel = "RefreshFittingPanel"
 pubsub_Draw_Fit_Live_XRD = "DrawFitLiveXRD"
+pubsub_Draw_Fit_Live_Deformation = "DrawFitLiveDeformation"
 pubsub_Update_Fit_Live = "UpdateFitLive"
 pubsub_OnFit_Graph = "OnFitGraph"
+pubsub_Update_Limit = "UpdateLimit"
 pubsub_Update_Gauge = "UpdateGauge"
 pubsub_Read_field4Save = "ReadField4Save"
 pubsub_changeColor_field4Save = "ChangeColorField4Save"
 pubsub_Update_deformation_multiplicator_coef = "UpdateDeformationMultiplicatorCoef"
+pubsub_save_project_before_fit = "SaveProjectBeforeFit"
+pubsub_gauge_to_zero = "Gauge2zero"
 
 Live_COUNT = wx.NewEventType()
 EVT_Live_COUNT = wx.PyEventBinder(Live_COUNT, 1)
@@ -36,37 +40,30 @@ class FittingPanel(wx.Panel):
         self.parent = parent
 
         vStatictextsize = 16
-        size_text = (85,22)
-        size_value_hkl = (50,22)
-        size_value_lattice = (50,22)
-        size_damaged_depth = (110,22)
+        size_text = (55,22)
         
         font = wx.Font(10, wx.DEFAULT, wx.ITALIC, wx.BOLD)
         font_update = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.BOLD)
-        font_Statictext = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
-        font_TextCtrl = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
-        font_combobox = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
+        if _platform == "linux" or _platform == "linux2":
+            font_Statictext = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
+            font_TextCtrl = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
+            font_combobox = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
+        elif _platform == "win32":
+            info = wx.NativeFontInfo()
+            info.SetFaceName("arial")
+            info.SetPointSize(9)
+            font_Statictext = wx.FontFromNativeInfoString(info.ToString())
+            font_TextCtrl = wx.FontFromNativeInfoString(info.ToString())
+            font_combobox = wx.FontFromNativeInfoString(info.ToString())
         
         
-        size_xyz_exp_files = (650,25)
-        size_line = (650,1)
-        size_statictxt = (95,16)
-        size_launcher = (150,16)
-        size_load = (600,16)
-        size_totalatom = (100,16)
-        size_staticgeneraltxt = (92,16)
-        size_comments = (389,22)
-        size_blank = (92,22)
         
         size_StaticBox = (700, 140)
 
         """master sizer for the whole panel"""
-        mainsizer = wx.BoxSizer(wx.HORIZONTAL)
-        mastersizer = wx.BoxSizer(wx.VERTICAL)
+        mainsizer = wx.GridBagSizer(hgap=0, vgap=1)
         topsizer = wx.BoxSizer(wx.HORIZONTAL)
         self.centersizer = wx.BoxSizer(wx.VERTICAL)
-        leftsizer = wx.BoxSizer(wx.VERTICAL)
-        restoresizer = wx.BoxSizer(wx.VERTICAL)
 
 
         FitAlgo_choice = ["GSA", "leastsq"]
@@ -85,15 +82,15 @@ class FittingPanel(wx.Panel):
         GSA_options_box = wx.StaticBox(self, -1, " GSA options ", size=size_StaticBox)
         GSA_options_box.SetFont(font)
         self.GSA_options_box_sizer = wx.StaticBoxSizer(GSA_options_box, wx.VERTICAL)
-        in_GSA_options_box_sizer = wx.GridBagSizer(hgap=10, vgap=0)
-        flagSizer = wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT
+        in_GSA_options_box_sizer = wx.GridBagSizer(hgap=10, vgap=1)
+        flagSizer = wx.ALL|wx.ALIGN_CENTER_VERTICAL 
         
-        temperature_txt = wx.StaticText(self, -1, label=u'Temperature (k)', size=(100,vStatictextsize))
+        temperature_txt = wx.StaticText(self, -1, label=u'Temperature (k)', size=(110,vStatictextsize))
         temperature_txt.SetFont(font_Statictext)
         self.temperature = wx.TextCtrl(self, size=size_text)
         self.temperature.SetFont(font_TextCtrl)
 
-        cycle_number_txt = wx.StaticText(self, -1, label=u'Number of cycle', size=(120,vStatictextsize))
+        cycle_number_txt = wx.StaticText(self, -1, label=u'Number of cycle', size=(110,vStatictextsize))
         cycle_number_txt.SetFont(font_Statictext)
         self.cycle_number = wx.TextCtrl(self, size=size_text)
         self.cycle_number.SetFont(font_TextCtrl)
@@ -115,7 +112,6 @@ class FittingPanel(wx.Panel):
         AGSA_options_box.SetFont(font)
         self.AGSA_options_box_sizer = wx.StaticBoxSizer(AGSA_options_box, wx.VERTICAL)
         in_AGSA_options_box_sizer = wx.GridBagSizer(hgap=10, vgap=0)
-        flagSizer = wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT
         
         qa_txt = wx.StaticText(self, -1, label=u'qa', size=(20,vStatictextsize))
         cooling_number_txt.SetFont(font_Statictext)
@@ -144,14 +140,12 @@ class FittingPanel(wx.Panel):
         Fit_box.SetFont(font)
         Fit_box_sizer = wx.StaticBoxSizer(Fit_box, wx.VERTICAL)
         in_Fit_box_sizer = wx.GridBagSizer(hgap=5, vgap=0)
-        flagSizer = wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT
 
         """GSA result part"""
         GSA_results_box = wx.StaticBox(self, -1, " GSA fit results ", size=size_StaticBox)
         GSA_results_box.SetFont(font)
         self.GSA_results_sizer = wx.StaticBoxSizer(GSA_results_box, wx.VERTICAL)
         in_GSA_results_sizer = wx.GridBagSizer(hgap=2, vgap=0)
-        flagSizer = wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT
 
         """button part"""
         self.FitId = wx.NewId()
@@ -170,6 +164,11 @@ class FittingPanel(wx.Panel):
         param_txt.SetFont(font_Statictext)
         self.param_change_txt = wx.StaticText(self, -1, label=u'', size=(50,vStatictextsize))
         self.param_change_txt.SetFont(font_TextCtrl)
+
+        self.limitexceeded_txt = wx.StaticText(self, -1, label=u'Limit Exceeded On Parameter: ', size=(190,vStatictextsize))
+        self.limitexceeded_txt.SetFont(font_Statictext)
+        self.limitexceeded = wx.StaticText(self, -1, label=u'', size=(50,vStatictextsize))
+        self.limitexceeded.SetFont(font_TextCtrl)
         
         self.fit_Btn = wx.Button(self, id=self.FitId, label="Fit!")
         self.fit_Btn.SetFont(font_update)
@@ -179,9 +178,9 @@ class FittingPanel(wx.Panel):
         self.stopfit_Btn.Bind(wx.EVT_BUTTON, self.onStopFit)
         self.stopfit_Btn.Disable()
         
-        self.restore_strain_btn = wx.Button(self, id=self.Restore_strain_Id, label="Restore\nprevious strain\nvalues")
+        self.restore_strain_btn = wx.Button(self, id=self.Restore_strain_Id, label="Strain values", size=(120, 30))
         self.restore_strain_btn.SetFont(font_update)
-        self.restore_dw_btn = wx.Button(self, id=self.Restore_dw_Id, label="Restore\nprevious DW\nvalues")
+        self.restore_dw_btn = wx.Button(self, id=self.Restore_dw_Id, label="DW values", size=(120, 30))
         self.restore_dw_btn.SetFont(font_update)
         self.restore_strain_btn.Bind(wx.EVT_BUTTON, self.onRestore)
         self.restore_dw_btn.Bind(wx.EVT_BUTTON, self.onRestore)
@@ -194,26 +193,35 @@ class FittingPanel(wx.Panel):
         in_GSA_results_sizer.Add(self.Emin_change_txt, pos=(0,2), flag=flagSizer)
         in_GSA_results_sizer.Add(param_txt, pos=(0,3), flag=flagSizer)
         in_GSA_results_sizer.Add(self.param_change_txt, pos=(0,4), flag=flagSizer)
+        in_GSA_results_sizer.Add(self.limitexceeded_txt, pos=(0,5), flag=flagSizer)
+        in_GSA_results_sizer.Add(self.limitexceeded, pos=(0,6), flag=flagSizer)
 #        'Emin = %4.3f' %E_min, '(',int(nb_minima), ')'
         
-        restoresizer.Add(self.restore_strain_btn, 0, wx.ALIGN_CENTER_HORIZONTAL, 5)
-        restoresizer.Add(self.restore_dw_btn, 0, wx.ALIGN_CENTER_HORIZONTAL, 5)
+        """Restore part"""
+        Restore_box = wx.StaticBox(self, -1, " Restore previous deformation ", size=(300, 150))
+        Restore_box.SetFont(font)
+        self.Restore_box_sizer = wx.StaticBoxSizer(Restore_box, wx.VERTICAL)
+        in_Restore_box_sizer = wx.GridBagSizer(hgap=0, vgap=1)
+        
+        in_Restore_box_sizer.Add(self.restore_strain_btn, pos=(0,0))
+        in_Restore_box_sizer.Add(self.restore_dw_btn, pos=(1,0))
+
+        self.Restore_box_sizer.Add(in_Restore_box_sizer, 0, wx.ALL, 5)
         
         self.GSA_options_box_sizer.Add(in_GSA_options_box_sizer, 0, wx.ALL, 5)
         self.AGSA_options_box_sizer.Add(in_AGSA_options_box_sizer, 0, wx.ALL, 5)
         Fit_box_sizer.Add(in_Fit_box_sizer, 0, wx.ALL, 5)
         self.GSA_results_sizer.Add(in_GSA_results_sizer, 0, wx.ALL, 5)
         
-        self.centersizer.Add(Fit_box_sizer, 0, wx.ALIGN_CENTER_VERTICAL, 5)
-        self.centersizer.Add(self.GSA_options_box_sizer, 0, wx.ALIGN_CENTER_VERTICAL, 5)
-        self.centersizer.Add(self.AGSA_options_box_sizer, 0, wx.ALIGN_CENTER_VERTICAL, 5)
-        self.centersizer.Add(self.GSA_results_sizer, 0, wx.ALIGN_CENTER_VERTICAL, 5)
+        self.centersizer.Add(Fit_box_sizer, 0, wx.ALL & ~wx.TOP, 5)
+        self.centersizer.Add(self.GSA_options_box_sizer, 0, wx.ALL, 5)
+        self.centersizer.Add(self.AGSA_options_box_sizer, 0, wx.ALL, 5)
+        self.centersizer.Add(self.GSA_results_sizer, 0, wx.ALL, 5)
         
 
-        leftsizer.Add(topsizer, 0, wx.ALL, 5)
-        leftsizer.Add(self.centersizer, wx.ALL, 5)
-        mainsizer.Add(leftsizer, 0, wx.ALL, 5)
-        mainsizer.Add(restoresizer, 0, wx.ALIGN_CENTER_VERTICAL, 5)
+        mainsizer.Add(topsizer, pos=(0,0))
+        mainsizer.Add(self.centersizer, pos=(1,0))
+        mainsizer.Add(self.Restore_box_sizer, pos=(1,1))
         
         self.data_fields = {}
         self.data_fields[0] = self.temperature
@@ -227,14 +235,16 @@ class FittingPanel(wx.Panel):
         
         self.worker_live = None        
         self.par4diff = []
-        self.Bind(EVT_Live_COUNT, self.OnLive)
+        self.Bind(EVT_Live_COUNT, self.OnLive)        
        
         pub.subscribe(self.onLoadProject, pubsub_Load_fitting_panel)
         pub.subscribe(self.RefreshAfterFit, pubsub_Refresh_fitting_panel)
+        pub.subscribe(self.Update_Limit, pubsub_Update_Limit)
         pub.subscribe(self.Update_Gauge, pubsub_Update_Gauge)
         pub.subscribe(self.ReadDataField, pubsub_Read_field4Save)
         pub.subscribe(self.ChangeColorField, pubsub_changeColor_field4Save)
-
+        pub.subscribe(self.Gauge2zero, pubsub_gauge_to_zero)
+        
         self.SetSizer(mainsizer)
 
     def onChangeFit(self, event):
@@ -269,19 +279,38 @@ class FittingPanel(wx.Panel):
         fitname = self.cb_FitAlgo.GetSelection()
         P4Diff.allparameters = a.initial_parameters + a.fitting_parameters
         self.par4diff = dict(zip(Initial_data_key,a.allparameters))
-        self.statusbar.SetStatusText(u"Fitting... Please Wait", 0)
-        self.Refresh()  
-        print ("Fitting... Please Wait")
-        pub.sendMessage(pubsub_OnFit_Graph)
-        P4Diff.fitlive = 1
-        self.gauge.SetValue(0)
-        self.worker_live = Fit_launcher(self, fitname, self.par4diff)
+        test_deformation_limit = self.onTestDataBeforeFit()
+        if test_deformation_limit == True:
+            self.RefreshAfterFit(0)
+            self.statusbar.SetStatusText(u"Fitting... Please Wait...This may take some time", 0)
+            self.Refresh()  
+            pub.sendMessage(pubsub_OnFit_Graph)
+            P4Diff.fitlive = 1
+            self.gauge.SetValue(0)
+            self.worker_live = Fit_launcher(self, fitname, self.par4diff)
+        else:
+            dlg = GMD.GenericMessageDialog(None, u"Deformation values are off limits\n" + \
+            u"Please check the Initial Parameters panel before launching the fit",
+                    "Attention", agwStyle = wx.OK|wx.ICON_INFORMATION|wx.CENTRE)
+            dlg.ShowModal()
+
+
+    def onTestDataBeforeFit(self):
+        a = P4Diff()
+        """ do not use the last value of strain because ou of the scope """
+        test_dw = (a.dwp > self.par4diff['min_dw']).all() and (a.dwp < self.par4diff['max_dw']).all()
+        test_strain = (a.sp[:-1] > self.par4diff['min_strain']).all() and (a.sp < self.par4diff['max_strain']).all()
+        if test_dw and test_strain == True:
+            return True
+        else:
+            return False            
         
     def OnLive(self, event):
         list4live = event.GetValue()
         stopFit = event.StopFit()
         if list4live[0] != []:
             pub.sendMessage(pubsub_Draw_Fit_Live_XRD, val=list4live[0])
+#            pub.sendMessage(pubsub_Draw_Fit_Live_Deformation)
         if list4live[1] != None:
             pub.sendMessage(pubsub_Update_Gauge, val=list4live[1][2], emin=list4live[1][0], param=int(list4live[1][1]))
         if stopFit != None: 
@@ -309,6 +338,7 @@ class FittingPanel(wx.Panel):
             self.stopfit_Btn.Enable()
             self.restore_strain_btn.Disable()
             self.restore_dw_btn.Disable()
+            self.cb_FitAlgo.Disable()
         elif option == 1:
             a = P4Diff()
             self.parent.notebook.EnableTab(0, True)
@@ -316,6 +346,7 @@ class FittingPanel(wx.Panel):
             self.stopfit_Btn.Disable()
             self.restore_strain_btn.Enable()
             self.restore_dw_btn.Enable()
+            self.cb_FitAlgo.Enable()
             P4Diff.fitlive = 0
             P4Diff.I_i = a.I_fit
             P4Diff.sp = a.par_fit[:int(self.par4diff['strain_basis_func'])]
@@ -338,31 +369,36 @@ class FittingPanel(wx.Panel):
             path = a.path2ini
         else:
             path = a.path2drx
-        savetxt(os.path.join(path, output_name['out_strain_profile']), column_stack((a.depth, a.strain_i)), fmt='%10.8f')
-        savetxt(os.path.join(path, output_name['out_dw_profile']), column_stack((a.depth, a.DW_i)), fmt='%10.8f')
-        savetxt(os.path.join(path, output_name['out_strain']),a.par_fit[:int(self.par4diff['strain_basis_func'])] , fmt='%10.8f')
-        savetxt(os.path.join(path, output_name['out_dw']), a.par_fit[-1*int(self.par4diff['dw_basis_func']):], fmt='%10.8f')
+        savetxt(os.path.join(path, a.namefromini + '_' + output_name['out_strain_profile']), column_stack((a.depth, a.strain_i)), fmt='%10.8f')
+        savetxt(os.path.join(path, a.namefromini + '_' +output_name['out_dw_profile']), column_stack((a.depth, a.DW_i)), fmt='%10.8f')
+        savetxt(os.path.join(path, a.namefromini + '_' +output_name['out_strain']),a.par_fit[:int(self.par4diff['strain_basis_func'])] , fmt='%10.8f')
+        savetxt(os.path.join(path, a.namefromini + '_' +output_name['out_dw']), a.par_fit[-1*int(self.par4diff['dw_basis_func']):], fmt='%10.8f')
 
     def onLaunchFit(self, event):
         a = P4Diff()
-        logger.log(logging.INFO, "Starting Fit")
-        check_empty = self.search4emptyfields()
-        if check_empty == True:
-            data_float = self.IsDataFloat()
-            if data_float == True:
-                pub.sendMessage(pubsub_Read_field_paramters_panel, event=event)
-                if a.success4Fit == 0:
-                    P4Diff.sp_backup = a.sp
-                    P4Diff.dwp_backup = a.dwp 
-                    self.RefreshAfterFit(0)
-                    self.onLaunchthread()
-                else:
-                    self.parent.notebook.SetSelection(0)
-                    pub.sendMessage(pubsub_Re_Read_field_paramters_panel, event=event)
-            elif data_float == False:
-                self.statusbar.SetStatusText(u"Please, fill correctly the fields before to continue", 0)
-        elif check_empty == False:
-            self.statusbar.SetStatusText(u"Please, fill the red empty fields before to continue", 0)
+        if a.namefromini != "":
+            logger.log(logging.INFO, "Starting Fit")
+            check_empty = self.search4emptyfields()
+            if check_empty == True:
+                data_float = self.IsDataFloat()
+                if data_float == True:
+                    pub.sendMessage(pubsub_Read_field_paramters_panel, event=event)
+                    if a.success4Fit == 0:
+                        P4Diff.sp_backup = a.sp
+                        P4Diff.dwp_backup = a.dwp 
+                        self.onLaunchthread()
+                    else:
+                        self.parent.notebook.SetSelection(0)
+                        pub.sendMessage(pubsub_Re_Read_field_paramters_panel, event=event)
+                elif data_float == False:
+                    self.statusbar.SetStatusText(u"Please, fill correctly the fields before to continue", 0)
+            elif check_empty == False:
+                self.statusbar.SetStatusText(u"Please, fill the red empty fields before to continue", 0)
+        else:
+            dlg = GMD.GenericMessageDialog(None, "Please, save the project before to continue",
+            "Attention", agwStyle = wx.OK|wx.ICON_INFORMATION)
+            dlg.ShowModal()
+            pub.sendMessage(pubsub_save_project_before_fit, event=event, case=1)
 
     def ReadDataField(self):
         P4Diff.checkDataField = 0
@@ -432,7 +468,7 @@ class FittingPanel(wx.Panel):
                 self.data_fields[ii].SetBackgroundColour('white')
             self.Refresh()
         else:
-            temp = [float(a) for a in self.resultprojectfile]
+            temp = [float(j) for j in self.resultprojectfile]
             P4Diff.fitting_parameters = temp
         return dataFloat
 
@@ -440,6 +476,19 @@ class FittingPanel(wx.Panel):
         self.gauge.SetValue(val)
         self.Emin_change_txt.SetLabel('%4.3f' %emin)
         self.param_change_txt.SetLabel(str(param))
+
+    def Update_Limit(self, val):
+        if val != -1:
+            self.limitexceeded.SetLabel(str(val))
+            self.limitexceeded.SetForegroundColour('#FF0000')
+        else:
+            self.limitexceeded.SetLabel("")
+            self.limitexceeded.SetForegroundColour('#000000')
+            
+            
+        
+    def Gauge2zero(self):
+        self.gauge.SetValue(0)
 
 
 #------------------------------------------------------------------------------
@@ -458,6 +507,7 @@ class LiveEvent(wx.PyCommandEvent):
 
     def StopFit(self):
         return self._stopfit
+
         
 #------------------------------------------------------------------------------
 class Fit_launcher(Thread):

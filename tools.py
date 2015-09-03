@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # A_BOULLE & M_SOUILAH
-# Version du : 22/06/2015
 
 import csv
 from scipy import *

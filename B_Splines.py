@@ -1,5 +1,7 @@
-## coding:utf-8
-## Module B_Splines
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# A_BOULLE & M_SOUILAH
+
 '''
 Calcule la fonction de base Bspline et la cubic-spline
 attention l'échelle horizontale est arbitraire (z = 0 -> 1ere abscisse

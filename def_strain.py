@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # A_BOULLE & M_SOUILAH
-# Version du : 11/06/2015
 
-from scipy import *
+from numpy import array, append, ones
 from scipy.optimize import leastsq
-from B_Splines import *
+from B_Splines import cubicSpline, constantSpline
 
 ## Calcul de la déformation (Spline à N abscisses)
 def f_strain_spline3_smooth(alt, sp,t):

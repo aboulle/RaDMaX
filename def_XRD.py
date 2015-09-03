@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # A_BOULLE & M_SOUILAH
-# Version du : 11/06/2015
 
-from def_strain import *
-from def_DW import *
-from Parameters4Diff import *
+from def_strain import f_strain
+from def_DW import f_DW
+from Parameters4Radmax import P4Diff
+from scipy import tan, sin, exp, pi, convolve
+from tools import signe
 
 '''
 Calcul de la réflectivité dynamique
@@ -15,7 +16,6 @@ def f_Refl(data):
     G = a.G
     thB_S = a.thB_S
     wl = data['wavelength']
-    h, k, l = data['h'], data['k'], data['l']
     t = data['damaged_depth']
     N = data['number_slices']
     resol = a.resol
@@ -35,7 +35,6 @@ def f_Refl(data):
     
     if a.fitlive == 1:
         param = a._fp_min
-#    print param
     		
     strain = f_strain(z, param[:len(sp):], t, spline_strain)
 #	DW = f_DW(z, strain, param[:len(sp):], param[len(sp):len(sp)+len(dwp):], t)
@@ -53,7 +52,7 @@ def f_Refl(data):
         b = g0 / gH
         T = pi * G * ((FH[n]*FmH[n])**0.5) * t_l * DW[n]/ (wl * (abs(g0*gH)**0.5) )
         eta = (-b*(th-thB[n])*sin(2*thB_S) - 0.5*G*F0[n]*(1-b)) / ((abs(b)**0.5) * G * DW[n] * (FH[n]*FmH[n])**0.5 )
-        S = (eta*eta-1)**0.5
+#        S = (eta*eta-1)**0.5
 #            print n, S
         S1 = (res - eta + (eta*eta-1)**0.5)*exp(-1j*T*(eta*eta-1)**0.5)
 #            print n, S1

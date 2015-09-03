@@ -1,20 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # A_BOULLE & M_SOUILAH
-# Version du : 22/06/2014
 
 try:
     import wx, wx.html
 except ImportError:
     raise ImportError, "The wxPython module is required to run this program"
 
-from myIcon import NewP24, LoadP24, saveP24, saveasP24, shutdown24
-from myIcon import parameters, bars_graph, prog_icon, About_icon
+from Icon4Radmax import NewP24, LoadP24, saveP24, saveasP24, shutdown24, logP32
+from Icon4Radmax import prog_icon, About_icon_24
 
-from Graph4Diff import RightGraph, Graph_window
+from Graph4Radmax import GraphPanel
 from Parameters_Panel import InitialDataPanel
 from Fitting_Panel import FittingPanel
-from Parameters4Diff import *
+from Parameters4Radmax import *
 
 """Pubsub message"""
 pubsub_Load = "LoadP"
@@ -26,13 +25,17 @@ pubsub_Save = "SaveP"
 pubsub_Launch_GUI = "LaunchGUI"
 pubsub_ChangeFrameTitle = "ChangeFrameTitle"
 pubsub_Activate_Import = "ActivateImport"
+pubsub_shortcut = "Shortcut"
 
 #------------------------------------------------------------------------------
 class MainFrame(wx.Frame):
     def __init__(self):
         pos=wx.DefaultPosition
-        size = (1000, 900)
-        wx.Frame.__init__(self, None, wx.ID_ANY, Application_name, pos, size)
+        size = (1100, 960)
+        no_resize = wx.DEFAULT_FRAME_STYLE & ~ (wx.RESIZE_BORDER | 
+                                                wx.RESIZE_BOX | 
+                                                wx.MAXIMIZE_BOX)
+        wx.Frame.__init__(self, None, wx.ID_ANY, Application_name, pos, size, style=no_resize)
         wx.Frame.CenterOnScreen(self)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
@@ -41,7 +44,7 @@ class MainFrame(wx.Frame):
         self.SetStatusBar(self.sb)
         self.SetStatusWidths([-4, -1, -1])
 
-#        self.SetIcon(prog_icon.GetIcon())
+        self.SetIcon(prog_icon.GetIcon())
 
         self.m_menubar = wx.MenuBar()
         self.m_menufile = wx.Menu()
@@ -52,6 +55,9 @@ class MainFrame(wx.Frame):
         self.Load_DW_ID = wx.NewId()
         self.Save_ID = wx.NewId()
         self.SaveP_ID = wx.NewId()
+        self.log_ID = wx.NewId()
+        self.Update = wx.NewId()
+        self.Reloadini = wx.NewId()
         self.m_menunewproject = wx.MenuItem( self.m_menufile, self.NewP_ID, u"New Project"+ u"\t" + u"Ctrl+N", u"Begin a new project" , wx.ITEM_NORMAL )
         self.m_menunewproject.SetBitmap(wx.BitmapFromIcon(NewP24.GetIcon()))
         self.m_menufile.AppendItem( self.m_menunewproject )
@@ -92,9 +98,13 @@ class MainFrame(wx.Frame):
 
         self.m_menuoptions = wx.Menu()
         self.m_menubar.Append( self.m_menuoptions, u"O&ptions" ) 
+        self.m_menulog = wx.MenuItem( self.m_menuoptions, self.log_ID, u"Log file", u"Open log file" , wx.ITEM_NORMAL )
+        self.m_menulog.SetBitmap(wx.BitmapFromIcon(logP32.GetIcon()))
+        self.m_menuoptions.AppendItem( self.m_menulog )
 
         self.m_menuhelp = wx.Menu()
         self.m_menuabout = wx.MenuItem( self.m_menuhelp, wx.ID_ABOUT, u"About..."+ u"\t" + u"F1", wx.EmptyString, wx.ITEM_NORMAL )
+        self.m_menuabout.SetBitmap(wx.BitmapFromIcon(About_icon_24.GetIcon()))
         self.m_menuhelp.AppendItem( self.m_menuabout )
 
         self.m_menubar.Append( self.m_menuhelp, u"&Help" ) 
@@ -104,11 +114,16 @@ class MainFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.SetMenu)
         self.Bind(wx.EVT_MENU, self.OnClose, id=wx.ID_EXIT)
         self.Bind(wx.EVT_MENU, self.OnAboutBox, id=wx.ID_ABOUT)
+ 
+        self.accel_tbl = wx.AcceleratorTable([(wx.ACCEL_CTRL, ord('U'), self.Update),
+                                              (wx.ACCEL_CTRL, ord('I'), self.Reloadini)])
+        self.SetAcceleratorTable(self.accel_tbl)
 
         pub.subscribe(self.OnChangeTitle, pubsub_ChangeFrameTitle)
         pub.subscribe(self.OnActivateImport, pubsub_Activate_Import)
         
-        panel = MainPanel(self, self.sb)
+        MainPanel(self, self.sb)
+
         self.Show()
         pub.sendMessage(pubsub_Launch_GUI)
 
@@ -139,21 +154,33 @@ class MainFrame(wx.Frame):
             pub.sendMessage(pubsub_Save, event=event, case=0)
         elif widget == self.SaveP_ID:
             pub.sendMessage(pubsub_Save, event=event, case=1)
+        elif widget == self.log_ID:
+            self.onDisplaylogfile()
+        elif widget == self.Update:
+            pub.sendMessage(pubsub_shortcut, event=event, case=0)
+        elif widget == self.Reloadini:
+            pub.sendMessage(pubsub_shortcut, event=event, case=1)
     
     def OnAboutBox(self, event):
         info = wx.AboutDialogInfo()
-#        info.SetIcon(About_icon.GetIcon())
         info.SetName(Application_name)
-        info.SetVersion('1.0')
+        info.SetVersion(str(Application_version))
         info.SetCopyright('(C) 2015 SPCTS')
         info.SetDescription(description)
         info.SetWebSite('http://www.unilim.fr/spcts/')
         info.AddDeveloper('Alexandre Boulle')
         info.AddDeveloper('Marc Souilah')
+        info.SetLicence(licence)
         wx.AboutBox(info)
 
     def OnChangeTitle(self, NewTitle):
         self.SetTitle(NewTitle)
+
+    def onDisplaylogfile(self):
+        """Open Log file"""
+        if P4Diff.log_window_status == False:
+            LogWindow().Show()
+            P4Diff.log_window_status = True           
 
     def OnClose(self, event):
         titlelabel = self.GetLabel().split(' - ')
@@ -195,7 +222,6 @@ class MainPanel(wx.Panel):
         wx.Panel.__init__(self, parent)
         self.statusbar = statusbar
  
-        self.panel1 = wx.Panel( self, wx.ID_ANY)
         self.aui_mgr = aui.AuiManager()
         self.aui_mgr.SetManagedWindow( self)
 
@@ -221,10 +247,15 @@ class MainPanel(wx.Panel):
 
         self.aui_mgr.AddPane(GraphPanel(self, self.statusbar), aui.AuiPaneInfo().Name("Graph_Window").CenterPane().PaneBorder( False ).Position(1).MaximizeButton(False))
         self.aui_mgr.GetPane("notebook_content").dock_proportion = 70
-        self.aui_mgr.GetPane("Graph_Window").dock_proportion = 90
+        self.aui_mgr.GetPane("Graph_Window").dock_proportion = 100
         self.Layout()
         self.Centre( wx.BOTH )
         self.aui_mgr.Update()
+        P4Diff.logfile_Radmax_path = current_dir
+        P4Diff.log_window_status = False
+        LogSaver(self)
+#        LogWindow().Show()               
+
 
 #------------------------------------------------------------------------------
 class AUINotebook(aui.AuiNotebook) :
@@ -247,21 +278,6 @@ class AUINotebook(aui.AuiNotebook) :
 
         self.SetCloseButton(page1, False)
         self.SetCloseButton(page2, False)
-
-#------------------------------------------------------------------------------
-class GraphPanel(wx.Panel):
-    def __init__(self, parent, statusbar):
-        wx.Panel.__init__(self, parent)
-        self.statusbar = statusbar
-
-        vSplitter = wx.SplitterWindow(self)
-        panelOne = Graph_window(vSplitter, self.statusbar)
-        panelTwo = RightGraph(vSplitter, self.statusbar)
-        vSplitter.SplitVertically(panelOne, panelTwo)
-        vSplitter.SetSashGravity(0.5)       
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(vSplitter, 1, wx.EXPAND)
-        self.SetSizer(sizer)
 
 #------------------------------------------------------------------------------
 if __name__ == "__main__":

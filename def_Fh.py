@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # A_BOULLE & M_SOUILAH
-# Version du : 22/06/2015
 
 from tools import *
-from Parameters4Diff import *
+from Parameters4Radmax import *
 
 # Anomalous scattering factors
 def f_f1f2(wl, el):
