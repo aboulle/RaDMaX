@@ -29,13 +29,13 @@ For the moment, the wxpython library is not compatible with Python 3 and above. 
 
 
 # Quick test of the program
-1. In a text editor open the *.ini file located in the "examples/YSZ" or "examples/SiC-3C" folder. Modify lines 5-7: insert the paths of the files on your system. For instance, for a Radmax file located in the "documents" folder:
+1. In a text editor open the "test.ini" file located in the "examples/YSZ" or "examples/SiC-3C" folder. Modify lines 5-7: insert the paths of the files on your system. For instance, for a Radmax file located in the "documents" folder:
 
    * Windows: C:\Users\User_name\Documents\
    * Linux: /home/user_name/Documents/
 2. Launch Radmax.py.
 3. In the "File" menu select "Load Project".
-4. Navigate to the "examples/YSZ" or "examples/SiC-3C" folder and load the *.ini file.
+4. Navigate to the "examples/YSZ" or "examples/SiC-3C" folder and load the "test.ini" file.
 
 * Any change in any of the upper panels has to be validated with the "Update" button to update the XRD curve.
 * The strain and damage profiles can be modified by dragging the control points. The XRD curve is updated in real time.
