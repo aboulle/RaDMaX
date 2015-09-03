@@ -108,7 +108,7 @@ class FittingPanel(wx.Panel):
         in_GSA_options_box_sizer.Add(self.cooling_number, pos=(0,5), flag=flagSizer)
 
         """Advanced GSA options part"""
-        AGSA_options_box = wx.StaticBox(self, -1, " Advanced GSA options (expert only) ", size=size_StaticBox)
+        AGSA_options_box = wx.StaticBox(self, -1, " Advanced GSA options (Expert users only) ", size=size_StaticBox)
         AGSA_options_box.SetFont(font)
         self.AGSA_options_box_sizer = wx.StaticBoxSizer(AGSA_options_box, wx.VERTICAL)
         in_AGSA_options_box_sizer = wx.GridBagSizer(hgap=10, vgap=0)
@@ -198,7 +198,7 @@ class FittingPanel(wx.Panel):
 #        'Emin = %4.3f' %E_min, '(',int(nb_minima), ')'
         
         """Restore part"""
-        Restore_box = wx.StaticBox(self, -1, " Restore previous deformation ", size=(300, 150))
+        Restore_box = wx.StaticBox(self, -1, " Restore previous ", size=(300, 150))
         Restore_box.SetFont(font)
         self.Restore_box_sizer = wx.StaticBoxSizer(Restore_box, wx.VERTICAL)
         in_Restore_box_sizer = wx.GridBagSizer(hgap=0, vgap=1)
