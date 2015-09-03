@@ -130,7 +130,7 @@ class InitialDataPanel(wx.Panel):
 
         crystalsymmetry_txt = wx.StaticText(self, -1, label=u'Symmetry:', size=(65,vStatictextsize))
         crystalsymmetry_txt.SetFont(font_Statictext)
-        self.symmetry_choice = ["cubique", "hexa", "tetra", "ortho", "rhombo", "mono", "triclinic"]
+        self.symmetry_choice = ["cubic", "hexa", "tetra", "ortho", "rhombo", "mono", "triclinic"]
         self.cb_crystalsymmetry = wx.ComboBox(self, pos=(50, 30), choices=self.symmetry_choice, style=wx.CB_READONLY)
         self.cb_crystalsymmetry.SetStringSelection(self.symmetry_choice[0])
         self.cb_crystalsymmetry.SetFont(font_combobox)
@@ -435,7 +435,7 @@ class InitialDataPanel(wx.Panel):
         tri_text_state = ["Enable", "Enable", "Enable", "Enable", "Enable", "Enable"]
         tri_text_value = ["None", "None", "None", "None", "None", 90]
 
-        if i == "cubique":
+        if i == "cubic":
             temp_state = deepcopy(cubique_text_state)
             temp_value = deepcopy(cubique_text_value)
             self.symmetry_txt_hide.SetValue(str(0))
