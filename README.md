@@ -19,7 +19,7 @@ For the moment, the wxpython library is not compatible with Python 3 and above. 
 
 
 2. Download and install [wxPython] (http://downloads.sourceforge.net/wxpython/wxPython3.0-win32-3.0.2.0-py27.exe)
-3. Finally execute the "Radmax.py" file. Alternatively, open a terminal (press "windows" and "r", type "cmd" [without commas] and press "Enter"). Navigate to the "Radmax" folder and type `python Radmax.py`.
+3. Finally execute the "Radmax.py" file. Alternatively, open a terminal (press "windows" and "r", type "cmd" [without commas] and press "Enter"). Navigate to the "Radmax" folder and type `python Radmax.py`. **The first execution of the program may take some time.**
 
 
 ## GNU / Linux
