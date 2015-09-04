@@ -109,11 +109,7 @@ class FittingPanel(wx.Panel):
         in_GSA_options_box_sizer.Add(self.cooling_number, pos=(0,5), flag=flagSizer)
 
         """Advanced GSA options part"""
-<<<<<<< HEAD
         AGSA_options_box = wx.StaticBox(self, -1, " Advanced GSA options (expert users only) ", size=size_StaticBox)
-=======
-        AGSA_options_box = wx.StaticBox(self, -1, " Advanced GSA options (Expert users only) ", size=size_StaticBox)
->>>>>>> 85bfd8a5f21418cc36d25833348050103fe74250
         AGSA_options_box.SetFont(font)
         self.AGSA_options_box_sizer = wx.StaticBoxSizer(AGSA_options_box, wx.VERTICAL)
         in_AGSA_options_box_sizer = wx.GridBagSizer(hgap=10, vgap=0)
