@@ -52,14 +52,14 @@ header_project = 4
 
 Application_name = "RaDMaX"
 filename = "Radmax"
-Application_version = 1.2
-last_modification = "03/09/2015"
+Application_version = 1.3
+last_modification = "04/09/2015"
 log_filename = "activity"
 ConfigDataFile = 'ConfigDataFile'
 ConfigFile = 'ConfigFile'
 
 description = """RaDMaX: Radiation Damage in Materials analyzed with X-ray diffraction"""
-licence = "CeCILL FREE SOFTWARE LICENSE AGREEMENT"
+licence = "RaDMaX is distributed freely under the CeCILL license (see LICENSE.txt and COPYRIGHT.txt)."
 
 output_name = {'out_strain':'output_strain_coeff.txt', 'out_dw':'output_DW_coeff.txt', 'out_strain_profile':'output_strain.txt',\
             'out_dw_profile':'output_DW.txt', 'in_strain':'input_strain_coeff.txt', 'in_dw':'input_DW_coeff.txt',}
@@ -106,6 +106,7 @@ class LogWindow(wx.Frame):
 class LogSaver(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, id=wx.ID_ANY)
+        self.Fit()
 
         # création de l'objet logger qui va nous servir à écrire dans les logs
         logger = logging.getLogger()

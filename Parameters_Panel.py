@@ -130,7 +130,7 @@ class InitialDataPanel(wx.Panel):
 
         crystalsymmetry_txt = wx.StaticText(self, -1, label=u'Symmetry:', size=(65,vStatictextsize))
         crystalsymmetry_txt.SetFont(font_Statictext)
-        self.symmetry_choice = ["cubique", "hexa", "tetra", "ortho", "rhombo", "mono", "triclinic"]
+        self.symmetry_choice = ["cubic", "hexa", "tetra", "ortho", "rhombo", "mono", "triclinic"]
         self.cb_crystalsymmetry = wx.ComboBox(self, pos=(50, 30), choices=self.symmetry_choice, style=wx.CB_READONLY)
         self.cb_crystalsymmetry.SetStringSelection(self.symmetry_choice[0])
         self.cb_crystalsymmetry.SetFont(font_combobox)
@@ -435,7 +435,7 @@ class InitialDataPanel(wx.Panel):
         tri_text_state = ["Enable", "Enable", "Enable", "Enable", "Enable", "Enable"]
         tri_text_value = ["None", "None", "None", "None", "None", 90]
 
-        if i == "cubique":
+        if i == "cubic":
             temp_state = deepcopy(cubique_text_state)
             temp_value = deepcopy(cubique_text_value)
             self.symmetry_txt_hide.SetValue(str(0))
@@ -797,13 +797,13 @@ class InitialDataPanel(wx.Panel):
                 dlg = GMD.GenericMessageDialog(None, "There is no data to save",
                     "Attention", agwStyle = wx.OK|wx.ICON_INFORMATION)
                 dlg.ShowModal()
-                dlg = GMD.GenericMessageDialog(None, "Do you really want to close this application?",
-                "Confirm Exit", agwStyle = wx.OK|wx.CANCEL|wx.ICON_QUESTION)
-                result = dlg.ShowModal()
-                dlg.Destroy()
-                if result == wx.ID_OK:
-                    logger.log(logging.INFO, "End of the project\n")
-                    sys.exit()
+#                dlg = GMD.GenericMessageDialog(None, "Do you really want to close this application?",
+#                "Confirm Exit", agwStyle = wx.OK|wx.CANCEL|wx.ICON_QUESTION)
+#                result = dlg.ShowModal()
+#                dlg.Destroy()
+#                if result == wx.ID_OK:
+#                    logger.log(logging.INFO, "End of the project\n")
+#                    sys.exit()
 
 
     def ReadDataField(self, case=None):
@@ -899,6 +899,7 @@ class InitialDataPanel(wx.Panel):
                     self.Fit()  
                     self.Layout()
                     P4Diff.success4Fit = 0
+                    self.statusbar.SetStatusText(u"", 0)
             else:
                 P4Diff.success4Fit = 1
         else:
@@ -985,7 +986,7 @@ class InitialDataPanel(wx.Panel):
         
         P4Diff.sp = a._fp_min[:int(self.par4diff['strain_basis_func'])]
         P4Diff.dwp = a._fp_min[-1*int(self.par4diff['dw_basis_func']):]
-
+        
         P4Diff.DW_i = f_DW(a.z, a.dwp, self.par4diff['damaged_depth'], self.spline_DW)
         P4Diff.strain_i = f_strain(a.z, a.sp, self.par4diff['damaged_depth'], self.spline_strain)
 
@@ -997,6 +998,7 @@ class InitialDataPanel(wx.Panel):
 
     def Shifted_and_draw_curves(self):
         a = P4Diff()
+        
         shifted_sp = append(array([0.]),a.sp[:-1:]) # shifts the array so as to set center ofl each Bspline on the maximum
         shifted_dwp = append(array([1.]),a.dwp[:-1:])
 #        print 'shifted_sp.shape', shifted_sp.shape

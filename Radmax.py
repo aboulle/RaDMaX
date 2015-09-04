@@ -221,6 +221,7 @@ class MainPanel(wx.Panel):
     def __init__(self, parent, statusbar):
         wx.Panel.__init__(self, parent)
         self.statusbar = statusbar
+        self.parent = parent
  
         self.aui_mgr = aui.AuiManager()
         self.aui_mgr.SetManagedWindow( self)
@@ -249,12 +250,13 @@ class MainPanel(wx.Panel):
         self.aui_mgr.GetPane("notebook_content").dock_proportion = 70
         self.aui_mgr.GetPane("Graph_Window").dock_proportion = 100
         self.Layout()
+        self.Fit()
+        self.parent.SendSizeEvent()
         self.Centre( wx.BOTH )
         self.aui_mgr.Update()
         P4Diff.logfile_Radmax_path = current_dir
         P4Diff.log_window_status = False
         LogSaver(self)
-#        LogWindow().Show()               
 
 
 #------------------------------------------------------------------------------

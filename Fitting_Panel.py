@@ -8,8 +8,9 @@ from scipy.optimize import leastsq
 from Read4Radmax import LogSaver
 from Parameters4Radmax import *
 from def_XRD import f_Refl
-from sim_anneal import gsa
+from sim_anneal import SimAnneal
 from sys import platform as _platform
+from time import sleep
 
 New_project_initial_data = {0:10, 1:1000, 2:10, 3:0.99, 4:2.6, 5:1.001}
 
@@ -30,7 +31,9 @@ pubsub_save_project_before_fit = "SaveProjectBeforeFit"
 pubsub_gauge_to_zero = "Gauge2zero"
 
 Live_COUNT = wx.NewEventType()
+LiveLimitExceeded_COUNT = wx.NewEventType()
 EVT_Live_COUNT = wx.PyEventBinder(Live_COUNT, 1)
+EVT_LiveLimitExceeded_COUNT = wx.PyEventBinder(LiveLimitExceeded_COUNT, 1)
 
 #------------------------------------------------------------------------------
 class FittingPanel(wx.Panel):
@@ -55,8 +58,6 @@ class FittingPanel(wx.Panel):
             font_Statictext = wx.FontFromNativeInfoString(info.ToString())
             font_TextCtrl = wx.FontFromNativeInfoString(info.ToString())
             font_combobox = wx.FontFromNativeInfoString(info.ToString())
-        
-        
         
         size_StaticBox = (700, 140)
 
@@ -108,7 +109,7 @@ class FittingPanel(wx.Panel):
         in_GSA_options_box_sizer.Add(self.cooling_number, pos=(0,5), flag=flagSizer)
 
         """Advanced GSA options part"""
-        AGSA_options_box = wx.StaticBox(self, -1, " Advanced GSA options (expert only) ", size=size_StaticBox)
+        AGSA_options_box = wx.StaticBox(self, -1, " Advanced GSA options (expert users only) ", size=size_StaticBox)
         AGSA_options_box.SetFont(font)
         self.AGSA_options_box_sizer = wx.StaticBoxSizer(AGSA_options_box, wx.VERTICAL)
         in_AGSA_options_box_sizer = wx.GridBagSizer(hgap=10, vgap=0)
@@ -198,7 +199,7 @@ class FittingPanel(wx.Panel):
 #        'Emin = %4.3f' %E_min, '(',int(nb_minima), ')'
         
         """Restore part"""
-        Restore_box = wx.StaticBox(self, -1, " Restore previous deformation ", size=(300, 150))
+        Restore_box = wx.StaticBox(self, -1, " Restore previous ", size=(300, 150))
         Restore_box.SetFont(font)
         self.Restore_box_sizer = wx.StaticBoxSizer(Restore_box, wx.VERTICAL)
         in_Restore_box_sizer = wx.GridBagSizer(hgap=0, vgap=1)
@@ -235,11 +236,13 @@ class FittingPanel(wx.Panel):
         
         self.worker_live = None        
         self.par4diff = []
-        self.Bind(EVT_Live_COUNT, self.OnLive)        
+        self.Bind(EVT_Live_COUNT, self.OnLive)
+        self.Bind(EVT_LiveLimitExceeded_COUNT, self.Update_Limit)
+        
        
         pub.subscribe(self.onLoadProject, pubsub_Load_fitting_panel)
         pub.subscribe(self.RefreshAfterFit, pubsub_Refresh_fitting_panel)
-        pub.subscribe(self.Update_Limit, pubsub_Update_Limit)
+#        pub.subscribe(self.Update_Limit, pubsub_Update_Limit)
         pub.subscribe(self.Update_Gauge, pubsub_Update_Gauge)
         pub.subscribe(self.ReadDataField, pubsub_Read_field4Save)
         pub.subscribe(self.ChangeColorField, pubsub_changeColor_field4Save)
@@ -279,9 +282,15 @@ class FittingPanel(wx.Panel):
         fitname = self.cb_FitAlgo.GetSelection()
         P4Diff.allparameters = a.initial_parameters + a.fitting_parameters
         self.par4diff = dict(zip(Initial_data_key,a.allparameters))
-        test_deformation_limit = self.onTestDataBeforeFit()
+        print fitname
+        if fitname == 0:
+            test_deformation_limit = self.onTestDataBeforeFit()
+        else:
+            test_deformation_limit = True
         if test_deformation_limit == True:
             self.RefreshAfterFit(0)
+            P4Diff.sp_backup = a.sp
+            P4Diff.dwp_backup = a.dwp 
             self.statusbar.SetStatusText(u"Fitting... Please Wait...This may take some time", 0)
             self.Refresh()  
             pub.sendMessage(pubsub_OnFit_Graph)
@@ -298,7 +307,7 @@ class FittingPanel(wx.Panel):
     def onTestDataBeforeFit(self):
         a = P4Diff()
         """ do not use the last value of strain because ou of the scope """
-        test_dw = (a.dwp > self.par4diff['min_dw']).all() and (a.dwp < self.par4diff['max_dw']).all()
+        test_dw = (a.dwp > self.par4diff['min_dw']).all() and (a.dwp[:-1] < self.par4diff['max_dw']).all()
         test_strain = (a.sp[:-1] > self.par4diff['min_strain']).all() and (a.sp < self.par4diff['max_strain']).all()
         if test_dw and test_strain == True:
             return True
@@ -310,9 +319,10 @@ class FittingPanel(wx.Panel):
         stopFit = event.StopFit()
         if list4live[0] != []:
             pub.sendMessage(pubsub_Draw_Fit_Live_XRD, val=list4live[0])
-#            pub.sendMessage(pubsub_Draw_Fit_Live_Deformation)
         if list4live[1] != None:
             pub.sendMessage(pubsub_Update_Gauge, val=list4live[1][2], emin=list4live[1][0], param=int(list4live[1][1]))
+        if list4live[2] != None:
+            pub.sendMessage(pubsub_Draw_Fit_Live_Deformation)
         if stopFit != None: 
             pub.sendMessage(pubsub_Refresh_fitting_panel, option=1, case=stopFit)
             pub.sendMessage(pubsub_OnFit_Graph, b=1)
@@ -369,10 +379,14 @@ class FittingPanel(wx.Panel):
             path = a.path2ini
         else:
             path = a.path2drx
-        savetxt(os.path.join(path, a.namefromini + '_' + output_name['out_strain_profile']), column_stack((a.depth, a.strain_i)), fmt='%10.8f')
-        savetxt(os.path.join(path, a.namefromini + '_' +output_name['out_dw_profile']), column_stack((a.depth, a.DW_i)), fmt='%10.8f')
-        savetxt(os.path.join(path, a.namefromini + '_' +output_name['out_strain']),a.par_fit[:int(self.par4diff['strain_basis_func'])] , fmt='%10.8f')
-        savetxt(os.path.join(path, a.namefromini + '_' +output_name['out_dw']), a.par_fit[-1*int(self.par4diff['dw_basis_func']):], fmt='%10.8f')
+        try:
+            savetxt(os.path.join(path, a.namefromini + '_' + output_name['out_strain_profile']), column_stack((a.depth, a.strain_i)), fmt='%10.8f')
+            savetxt(os.path.join(path, a.namefromini + '_' +output_name['out_dw_profile']), column_stack((a.depth, a.DW_i)), fmt='%10.8f')
+            savetxt(os.path.join(path, a.namefromini + '_' +output_name['out_strain']),a.par_fit[:int(self.par4diff['strain_basis_func'])] , fmt='%10.8f')
+            savetxt(os.path.join(path, a.namefromini + '_' +output_name['out_dw']), a.par_fit[-1*int(self.par4diff['dw_basis_func']):], fmt='%10.8f')
+        except IOError:
+            logger.log(logging.INFO, "Impossible to save data to file, please check your path !!")
+
 
     def onLaunchFit(self, event):
         a = P4Diff()
@@ -384,8 +398,7 @@ class FittingPanel(wx.Panel):
                 if data_float == True:
                     pub.sendMessage(pubsub_Read_field_paramters_panel, event=event)
                     if a.success4Fit == 0:
-                        P4Diff.sp_backup = a.sp
-                        P4Diff.dwp_backup = a.dwp 
+                        self.statusbar.SetStatusText(u"", 0)
                         self.onLaunchthread()
                     else:
                         self.parent.notebook.SetSelection(0)
@@ -477,15 +490,17 @@ class FittingPanel(wx.Panel):
         self.Emin_change_txt.SetLabel('%4.3f' %emin)
         self.param_change_txt.SetLabel(str(param))
 
-    def Update_Limit(self, val):
+    def Update_Limit(self, event):
+        val = event.GetValue()
+        pub.sendMessage(pubsub_Update_Limit, val=val)
+
+    def Update_Limit_value(self, val):
         if val != -1:
             self.limitexceeded.SetLabel(str(val))
             self.limitexceeded.SetForegroundColour('#FF0000')
         else:
             self.limitexceeded.SetLabel("")
             self.limitexceeded.SetForegroundColour('#000000')
-            
-            
         
     def Gauge2zero(self):
         self.gauge.SetValue(0)
@@ -493,22 +508,30 @@ class FittingPanel(wx.Panel):
 
 #------------------------------------------------------------------------------
 class LiveEvent(wx.PyCommandEvent):
-    """Event to signal that a count value is ready"""
-    def __init__(self, etype, eid, value=None, data=None, stopfit=None):
-        """Creates the event object"""
+    def __init__(self, etype, eid, value=None, data=None, deformation=None, stopfit=None):
         wx.PyCommandEvent.__init__(self, etype, eid)
         self._value = value
         self._data = data
+        self._deformation = deformation
         self._stopfit = stopfit
 
     def GetValue(self):
-        list4live = [self._value, self._data]
+        list4live = [self._value, self._data, self._deformation]
         return list4live
 
     def StopFit(self):
         return self._stopfit
 
-        
+#------------------------------------------------------------------------------
+class LiveLimitExceeded(wx.PyCommandEvent):
+    def __init__(self, etype, eid, value=None):
+        wx.PyCommandEvent.__init__(self, etype, eid)
+        self._value = value
+
+    def GetValue(self):
+        return self._value
+
+       
 #------------------------------------------------------------------------------
 class Fit_launcher(Thread):
     def __init__(self, parent, choice, data):
@@ -525,14 +548,21 @@ class Fit_launcher(Thread):
         self._stop = Event()
         self.start()
 
+    def LimitExceeded(self, val):
+        if self.need_abort == 0:
+            evt = LiveLimitExceeded(LiveLimitExceeded_COUNT, -1, val)
+            wx.PostEvent(self.parent, evt)
+
     def residual(self, p, y, x):
         P4Diff._fp_min = p
         y_cal = f_Refl(self.data)
         y_cal = y_cal/y_cal.max() + self.data['background']
         self.count = self.count + 1
         if self.count % self.leastsq_refresh == 0:
-            evt = LiveEvent(Live_COUNT, -1, y_cal)
+            deformation = [p]
+            evt = LiveEvent(Live_COUNT, -1, y_cal, None, deformation)
             wx.PostEvent(self.parent, evt)
+            sleep(0.5)
         return (log10(y) - log10(y_cal))
 
     def residual_square(self, p, E_min, nb_minima, val4gauge):
@@ -548,12 +578,14 @@ class Fit_launcher(Thread):
         if self.count % val4gauge == 0:
             self.gauge_counter += a.gaugeUpdate
             data = [E_min, nb_minima, self.gauge_counter]
-            evt = LiveEvent(Live_COUNT, -1, y_cal, data)
+            deformation = [p]
+            evt = LiveEvent(Live_COUNT, -1, y_cal, data, deformation)
             wx.PostEvent(self.parent, evt)
         return ((log10(a.Iobs) - log10(y_cal))**2).sum() / len(y_cal)
 
     def run(self):
         a = P4Diff()
+        b = SimAnneal(self.parent)
         P4Diff.par_fit = []
         P4Diff.gsa_loop = 0
         self.leastsq_refresh = a.frequency_refresh_leastsq
@@ -564,12 +596,12 @@ class Fit_launcher(Thread):
         if self.choice == 1:
             P4Diff.par_fit, P4Diff.success = leastsq(self.residual, a.par, args = (a.Iobs, a.th))
         elif self.choice == 0:
-            P4Diff.par_fit = gsa(self.residual_square, self.data)
+            P4Diff.par_fit = b.gsa(self.residual_square, self.LimitExceeded, self.data)
         if self.need_abort == 1:
-            evt = LiveEvent(Live_COUNT, -1, [], None, 1)
+            evt = LiveEvent(Live_COUNT, -1, [], None, None, 1)
             wx.PostEvent(self.parent, evt)
         else:
-            evt = LiveEvent(Live_COUNT, -1, [], None, 0)
+            evt = LiveEvent(Live_COUNT, -1, [], None, None, 0)
             wx.PostEvent(self.parent, evt)
     
     def stop(self):
@@ -577,7 +609,7 @@ class Fit_launcher(Thread):
         P4Diff.gsa_loop = 1
         self.need_abort = 1
         if self.choice == 1:
-            evt = LiveEvent(Live_COUNT, -1, [], None, 1)
+            evt = LiveEvent(Live_COUNT, -1, [], None, None, 1)
             wx.PostEvent(self.parent, evt)
 
 

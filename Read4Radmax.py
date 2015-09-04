@@ -32,6 +32,7 @@ class ReadFile(wx.Panel):
         wx.Panel.__init__(self, parent, id=wx.ID_ANY)
         self.section_name = []
         self.structure_section = []
+        self.Fit()
 
     def Read_init_Parameters(self, filename, choice):
         if choice == 'ConfigFile':
@@ -202,6 +203,7 @@ class ReadFile(wx.Panel):
 class SaveFile4Diff(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, id=wx.ID_ANY)
+        self.Fit()
 
     def save_project(self, data, case):
         nunberofdatapersection = [0, len(structure_Crystal), len(structure_Data_filename), len(structure_Experiment),\
