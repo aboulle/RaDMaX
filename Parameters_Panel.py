@@ -42,6 +42,7 @@ pubsub_Update_deformation_multiplicator_coef = "UpdateDeformationMultiplicatorCo
 pubsub_save_project_before_fit = "SaveProjectBeforeFit"
 pubsub_gauge_to_zero = "Gauge2zero"
 pubsub_shortcut = "Shortcut"
+pubsub_On_Limit_Before_Graph = "OnLimitBeforeGraph"
 
 #------------------------------------------------------------------------------
 class InitialDataPanel(wx.Panel):
@@ -84,12 +85,12 @@ class InitialDataPanel(wx.Panel):
         in_Experiment_box_sizer = wx.GridBagSizer(hgap=10, vgap=0)
         flagSizer = wx.ALL|wx.ALIGN_CENTER_VERTICAL
         
-        wavelength_txt = wx.StaticText(self, -1, label=u'Wavelength(\u212B)', size=(100,vStatictextsize))
+        wavelength_txt = wx.StaticText(self, -1, label=u'Wavelength (\u212B)', size=(100,vStatictextsize))
         wavelength_txt.SetFont(font_Statictext)
         self.wavelength = wx.TextCtrl(self, size=size_text)
         self.wavelength.SetFont(font_TextCtrl)
 
-        resolution_txt = wx.StaticText(self, -1, label=u'Resolution(°)', size=(90,vStatictextsize))
+        resolution_txt = wx.StaticText(self, -1, label=u'Resolution (°)', size=(90,vStatictextsize))
         resolution_txt.SetFont(font_Statictext)
         self.resolution = wx.TextCtrl(self, size=size_text)
         self.resolution.SetFont(font_TextCtrl)
@@ -153,7 +154,7 @@ class InitialDataPanel(wx.Panel):
         self.l_direction = wx.TextCtrl(self, size=size_value_hkl)
         self.l_direction.SetFont(font_TextCtrl)
 
-        latticeparam_txt = wx.StaticText(self, -1, label=u'Lattice parameters(\u212B):', size=(135,vStatictextsize))
+        latticeparam_txt = wx.StaticText(self, -1, label=u'Lattice parameters (\u212B):', size=(135,vStatictextsize))
         latticeparam_txt.SetFont(font_Statictext)
 
         self.symmetry_txt_hide = wx.TextCtrl(self,size=(0,vStatictextsize))
@@ -273,7 +274,7 @@ class InitialDataPanel(wx.Panel):
         self.StrainMin.SetFont(font_TextCtrl)
         self.StrainMax.SetFont(font_TextCtrl)
         
-        damaged_depth_txt = wx.StaticText(self, -1, label=u'Damaged depth(\u212B)', size=(115,vStatictextsize))
+        damaged_depth_txt = wx.StaticText(self, -1, label=u'Damaged depth (\u212B)', size=(115,vStatictextsize))
         damaged_depth_txt.SetFont(font_Statictext)
         self.damaged_depth = wx.TextCtrl(self, size=size_damaged_depth)
         self.damaged_depth.SetFont(font_TextCtrl)
@@ -376,7 +377,7 @@ class InitialDataPanel(wx.Panel):
         pub.subscribe(self.onNewProject, pubsub_Launch_GUI)
         pub.subscribe(self.f_strain_DW, pubsub_Draw_Fit_Live_Deformation)
         pub.subscribe(self.KeyPressed, pubsub_shortcut)
-
+        pub.subscribe(self.LimitReach, pubsub_On_Limit_Before_Graph)
         
         b = ReadFile(self)
         b.Read_init_Parameters(os.path.join(current_dir, filename + '.ini'), ConfigFile)
@@ -851,6 +852,21 @@ class InitialDataPanel(wx.Panel):
             self.empty_field = 0
             self.not_a_float = 0
 
+    def LimitReach(self, limit):
+        limit_list = [15,16,18,19]
+        for i in range(len(limit)):
+            if limit[i] == False:
+                self.data_fields[limit_list[i]].SetBackgroundColour('yellow')
+                self.Refresh() 
+        dlg = GMD.GenericMessageDialog(None, u"Deformation values are off limits\n" + \
+        u"Please check the yellow field before launching the fit",
+                "Attention", agwStyle = wx.OK|wx.ICON_INFORMATION|wx.CENTRE)
+        dlg.ShowModal()
+        for i in range(len(limit)):
+            if limit[i] == False:
+                self.data_fields[limit_list[i]].SetBackgroundColour('white')
+                self.Refresh()                 
+        
     def Read_Initial_File(self):
         a = P4Diff()
         b = ReadFile(self)

@@ -13,6 +13,8 @@ from sys import exit
 from sys import platform as _platform
 import string
 
+from Icon4Radmax import prog_icon
+
 import wx.lib.agw.aui as aui
 from wx.lib.pubsub import pub
 import wx.lib.agw.multidirdialog as MDD
@@ -76,6 +78,7 @@ class LogWindow(wx.Frame):
         wx.Frame.CenterOnScreen(self)
         self.Bind(wx.EVT_CLOSE, self.onClose)
 
+        self.SetIcon(prog_icon.GetIcon())
         sizer = wx.BoxSizer(wx.VERTICAL)
         self._logFileContents = wx.TextCtrl(self, wx.ID_ANY, size=(600,300),
                           style = wx.TE_MULTILINE|wx.TE_READONLY|wx.VSCROLL)

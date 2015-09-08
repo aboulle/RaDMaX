@@ -31,6 +31,7 @@ pubsub_shortcut = "Shortcut"
 class MainFrame(wx.Frame):
     def __init__(self):
         pos=wx.DefaultPosition
+#        print(wx.GetDisplaySize())  # returns a tuple
         size = (1100, 960)
         no_resize = wx.DEFAULT_FRAME_STYLE & ~ (wx.RESIZE_BORDER | 
                                                 wx.RESIZE_BOX | 

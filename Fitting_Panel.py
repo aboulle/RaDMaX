@@ -29,6 +29,7 @@ pubsub_changeColor_field4Save = "ChangeColorField4Save"
 pubsub_Update_deformation_multiplicator_coef = "UpdateDeformationMultiplicatorCoef"
 pubsub_save_project_before_fit = "SaveProjectBeforeFit"
 pubsub_gauge_to_zero = "Gauge2zero"
+pubsub_On_Limit_Before_Graph = "OnLimitBeforeGraph"
 
 Live_COUNT = wx.NewEventType()
 LiveLimitExceeded_COUNT = wx.NewEventType()
@@ -233,6 +234,7 @@ class FittingPanel(wx.Panel):
         self.data_fields[5] = self.qt
         self.resultprojectfile = len(Fitting_panel_keys)*[1]
         self.resultprojectfile_backup = []
+        self.test_limit = []
         
         self.worker_live = None        
         self.par4diff = []
@@ -282,7 +284,6 @@ class FittingPanel(wx.Panel):
         fitname = self.cb_FitAlgo.GetSelection()
         P4Diff.allparameters = a.initial_parameters + a.fitting_parameters
         self.par4diff = dict(zip(Initial_data_key,a.allparameters))
-        print fitname
         if fitname == 0:
             test_deformation_limit = self.onTestDataBeforeFit()
         else:
@@ -298,11 +299,13 @@ class FittingPanel(wx.Panel):
             self.gauge.SetValue(0)
             self.worker_live = Fit_launcher(self, fitname, self.par4diff)
         else:
-            dlg = GMD.GenericMessageDialog(None, u"Deformation values are off limits\n" + \
-            u"Please check the Initial Parameters panel before launching the fit",
-                    "Attention", agwStyle = wx.OK|wx.ICON_INFORMATION|wx.CENTRE)
-            dlg.ShowModal()
-
+#            dlg = GMD.GenericMessageDialog(None, u"Deformation values are off limits\n" + \
+#            u"Please check the Initial Parameters panel before launching the fit",
+#                    "Attention", agwStyle = wx.OK|wx.ICON_INFORMATION|wx.CENTRE)
+#            dlg.ShowModal()
+            self.parent.notebook.SetSelection(0)
+#            pub.sendMessage(pubsub_Re_Read_field_paramters_panel, event=event)
+            pub.sendMessage(pubsub_On_Limit_Before_Graph, limit=self.test_limit)
 
     def onTestDataBeforeFit(self):
         a = P4Diff()
@@ -312,6 +315,11 @@ class FittingPanel(wx.Panel):
         if test_dw and test_strain == True:
             return True
         else:
+            self.test_limit = []
+            self.test_limit.append((a.sp[:-1] > self.par4diff['min_strain']).all())
+            self.test_limit.append((a.sp < self.par4diff['max_strain']).all())
+            self.test_limit.append((a.dwp > self.par4diff['min_dw']).all())
+            self.test_limit.append((a.dwp[:-1] < self.par4diff['max_dw']).all())
             return False            
         
     def OnLive(self, event):

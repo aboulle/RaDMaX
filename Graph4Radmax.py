@@ -161,7 +161,7 @@ class LeftGraphTop(wx.Panel):
         self.draw_c(poly, xs, ys)
 
     def draw_c(self, data, x, y):
-        self.ax.plot(x, y, 'g', lw=2.)
+        self.ax.plot(x[1:], y[1:], 'g', lw=2.)
 #        self.ax.plot(x, y, marker='o', alpha=0.0)
         self.ax.set_ylabel("Strain", fontdict=font)
         self.ax.set_xticklabels([])        
@@ -379,7 +379,7 @@ class LeftGraphBottom(wx.Panel):
             P4Diff.DragDrop_DW_y = y_dwp
             ymin = min(ys) - min(ys)*10/100
             ymax = max(ys) + max(ys)*10/100
-            self.ax.set_ylim([-1*ymin, ymax])
+            self.ax.set_ylim([ymin, ymax])
 #            self.ax.set_ylim([a.initial_parameters[17]*a.DW_multiplication, max(y_dwp)])
         elif b == 2:
             x_dwp = [-1]
@@ -496,7 +496,7 @@ class LeftGraphBottom(wx.Panel):
         if event.inaxes is None: return
         if event.button != 1: return
         y = event.ydata
-        x = a.DragDrop_Strain_x[self.new_coord['indice']]
+        x = a.DragDrop_DW_x[self.new_coord['indice']]
         self.new_coord['x'] = x
         self.new_coord['y'] = y
         
