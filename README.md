@@ -1,4 +1,4 @@
-RaDMaX is a program that allows to retrieve strain and damage profile in ion-irradiated materials from the simulation of X-ray diffraction data recorded in symmetric thêta-2thêta geometry. It is distributed freely under the CeCILL license (see LICENSE.txt and COPYRIGHT.txt).
+RaDMaX is a program that allows to retrieve strain and damage profiles in ion-irradiated materials from the simulation of X-ray diffraction data recorded in symmetric thêta-2thêta geometry. It is distributed freely under the CeCILL license (see LICENSE.txt and COPYRIGHT.txt).
 
 If you use this program in academic work, please cite:
 M. Souilah, A. Boulle, A. Debelle, "RaDMaX: a graphical program for the determination of strain and damage profiles in irradiated crystals", 2015.
@@ -6,8 +6,7 @@ M. Souilah, A. Boulle, A. Debelle, "RaDMaX: a graphical program for the determin
 # Installation instructions
 Download zip file and extract it to your disk.
 
-Radmax requires [python 2.7] (http://www.python.org), [SciPy](http://www.scipy.org), [Matplotlib](http://www.matplotlib.org) and [wxPython] (http://www.wxpython.org).
-For the moment, the wxpython library is not compatible with Python 3 and above. **RaDMaX won't work with Python 3.**
+Radmax requires python 2.7, SciPy, Matplotlib and wxPython. For the moment, the wxpython library is not compatible with Python 3 and above. **RaDMaX won't work with Python 3.** Instructions for Windows and GNU/Linux are given below.
 
 
 ## MS Windows
@@ -25,6 +24,8 @@ For the moment, the wxpython library is not compatible with Python 3 and above. 
 ## GNU / Linux
 1. On most Linux systems the dependencies are available in the software repositories. For debian based systems run (as root): `apt-get install python python-scipy python-matplolib python-wxgtk3.0`. 
 2. In a terminal, run the Radmax.py file with `python Radmax.py`.
+ 
+For other distributions please visit the [python 2.7] (http://www.python.org), [SciPy](http://www.scipy.org), [Matplotlib](http://www.matplotlib.org) and [wxPython] (http://www.wxpython.org) websites.
 
 
 
