@@ -11,6 +11,7 @@ from def_XRD import f_Refl
 from sim_anneal import SimAnneal
 from sys import platform as _platform
 from time import sleep
+from Icon4Radmax import error_icon, ok_icon, warning_icon
 
 New_project_initial_data = {0:10, 1:1000, 2:10, 3:0.99, 4:2.6, 5:1.001}
 
@@ -48,10 +49,11 @@ class FittingPanel(wx.Panel):
         
         font = wx.Font(10, wx.DEFAULT, wx.ITALIC, wx.BOLD)
         font_update = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.BOLD)
+        font_end_fit = wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.BOLD, False, u'Arial')
         if _platform == "linux" or _platform == "linux2":
             font_Statictext = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
             font_TextCtrl = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
-            font_combobox = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
+            font_TextCtrl = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
         elif _platform == "win32":
             info = wx.NativeFontInfo()
             info.SetFaceName("arial")
@@ -209,6 +211,12 @@ class FittingPanel(wx.Panel):
         in_Restore_box_sizer.Add(self.restore_dw_btn, pos=(1,0))
 
         self.Restore_box_sizer.Add(in_Restore_box_sizer, 0, wx.ALL, 5)
+
+        self.png = wx.BitmapFromIcon(error_icon.GetIcon())
+        self.information_icon = wx.StaticBitmap(self, -1, self.png, (10, 5), (self.png.GetWidth(), self.png.GetHeight()))
+        self.information_text = wx.StaticText(self, -1, label=u'', size=(150,20))
+        self.information_text.SetFont(font_end_fit)
+        self.information_icon.Hide()
         
         self.GSA_options_box_sizer.Add(in_GSA_options_box_sizer, 0, wx.ALL, 5)
         self.AGSA_options_box_sizer.Add(in_AGSA_options_box_sizer, 0, wx.ALL, 5)
@@ -220,10 +228,12 @@ class FittingPanel(wx.Panel):
         self.centersizer.Add(self.AGSA_options_box_sizer, 0, wx.ALL, 5)
         self.centersizer.Add(self.GSA_results_sizer, 0, wx.ALL, 5)
         
-
         mainsizer.Add(topsizer, pos=(0,0))
-        mainsizer.Add(self.centersizer, pos=(1,0))
-        mainsizer.Add(self.Restore_box_sizer, pos=(1,1))
+        mainsizer.Add(self.centersizer, pos=(1,0), span=(2,1))
+        mainsizer.Add(self.Restore_box_sizer, pos=(1,1), span=(1,2))
+        mainsizer.Add(self.information_icon, pos=(2,1), flag=wx.ALL, border=10)
+        mainsizer.Add(self.information_text, pos=(2,2), flag=wx.TOP, border=15)
+        
         
         self.data_fields = {}
         self.data_fields[0] = self.temperature
@@ -264,6 +274,7 @@ class FittingPanel(wx.Panel):
             self.centersizer.Hide(self.GSA_options_box_sizer)
             self.centersizer.Hide(self.AGSA_options_box_sizer)
             self.Layout()
+        self.Fit()
 
     def onLoadProject(self, data=None, b=None):
         for ii in self.data_fields:
@@ -289,6 +300,10 @@ class FittingPanel(wx.Panel):
         else:
             test_deformation_limit = True
         if test_deformation_limit == True:
+            if fitname == 0:
+                logger.log(logging.INFO, "GSA Fit has been launched")
+            else:
+                logger.log(logging.INFO, "Leastsq Fit has been launched")
             self.RefreshAfterFit(0)
             P4Diff.sp_backup = a.sp
             P4Diff.dwp_backup = a.dwp 
@@ -299,12 +314,7 @@ class FittingPanel(wx.Panel):
             self.gauge.SetValue(0)
             self.worker_live = Fit_launcher(self, fitname, self.par4diff)
         else:
-#            dlg = GMD.GenericMessageDialog(None, u"Deformation values are off limits\n" + \
-#            u"Please check the Initial Parameters panel before launching the fit",
-#                    "Attention", agwStyle = wx.OK|wx.ICON_INFORMATION|wx.CENTRE)
-#            dlg.ShowModal()
             self.parent.notebook.SetSelection(0)
-#            pub.sendMessage(pubsub_Re_Read_field_paramters_panel, event=event)
             pub.sendMessage(pubsub_On_Limit_Before_Graph, limit=self.test_limit)
 
     def onTestDataBeforeFit(self):
@@ -331,7 +341,7 @@ class FittingPanel(wx.Panel):
             pub.sendMessage(pubsub_Update_Gauge, val=list4live[1][2], emin=list4live[1][0], param=int(list4live[1][1]))
         if list4live[2] != None:
             pub.sendMessage(pubsub_Draw_Fit_Live_Deformation)
-        if stopFit != None: 
+        if stopFit != None:
             pub.sendMessage(pubsub_Refresh_fitting_panel, option=1, case=stopFit)
             pub.sendMessage(pubsub_OnFit_Graph, b=1)
         
@@ -350,6 +360,7 @@ class FittingPanel(wx.Panel):
         pub.sendMessage(pubsub_Re_Read_field_paramters_panel, event=event)
 
     def RefreshAfterFit(self, option, case=None):
+        label = ""
         if option == 0:
             self.parent.notebook.EnableTab(0, False)
             self.fit_Btn.Disable()
@@ -357,6 +368,14 @@ class FittingPanel(wx.Panel):
             self.restore_strain_btn.Disable()
             self.restore_dw_btn.Disable()
             self.cb_FitAlgo.Disable()
+            self.information_icon.Hide()
+            self.information_text.SetLabel(u"")
+#            if
+#                self.png = wx.BitmapFromIcon(ok_icon.GetIcon())
+#                self.information_icon.SetBitmap(self.png)
+#                self.information_icon.Show()
+#                label = u"Fit end normally"
+#                warning_icon
         elif option == 1:
             a = P4Diff()
             self.parent.notebook.EnableTab(0, True)
@@ -370,15 +389,28 @@ class FittingPanel(wx.Panel):
             P4Diff.sp = a.par_fit[:int(self.par4diff['strain_basis_func'])]
             P4Diff.dwp = a.par_fit[-1*int(self.par4diff['dw_basis_func']):]
             if case == 0:
-                self.statusbar.SetStatusText(u"Done.", 0)
+                self.png = wx.BitmapFromIcon(ok_icon.GetIcon())
+                self.information_icon.SetBitmap(self.png)
+                self.information_icon.Show()
+                label = u"Fit ended normally"
+                logger.log(logging.INFO, label)
+                self.statusbar.SetStatusText(label, 0)
                 self.gauge.SetValue(0)
             elif case == 1:
-                self.statusbar.SetStatusText(u"Fit aborted by user", 0)
+                self.png = wx.BitmapFromIcon(error_icon.GetIcon())
+                self.information_icon.SetBitmap(self.png)
+                self.information_icon.Show()
+                label = u"Fit aborted by user"
+                logger.log(logging.WARNING, label)
+                self.statusbar.SetStatusText(label, 0)
             if a.par_fit != []:
                 pub.sendMessage(pubsub_Update_Fit_Live)
                 pub.sendMessage(pubsub_Update_deformation_multiplicator_coef)
+                self.information_text.SetLabel(label)
                 self.OnSavefromFit()
+                self.Refresh()  
         self.Refresh()  
+        self.Fit()
         self.Layout()
 
     def OnSavefromFit(self):
@@ -388,18 +420,22 @@ class FittingPanel(wx.Panel):
         else:
             path = a.path2drx
         try:
+            header = ["2theta", "Iobs", "Icalc"]
+            line = u'{:^12} {:^24} {:^12}'.format(*header)
             savetxt(os.path.join(path, a.namefromini + '_' + output_name['out_strain_profile']), column_stack((a.depth, a.strain_i)), fmt='%10.8f')
-            savetxt(os.path.join(path, a.namefromini + '_' +output_name['out_dw_profile']), column_stack((a.depth, a.DW_i)), fmt='%10.8f')
-            savetxt(os.path.join(path, a.namefromini + '_' +output_name['out_strain']),a.par_fit[:int(self.par4diff['strain_basis_func'])] , fmt='%10.8f')
-            savetxt(os.path.join(path, a.namefromini + '_' +output_name['out_dw']), a.par_fit[-1*int(self.par4diff['dw_basis_func']):], fmt='%10.8f')
+            savetxt(os.path.join(path, a.namefromini + '_' + output_name['out_dw_profile']), column_stack((a.depth, a.DW_i)), fmt='%10.8f')
+            savetxt(os.path.join(path, a.namefromini + '_' + output_name['out_strain']),a.par_fit[:int(self.par4diff['strain_basis_func'])] , fmt='%10.8f')
+            savetxt(os.path.join(path, a.namefromini + '_' + output_name['out_dw']), a.par_fit[-1*int(self.par4diff['dw_basis_func']):], fmt='%10.8f')
+            savetxt(os.path.join(path, a.namefromini + '_' + output_name['out_XRD']),\
+                    column_stack((a.th4live, a.Iobs, a.I_fit)), header=line, fmt='{:^12}'.format('%3.8f'))
+            logger.log(logging.INFO, "Data have been saved successfully")
         except IOError:
-            logger.log(logging.INFO, "Impossible to save data to file, please check your path !!")
-
+            logger.log(logging.WARNING, "Impossible to save data to file, please check your path !!")
 
     def onLaunchFit(self, event):
         a = P4Diff()
         if a.namefromini != "":
-            logger.log(logging.INFO, "Starting Fit")
+            logger.log(logging.INFO, "Start Fit")
             check_empty = self.search4emptyfields()
             if check_empty == True:
                 data_float = self.IsDataFloat()
@@ -412,9 +448,13 @@ class FittingPanel(wx.Panel):
                         self.parent.notebook.SetSelection(0)
                         pub.sendMessage(pubsub_Re_Read_field_paramters_panel, event=event)
                 elif data_float == False:
-                    self.statusbar.SetStatusText(u"Please, fill correctly the fields before to continue", 0)
+                    text = u"Please, fill correctly the fields before to continue"
+                    self.statusbar.SetStatusText(text, 0)
+                    logger.log(logging.WARNING, text)
             elif check_empty == False:
-                self.statusbar.SetStatusText(u"Please, fill the red empty fields before to continue", 0)
+                text = u"Please, fill the red empty fields before to continue" 
+                self.statusbar.SetStatusText(text, 0)
+                logger.log(logging.WARNING, text)
         else:
             dlg = GMD.GenericMessageDialog(None, "Please, save the project before to continue",
             "Attention", agwStyle = wx.OK|wx.ICON_INFORMATION)
@@ -512,6 +552,8 @@ class FittingPanel(wx.Panel):
         
     def Gauge2zero(self):
         self.gauge.SetValue(0)
+        self.information_icon.Hide()
+        self.information_text.SetLabel(u"")
 
 
 #------------------------------------------------------------------------------

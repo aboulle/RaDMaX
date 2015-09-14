@@ -238,21 +238,21 @@ class LeftGraphTop(wx.Panel):
     def key_press_callback(self, event):
         'whenever a key is pressed'
         if not event.inaxes: return
-        if event.key == 'e':
+        if event.key == 'u':
             self.u_key_press = True
 
     def scroll_callback(self, event):
         if not event.inaxes: return
         a = P4Diff()
-        if event.key == 'e' and event.button == 'up':
+        if event.key == 'u' and event.button == 'up':
             P4Diff.strain_multiplication = a.strain_multiplication + 0.01
-        elif event.key == 'e' and event.button == 'down':
+        elif event.key == 'u' and event.button == 'down':
             P4Diff.strain_multiplication = a.strain_multiplication - 0.01
 
     def key_release_callback(self, event):
         if not event.inaxes: return
         a = P4Diff()
-        if event.key == 'e':
+        if event.key == 'u':
             self.u_key_press = False
             P4Diff.sp = multiply(a.sp_backup,a.strain_multiplication)
             pub.sendMessage(pubsub_Re_Read_field_paramters_panel, event=event)
@@ -469,21 +469,21 @@ class LeftGraphBottom(wx.Panel):
     def key_press_callback(self, event):
         'whenever a key is pressed'
         if not event.inaxes: return
-        if event.key == 'e':
+        if event.key == 'u':
             self.u_key_press = True
 
     def scroll_callback(self, event):
         if not event.inaxes: return
         a = P4Diff()
-        if event.key == 'e' and event.button == 'up':
+        if event.key == 'u' and event.button == 'up':
             P4Diff.DW_multiplication = a.DW_multiplication + 0.01
-        elif event.key == 'e' and event.button == 'down':
+        elif event.key == 'u' and event.button == 'down':
             P4Diff.DW_multiplication = a.DW_multiplication - 0.01
 
     def key_release_callback(self, event):
         if not event.inaxes: return
         a = P4Diff()
-        if event.key == 'e':
+        if event.key == 'u':
             self.u_key_press = False
             P4Diff.dwp = multiply(a.dwp_backup,a.DW_multiplication)
             pub.sendMessage(pubsub_Re_Read_field_paramters_panel, event=event)
@@ -551,31 +551,23 @@ class RightGraph(wx.Panel):
         self.toolbar.Hide()
         self.canvas.toolbar.zoom()
         self.toolbar.Disable()
-        self.update_zoom = self.canvas.mpl_connect('button_press_event', self.MouseOnGraph)
-        self.update_coordinate = self.canvas.mpl_connect('motion_notify_event', self.on_update_coordinate)   
-        self.canvas.mpl_disconnect(self.update_coordinate)
-        self.canvas.mpl_disconnect(self.update_zoom)
+        self.update_zoom = self.canvas.mpl_connect('motion_notify_event', self.MouseOnGraph)
         self.ly = self.ax.axvline(color='r', lw=0.0)  # the vert line
         self.lx = self.ax.axhline(color='r', lw=0.0)  # the horiz line
 
         if not hasattr(self, "UnzoomID"):
-#            self.zoomID = wx.NewId()
             self.UnzoomID = wx.NewId()
             self.CheckedGridId = wx.NewId()
             self.CursorId = wx.NewId()
-            self.itemThreeId = wx.NewId()
-#            self.Bind(wx.EVT_MENU, self.Onzoom, id=self.zoomID)
             self.Bind(wx.EVT_MENU, self.OnUnzoom, id=self.UnzoomID)
             self.Bind(wx.EVT_MENU, self.CheckedGrid, id=self.CheckedGridId)
             self.Bind(wx.EVT_MENU, self.CursorMove, id=self.CursorId)
  
         """build the menu"""
         self.menu = wx.Menu()
-#        self.item_zoom = self.menu.Append(self.zoomID, "Zoom")
         self.item_unzoom = self.menu.Append(self.UnzoomID, "Unzoom")
         self.item_grid = self.menu.Append(self.CheckedGridId, "Show/Hide grid", kind=wx.ITEM_CHECK)
         self.item_cursor = self.menu.Append(self.CursorId, "Show/Hide cursor", kind=wx.ITEM_CHECK)
-#        self.item_zoom.Enable(False)
         self.item_unzoom.Enable(False)
         self.item_grid.Enable(False)
         self.item_cursor.Enable(False)
@@ -584,6 +576,9 @@ class RightGraph(wx.Panel):
                 
         mastersizer.Add(self.canvas, 1, wx.ALL)
         mastersizer.Add(self.toolbar, 1, wx.ALL)
+        
+#        self.canvas.mpl_disconnect(self.update_coordinate)
+#        self.canvas.mpl_disconnect(self.update_zoom)
 
         pub.subscribe(self.OnDrawGraph, pubsub_Draw_XRD)
         pub.subscribe(self.OnDrawGraphLive, pubsub_Draw_Fit_Live_XRD)
@@ -593,7 +588,7 @@ class RightGraph(wx.Panel):
         self.Raise()
         self.SetPosition((0,0))
         self.Fit()
-
+        
     def OnDrawGraph(self, b=None):
         a = P4Diff()
         self.ax.clear() 
@@ -627,20 +622,15 @@ class RightGraph(wx.Panel):
         self.ax.set_xlabel(r'2$\theta$ (deg.)', fontdict=font)
         self.canvas.draw()
         
-    def onDoubleClick(self, event):
-        print "DoubleClick"
-
     def onFit(self, b=None):
         if b == 1:
             self.update_coordinate = self.canvas.mpl_connect('motion_notify_event', self.on_update_coordinate)   
             self.update_zoom = self.canvas.mpl_connect('button_release_event', self.MouseOnGraph)
-#            self.item_zoom.Enable(True)
             self.item_unzoom.Enable(True)
             self.item_grid.Enable(True)
             self.item_cursor.Enable(True)
         else:
             self.menu.Check(self.CursorId, check=False)
-#            self.item_zoom.Enable(False)
             self.item_unzoom.Enable(False)
             self.item_grid.Enable(False)
             self.item_cursor.Enable(False)
@@ -652,27 +642,23 @@ class RightGraph(wx.Panel):
     def MouseOnGraph(self, event):
         a = P4Diff()
         if a.fitlive == 1: return
-        if event.inaxes is not None:
-            if event.button == 1 and self.menu.IsEnabled(self.CheckedGridId) == True:
-                xlim = self.ax.get_xlim()
-#                ylim = self.ax.get_ylim()
-                xlim_min = xlim[0]*pi/(2*180)
-                xlim_max = xlim[1]*pi/(2*180)
-                itemindex = where((a.th > xlim_min) & (a.th < xlim_max))
-                P4Diff.th = a.th[itemindex[0][0]:itemindex[0][-1]]
-                P4Diff.Iobs = a.Iobs[itemindex[0][0]:itemindex[0][-1]]
-                P4Diff.th4live = 2*a.th*180/pi
+        if event.inaxes is not None and a.Iobs != []:
+            xlim = self.ax.get_xlim()
+            xlim_min = xlim[0]*pi/(2*180)
+            xlim_max = xlim[1]*pi/(2*180)
+            itemindex = where((a.th > xlim_min) & (a.th < xlim_max))
+            P4Diff.th = a.th[itemindex[0][0]:itemindex[0][-1]]
+            P4Diff.Iobs = a.Iobs[itemindex[0][0]:itemindex[0][-1]]
+            P4Diff.th4live = 2*a.th*180/pi
 
     def OnRightDown(self, event):
         a = P4Diff()
         if a.fitlive == 1: return
         self.PopupMenu(self.menu)
-
-    def Onzoom(self, event):
-        self.canvas.toolbar.zoom()
         
     def OnUnzoom(self, event):
         self.canvas.toolbar.home()
+        P4Diff.zoomOn = 0
         a = P4Diff()
         P4Diff.th = a.th_backup
         P4Diff.Iobs = a.Iobs_backup

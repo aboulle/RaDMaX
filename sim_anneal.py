@@ -173,7 +173,7 @@ class SimAnneal(wx.Panel):
             val4gauge = ceil(val4gaugetemp)
         else:
             val4gauge = val4gaugetemp
-                
+                        
     ## début de la boucle de recuit
         for iteration in cycle:
             if a.gsa_loop == 1:

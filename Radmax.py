@@ -33,13 +33,14 @@ class MainFrame(wx.Frame):
         pos=wx.DefaultPosition
 #        print(wx.GetDisplaySize())  # returns a tuple
         size = (1100, 960)
-        no_resize = wx.DEFAULT_FRAME_STYLE & ~ (wx.RESIZE_BORDER | 
-                                                wx.RESIZE_BOX | 
-                                                wx.MAXIMIZE_BOX)
+        no_resize = wx.DEFAULT_FRAME_STYLE
+#        no_resize = wx.DEFAULT_FRAME_STYLE & ~ (wx.RESIZE_BORDER | 
+#                                                wx.RESIZE_BOX | 
+#                                                wx.MAXIMIZE_BOX)
         wx.Frame.__init__(self, None, wx.ID_ANY, Application_name, pos, size, style=no_resize)
         wx.Frame.CenterOnScreen(self)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
-
+        
         self.sb = wx.StatusBar(self, -1)
         self.sb.SetFieldsCount(3)
         self.SetStatusBar(self.sb)
@@ -124,7 +125,7 @@ class MainFrame(wx.Frame):
         pub.subscribe(self.OnActivateImport, pubsub_Activate_Import)
         
         MainPanel(self, self.sb)
-
+        
         self.Show()
         pub.sendMessage(pubsub_Launch_GUI)
 
@@ -221,9 +222,10 @@ class MainFrame(wx.Frame):
 class MainPanel(wx.Panel):
     def __init__(self, parent, statusbar):
         wx.Panel.__init__(self, parent)
+#        scrolled.ScrolledPanel.__init__(self, parent)
         self.statusbar = statusbar
         self.parent = parent
- 
+        
         self.aui_mgr = aui.AuiManager()
         self.aui_mgr.SetManagedWindow( self)
 
@@ -248,11 +250,13 @@ class MainPanel(wx.Panel):
             nb.Update()
 
         self.aui_mgr.AddPane(GraphPanel(self, self.statusbar), aui.AuiPaneInfo().Name("Graph_Window").CenterPane().PaneBorder( False ).Position(1).MaximizeButton(False))
-        self.aui_mgr.GetPane("notebook_content").dock_proportion = 70
+        self.aui_mgr.GetPane("notebook_content").dock_proportion = 65
         self.aui_mgr.GetPane("Graph_Window").dock_proportion = 100
         self.Layout()
+        self.parent.SetSizeHints(minW=1100,minH=960)
         self.Fit()
-        self.parent.SendSizeEvent()
+#        self.SetupScrolling(False,True)
+#        self.parent.SendSizeEvent()
         self.Centre( wx.BOTH )
         self.aui_mgr.Update()
         P4Diff.logfile_Radmax_path = current_dir

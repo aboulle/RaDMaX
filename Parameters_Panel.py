@@ -916,6 +916,7 @@ class InitialDataPanel(wx.Panel):
                     self.Layout()
                     P4Diff.success4Fit = 0
                     self.statusbar.SetStatusText(u"", 0)
+                    pub.sendMessage(pubsub_gauge_to_zero)
             else:
                 P4Diff.success4Fit = 1
         else:

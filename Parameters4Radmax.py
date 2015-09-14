@@ -54,8 +54,8 @@ header_project = 4
 
 Application_name = "RaDMaX"
 filename = "Radmax"
-Application_version = 1.3
-last_modification = "08/09/2015"
+Application_version = 1.4
+last_modification = "14/09/2015"
 log_filename = "activity"
 ConfigDataFile = 'ConfigDataFile'
 ConfigFile = 'ConfigFile'
@@ -64,7 +64,7 @@ description = """RaDMaX: Radiation Damage in Materials analyzed with X-ray diffr
 licence = "RaDMaX is distributed freely under the CeCILL license (see LICENSE.txt and COPYRIGHT.txt)."
 
 output_name = {'out_strain':'output_strain_coeff.txt', 'out_dw':'output_DW_coeff.txt', 'out_strain_profile':'output_strain.txt',\
-            'out_dw_profile':'output_DW.txt', 'in_strain':'input_strain_coeff.txt', 'in_dw':'input_DW_coeff.txt',}
+            'out_dw_profile':'output_DW.txt', 'in_strain':'input_strain_coeff.txt', 'in_dw':'input_DW_coeff.txt', 'out_XRD':'out_XRD_fit.txt',}
 
 current_dir = os.path.dirname(os.path.realpath(filename))
 structures_name = os.path.join(current_dir, 'structures')
@@ -154,6 +154,8 @@ class P4Diff():
     frequency_refresh_leastsq = 50
     frequency_refresh_gsa = 30
     gaugeUpdate = 0
+    
+    zoomOn = 0
 
     DragDrop_Strain_x = []
     DragDrop_Strain_y = []
