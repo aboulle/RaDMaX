@@ -1117,13 +1117,13 @@ class InitialDataPanel(wx.Panel):
         strain_change = 0
         dw_change = 0
         slice_change = 0
-        if  strain != a.strain_basis_backup:
+        if  strain != float(a.strain_basis_backup):
             P4Diff.strain_basis_backup = strain
             strain_change = 1
         if  dw != a.dw_basis_backup:
             P4Diff.dw_basis_backup = dw
             dw_change = 1
-        if slice_ != a.slice_backup:
+        if slice_ != float(a.slice_backup):
             P4Diff.slice_backup = slice_
             slice_change = 1
         if strain_change == 1 or dw_change == 1 or slice_change == 1:
@@ -1133,6 +1133,7 @@ class InitialDataPanel(wx.Panel):
             damaged_val = self.par4diff['damaged_depth']
             dw = self.find_nearest_dw(self.par4diff['number_slices'], dw, strain, strain_change, dw_change, slice_change)
             self.damaged_depth.SetValue(str(damaged_val))
+            self.dwBfunction.SetValue(str(dw))
             P4Diff.t_l = damaged_val/slice_val
             P4Diff.z = arange(slice_val+1) * a.t_l
             P4Diff.dwp = old2new_DW(a.z, a.dwp, damaged_val, dw, spline_DW)
@@ -1176,8 +1177,7 @@ class InitialDataPanel(wx.Panel):
             val = int(temp[index])
         elif dw_change == 1:
             index = self.dwBfunction_hide.GetValue()
-            self.dwBfunction.SetStringSelection(index)
-            val = int(index)
+            val = int(float(index))
         return val
             
     def OnSelectNbSlice(self, event):

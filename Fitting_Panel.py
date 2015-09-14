@@ -53,7 +53,7 @@ class FittingPanel(wx.Panel):
         if _platform == "linux" or _platform == "linux2":
             font_Statictext = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
             font_TextCtrl = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
-            font_TextCtrl = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
+            font_combobox = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
         elif _platform == "win32":
             info = wx.NativeFontInfo()
             info.SetFaceName("arial")
