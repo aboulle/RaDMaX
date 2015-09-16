@@ -117,8 +117,6 @@ class LeftGraphTop(wx.Panel):
 
         self.canvas.mpl_connect('draw_event', self.draw_callback)
         self.canvas.mpl_connect('button_press_event', self.button_press_callback)
-        self.canvas.mpl_connect('key_press_event', self.key_press_callback)
-        self.canvas.mpl_connect('key_release_event', self.key_release_callback)
         self.canvas.mpl_connect('button_release_event', self.button_release_callback)
         self.canvas.mpl_connect('scroll_event', self.scroll_callback)
         self.canvas.mpl_connect('motion_notify_event', self.motion_notify_callback)
@@ -235,12 +233,6 @@ class LeftGraphTop(wx.Panel):
                 pub.sendMessage(pubsub_Update_Fit_Live)
             self._ind = None
 
-    def key_press_callback(self, event):
-        'whenever a key is pressed'
-        if not event.inaxes: return
-        if event.key == 'u':
-            self.u_key_press = True
-
     def scroll_callback(self, event):
         if not event.inaxes: return
         a = P4Diff()
@@ -248,14 +240,8 @@ class LeftGraphTop(wx.Panel):
             P4Diff.strain_multiplication = a.strain_multiplication + 0.01
         elif event.key == 'u' and event.button == 'down':
             P4Diff.strain_multiplication = a.strain_multiplication - 0.01
-
-    def key_release_callback(self, event):
-        if not event.inaxes: return
-        a = P4Diff()
-        if event.key == 'u':
-            self.u_key_press = False
-            P4Diff.sp = multiply(a.sp_backup,a.strain_multiplication)
-            pub.sendMessage(pubsub_Re_Read_field_paramters_panel, event=event)
+        P4Diff.sp = multiply(a.sp_backup,a.strain_multiplication)
+        pub.sendMessage(pubsub_Re_Read_field_paramters_panel, event=event)
 
     def motion_notify_callback(self, event):
         'on mouse movement'
@@ -350,8 +336,6 @@ class LeftGraphBottom(wx.Panel):
 
         self.canvas.mpl_connect('draw_event', self.draw_callback)
         self.canvas.mpl_connect('button_press_event', self.button_press_callback)
-        self.canvas.mpl_connect('key_press_event', self.key_press_callback)
-        self.canvas.mpl_connect('key_release_event', self.key_release_callback)
         self.canvas.mpl_connect('button_release_event', self.button_release_callback)
         self.canvas.mpl_connect('motion_notify_event', self.motion_notify_callback)
         self.canvas.mpl_connect('scroll_event', self.scroll_callback)
@@ -466,12 +450,6 @@ class LeftGraphBottom(wx.Panel):
                 pub.sendMessage(pubsub_Update_Fit_Live)
             self._ind = None
 
-    def key_press_callback(self, event):
-        'whenever a key is pressed'
-        if not event.inaxes: return
-        if event.key == 'u':
-            self.u_key_press = True
-
     def scroll_callback(self, event):
         if not event.inaxes: return
         a = P4Diff()
@@ -479,14 +457,8 @@ class LeftGraphBottom(wx.Panel):
             P4Diff.DW_multiplication = a.DW_multiplication + 0.01
         elif event.key == 'u' and event.button == 'down':
             P4Diff.DW_multiplication = a.DW_multiplication - 0.01
-
-    def key_release_callback(self, event):
-        if not event.inaxes: return
-        a = P4Diff()
-        if event.key == 'u':
-            self.u_key_press = False
-            P4Diff.dwp = multiply(a.dwp_backup,a.DW_multiplication)
-            pub.sendMessage(pubsub_Re_Read_field_paramters_panel, event=event)
+        P4Diff.dwp = multiply(a.dwp_backup,a.DW_multiplication)
+        pub.sendMessage(pubsub_Re_Read_field_paramters_panel, event=event)
 
     def motion_notify_callback(self, event):
         'on mouse movement'

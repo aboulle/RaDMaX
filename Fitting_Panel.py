@@ -31,6 +31,7 @@ pubsub_Update_deformation_multiplicator_coef = "UpdateDeformationMultiplicatorCo
 pubsub_save_project_before_fit = "SaveProjectBeforeFit"
 pubsub_gauge_to_zero = "Gauge2zero"
 pubsub_On_Limit_Before_Graph = "OnLimitBeforeGraph"
+pubsub_Draw_XRD = "DrawXRD"
 
 Live_COUNT = wx.NewEventType()
 LiveLimitExceeded_COUNT = wx.NewEventType()
@@ -361,6 +362,7 @@ class FittingPanel(wx.Panel):
 
     def RefreshAfterFit(self, option, case=None):
         label = ""
+        a = P4Diff()
         if option == 0:
             self.parent.notebook.EnableTab(0, False)
             self.fit_Btn.Disable()
@@ -370,12 +372,6 @@ class FittingPanel(wx.Panel):
             self.cb_FitAlgo.Disable()
             self.information_icon.Hide()
             self.information_text.SetLabel(u"")
-#            if
-#                self.png = wx.BitmapFromIcon(ok_icon.GetIcon())
-#                self.information_icon.SetBitmap(self.png)
-#                self.information_icon.Show()
-#                label = u"Fit end normally"
-#                warning_icon
         elif option == 1:
             a = P4Diff()
             self.parent.notebook.EnableTab(0, True)
@@ -386,8 +382,6 @@ class FittingPanel(wx.Panel):
             self.cb_FitAlgo.Enable()
             P4Diff.fitlive = 0
             P4Diff.I_i = a.I_fit
-            P4Diff.sp = a.par_fit[:int(self.par4diff['strain_basis_func'])]
-            P4Diff.dwp = a.par_fit[-1*int(self.par4diff['dw_basis_func']):]
             if case == 0:
                 self.png = wx.BitmapFromIcon(ok_icon.GetIcon())
                 self.information_icon.SetBitmap(self.png)
@@ -396,15 +390,18 @@ class FittingPanel(wx.Panel):
                 logger.log(logging.INFO, label)
                 self.statusbar.SetStatusText(label, 0)
                 self.gauge.SetValue(0)
+                P4Diff.sp = a.par_fit[:int(self.par4diff['strain_basis_func'])]
+                P4Diff.dwp = a.par_fit[-1*int(self.par4diff['dw_basis_func']):]
             elif case == 1:
                 self.png = wx.BitmapFromIcon(error_icon.GetIcon())
                 self.information_icon.SetBitmap(self.png)
                 self.information_icon.Show()
                 label = u"Fit aborted by user"
                 logger.log(logging.WARNING, label)
-                self.statusbar.SetStatusText(label, 0)
+                self.statusbar.SetStatusText(label, 0)    
             if a.par_fit != []:
-                pub.sendMessage(pubsub_Update_Fit_Live)
+#                pub.sendMessage(pubsub_Update_Fit_Live)
+                pub.sendMessage(pubsub_Draw_XRD)
                 pub.sendMessage(pubsub_Update_deformation_multiplicator_coef)
                 self.information_text.SetLabel(label)
                 self.OnSavefromFit()
