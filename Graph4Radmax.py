@@ -254,7 +254,7 @@ class LeftGraphTop(wx.Panel):
         a = P4Diff()
         if val != None:
             P4Diff.strain_multiplication = val
-        P4Diff.sp = multiply(a.sp_backup,a.strain_multiplication)
+        P4Diff.sp = multiply(a.sp,a.strain_multiplication)
         pub.sendMessage(pubsub_Re_Read_field_paramters_panel, event=event)
 
     def motion_notify_callback(self, event):
@@ -479,7 +479,7 @@ class LeftGraphBottom(wx.Panel):
         a = P4Diff()
         if val != None:
             P4Diff.DW_multiplication = val
-        P4Diff.dwp = multiply(a.dwp_backup,a.DW_multiplication)
+        P4Diff.dwp = multiply(a.dwp,a.DW_multiplication)
         pub.sendMessage(pubsub_Re_Read_field_paramters_panel, event=event)
 
     def motion_notify_callback(self, event):
