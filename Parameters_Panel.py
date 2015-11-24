@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# A_BOULLE & M_SOUILAH
+# Author: A_BOULLE & M_SOUILAH
+# Radmax project
+
+'''
+*Radmax Initial Parameters module*
+'''
 
 from Read4Radmax import ReadFile, SaveFile4Diff
 from Parameters4Radmax import *
@@ -9,6 +14,9 @@ from def_DW import f_DW, old2new_DW, fit_input_DW
 from def_XRD import f_Refl
 from def_Fh import f_FH
 from sys import platform as _platform
+
+ALPHA_ONLY = 1
+DIGIT_ONLY = 2
 
 """New Project initial data"""
 New_project_initial = [1.48806, 0.013, 0.000001, 5e-6, 1, 1, 0, 0, 5.4135,\
@@ -43,9 +51,15 @@ pubsub_save_project_before_fit = "SaveProjectBeforeFit"
 pubsub_gauge_to_zero = "Gauge2zero"
 pubsub_shortcut = "Shortcut"
 pubsub_On_Limit_Before_Graph = "OnLimitBeforeGraph"
+pubsub_Update_Scale_Strain = "OnUpdateScaleStrain"
+pubsub_Update_Scale_DW = "OnUpdateScaleDW"
 
 #------------------------------------------------------------------------------
 class InitialDataPanel(wx.Panel):
+    """
+    Initial Parameters main panel
+    we built the all page in this module
+    """
     def __init__(self, parent, statusbar):
         wx.Panel.__init__(self, parent)
         self.statusbar = statusbar
@@ -53,27 +67,47 @@ class InitialDataPanel(wx.Panel):
 #        self.parent.Bind(aui.EVT_AUINOTEBOOK_PAGE_CHANGING, self.OnPageChanged)
         self.locale = wx.Locale(wx.LANGUAGE_ENGLISH)
 
-        vStatictextsize = 16
         size_text = (85,22)
         size_value_hkl = (50,22)
         size_value_lattice = (65,22)
         size_damaged_depth = (110,22)
-        
-        font = wx.Font(10, wx.DEFAULT, wx.ITALIC, wx.BOLD)
-        font_update = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.BOLD)
+        size_scale = (50,22)
+                
         if _platform == "linux" or _platform == "linux2":
+            size_StaticBox = (950, 140)
+            crystal_combobox = (110, -1)
+            symmetry_combobox = (90, -1)
             font_Statictext = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
             font_TextCtrl = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
             font_combobox = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
+            font_scale = wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD)
+            font_update = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.BOLD)
+            font = wx.Font(10, wx.DEFAULT, wx.ITALIC, wx.BOLD)
+            vStatictextsize = 16
         elif _platform == "win32":
-            info = wx.NativeFontInfo()
-            info.SetFaceName("arial")
-            info.SetPointSize(9)
-            font_Statictext = wx.FontFromNativeInfoString(info.ToString())
-            font_TextCtrl = wx.FontFromNativeInfoString(info.ToString())
-            font_combobox = wx.FontFromNativeInfoString(info.ToString())
+            size_StaticBox = (920, 140)
+            crystal_combobox = (80, -1)
+            symmetry_combobox = (80, -1)
+            font_Statictext = wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
+            font_TextCtrl = wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
+            font_combobox = wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
+            font_scale = wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD)
+            font_update = wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD)
+            font = wx.Font(9, wx.DEFAULT, wx.ITALIC, wx.BOLD)
+            vStatictextsize = 16
+        elif _platform == 'darwin':
+            size_StaticBox = (950, 140)
+            crystal_combobox = (80, -1)
+            symmetry_combobox = (80, -1)
+            font_Statictext = wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
+            font_TextCtrl = wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
+            font_combobox = wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
+            font_scale = wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.BOLD)
+            font_update = wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.BOLD)
+            font = wx.Font(12, wx.DEFAULT, wx.ITALIC, wx.BOLD)
+            vStatictextsize = 18
                 
-        size_StaticBox = (920, 140)
+        flagSizer = wx.ALL|wx.ALIGN_CENTER_VERTICAL
 
         """master sizer for the whole panel"""
         mastersizer = wx.BoxSizer(wx.VERTICAL)
@@ -83,26 +117,27 @@ class InitialDataPanel(wx.Panel):
         Experiment_box.SetFont(font)
         Experiment_box_sizer = wx.StaticBoxSizer(Experiment_box, wx.VERTICAL)
         in_Experiment_box_sizer = wx.GridBagSizer(hgap=10, vgap=0)
-        flagSizer = wx.ALL|wx.ALIGN_CENTER_VERTICAL
         
-        wavelength_txt = wx.StaticText(self, -1, label=u'Wavelength (\u212B)', size=(100,vStatictextsize))
+        wavelength_txt = wx.StaticText(self, -1, label=u'Wavelength (\u212B)',\
+                                       size=(100,vStatictextsize))
         wavelength_txt.SetFont(font_Statictext)
-        self.wavelength = wx.TextCtrl(self, size=size_text)
+        self.wavelength = wx.TextCtrl(self, size=size_text, validator = TextValidator(DIGIT_ONLY))
         self.wavelength.SetFont(font_TextCtrl)
 
-        resolution_txt = wx.StaticText(self, -1, label=u'Resolution (°)', size=(90,vStatictextsize))
+        resolution_txt = wx.StaticText(self, -1, label=u'Resolution (°)',\
+                                       size=(90,vStatictextsize))
         resolution_txt.SetFont(font_Statictext)
-        self.resolution = wx.TextCtrl(self, size=size_text)
+        self.resolution = wx.TextCtrl(self, size=size_text, validator = TextValidator(DIGIT_ONLY))
         self.resolution.SetFont(font_TextCtrl)
 
         shape_txt = wx.StaticText(self, -1, label=u'Shape', size=(45,vStatictextsize))
         shape_txt.SetFont(font_Statictext)
-        self.shape = wx.TextCtrl(self, size=size_text)
+        self.shape = wx.TextCtrl(self, size=size_text, validator = TextValidator(DIGIT_ONLY))
         self.shape.SetFont(font_TextCtrl)
 
         bckground_txt = wx.StaticText(self, -1, label=u'Background', size=(75,vStatictextsize))
         bckground_txt.SetFont(font_Statictext)
-        self.bckground = wx.TextCtrl(self, size=size_text)
+        self.bckground = wx.TextCtrl(self, size=size_text, validator = TextValidator(DIGIT_ONLY))
         self.bckground.SetFont(font_TextCtrl)
         
         in_Experiment_box_sizer.Add(wavelength_txt, pos=(0,0), flag=flagSizer)
@@ -125,14 +160,17 @@ class InitialDataPanel(wx.Panel):
         crystalname_txt = wx.StaticText(self, -1, label=u'Crystal', size=(45,vStatictextsize))
         crystalname_txt.SetFont(font_Statictext)
         self.crystal_choice = ["None"]
-        self.cb_crystalname = wx.ComboBox(self, pos=(50, 30), choices=self.crystal_choice, style=wx.CB_READONLY, size=(80, 22))
+        self.cb_crystalname = wx.ComboBox(self, pos=(50, 30), choices=self.crystal_choice,\
+                                          style=wx.CB_READONLY, size=crystal_combobox)                                 
         self.cb_crystalname.SetStringSelection(self.crystal_choice[0])
         self.cb_crystalname.SetFont(font_combobox)
+#        style=wx.ALIGN_LEFT|wx.ST_NO_AUTORESIZE|wx.TE_PROCESS_ENTER
 
         crystalsymmetry_txt = wx.StaticText(self, -1, label=u'Symmetry:', size=(65,vStatictextsize))
         crystalsymmetry_txt.SetFont(font_Statictext)
         self.symmetry_choice = ["cubic", "hexa", "tetra", "ortho", "rhombo", "mono", "triclinic"]
-        self.cb_crystalsymmetry = wx.ComboBox(self, pos=(50, 30), choices=self.symmetry_choice, style=wx.CB_READONLY)
+        self.cb_crystalsymmetry = wx.ComboBox(self, pos=(50, 30), choices=self.symmetry_choice,\
+                                              style=wx.CB_READONLY, size=symmetry_combobox)
         self.cb_crystalsymmetry.SetStringSelection(self.symmetry_choice[0])
         self.cb_crystalsymmetry.SetFont(font_combobox)
         self.cb_crystalsymmetry.Bind(wx.EVT_COMBOBOX, self.OnSelectSymmetry)
@@ -141,20 +179,21 @@ class InitialDataPanel(wx.Panel):
         reflection_txt.SetFont(font_Statictext)
         h_direction_txt = wx.StaticText(self, -1, label=u'h', size=(10,vStatictextsize))
         h_direction_txt.SetFont(font_Statictext)
-        self.h_direction = wx.TextCtrl(self, size=size_value_hkl)
+        self.h_direction = wx.TextCtrl(self, size=size_value_hkl, validator = TextValidator(DIGIT_ONLY))
         self.h_direction.SetFont(font_TextCtrl)
 
         k_direction_txt = wx.StaticText(self, -1, label=u'k', size=(10,vStatictextsize))
         k_direction_txt.SetFont(font_Statictext)
-        self.k_direction = wx.TextCtrl(self, size=size_value_hkl)
+        self.k_direction = wx.TextCtrl(self, size=size_value_hkl, validator = TextValidator(DIGIT_ONLY))
         self.k_direction.SetFont(font_TextCtrl)
 
         l_direction_txt = wx.StaticText(self, -1, label=u'l', size=(10,vStatictextsize))
         l_direction_txt.SetFont(font_Statictext)
-        self.l_direction = wx.TextCtrl(self, size=size_value_hkl)
+        self.l_direction = wx.TextCtrl(self, size=size_value_hkl, validator = TextValidator(DIGIT_ONLY))
         self.l_direction.SetFont(font_TextCtrl)
 
-        latticeparam_txt = wx.StaticText(self, -1, label=u'Lattice parameters (\u212B):', size=(135,vStatictextsize))
+        latticeparam_txt = wx.StaticText(self, -1, label=u'Lattice parameters (\u212B):',\
+                                        size=(135,vStatictextsize))
         latticeparam_txt.SetFont(font_Statictext)
 
         self.symmetry_txt_hide = wx.TextCtrl(self,size=(0,vStatictextsize))
@@ -162,36 +201,39 @@ class InitialDataPanel(wx.Panel):
 
         a_param_txt = wx.StaticText(self, -1, label=u'a', size=(10,vStatictextsize))
         a_param_txt.SetFont(font_Statictext)
-        self.a_param = wx.TextCtrl(self, size=size_value_lattice)
+        self.a_param = wx.TextCtrl(self, size=size_value_lattice, validator = TextValidator(DIGIT_ONLY))
         self.a_param.SetFont(font_TextCtrl)
 
         b_param_txt = wx.StaticText(self, -1, label=u'b', size=(10,vStatictextsize))
         b_param_txt.SetFont(font_Statictext)
-        self.b_param = wx.TextCtrl(self, size=size_value_lattice)
+        self.b_param = wx.TextCtrl(self, size=size_value_lattice, validator = TextValidator(DIGIT_ONLY))
         self.b_param.SetFont(font_TextCtrl)
 
         c_param_txt = wx.StaticText(self, -1, label=u'c', size=(10,vStatictextsize))
         c_param_txt.SetFont(font_Statictext)
-        self.c_param = wx.TextCtrl(self, size=size_value_lattice)
+        self.c_param = wx.TextCtrl(self, size=size_value_lattice, validator = TextValidator(DIGIT_ONLY))
         self.c_param.SetFont(font_TextCtrl)
 
-        alpha_param_txt = wx.StaticText(self, -1, label=u'\N{GREEK SMALL LETTER ALPHA}', size=(10,vStatictextsize))
+        alpha_param_txt = wx.StaticText(self, -1, label=u'\N{GREEK SMALL LETTER ALPHA}',\
+                                        size=(10,vStatictextsize))
         alpha_param_txt.SetFont(font_Statictext)
-        self.alpha_param = wx.TextCtrl(self, size=size_value_lattice)
+        self.alpha_param = wx.TextCtrl(self, size=size_value_lattice, validator = TextValidator(DIGIT_ONLY))
         self.alpha_param.SetFont(font_TextCtrl)
 
-        beta_param_txt = wx.StaticText(self, -1, label=u'\N{GREEK SMALL LETTER BETA}', size=(10,vStatictextsize))
+        beta_param_txt = wx.StaticText(self, -1, label=u'\N{GREEK SMALL LETTER BETA}',\
+                                       size=(10,vStatictextsize))
         beta_param_txt.SetFont(font_Statictext)
-        self.beta_param = wx.TextCtrl(self, size=size_value_lattice)
+        self.beta_param = wx.TextCtrl(self, size=size_value_lattice, validator = TextValidator(DIGIT_ONLY))
         self.beta_param.SetFont(font_TextCtrl)
 
-        gamma_param_txt = wx.StaticText(self, -1, label=u'\N{GREEK SMALL LETTER GAMMA}', size=(10,vStatictextsize))
+        gamma_param_txt = wx.StaticText(self, -1, label=u'\N{GREEK SMALL LETTER GAMMA}',\
+                                        size=(10,vStatictextsize))
         gamma_param_txt.SetFont(font_Statictext)
-        self.gamma_param = wx.TextCtrl(self, size=size_value_lattice)
+        self.gamma_param = wx.TextCtrl(self, size=size_value_lattice, validator = TextValidator(DIGIT_ONLY))
         self.gamma_param.SetFont(font_TextCtrl)
 
         in_Material_box_sizer.Add(crystalname_txt, pos=(0,0), flag=flagSizer)
-        in_Material_box_sizer.Add(self.cb_crystalname, pos=(0,1), span=(1,2), flag=flagSizer)
+        in_Material_box_sizer.Add(self.cb_crystalname, pos=(0,1), span=(1,3), flag=flagSizer)
         in_Material_box_sizer.Add(reflection_txt, pos=(1,0), flag=flagSizer)
         in_Material_box_sizer.Add(h_direction_txt, pos=(1,1), flag=flagSizer)
         in_Material_box_sizer.Add(self.h_direction, pos=(1,2), flag=flagSizer)
@@ -200,7 +242,8 @@ class InitialDataPanel(wx.Panel):
         in_Material_box_sizer.Add(l_direction_txt, pos=(1,5), flag=flagSizer)
         in_Material_box_sizer.Add(self.l_direction, pos=(1,6), flag=flagSizer)
 
-        in_Material_box_sizer.Add(latticeparam_txt, pos=(0,5), span=(1,4), flag=wx.ALL|wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL)
+        in_Material_box_sizer.Add(latticeparam_txt, pos=(0,5), span=(1,4),\
+                                  flag=wx.ALL|wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL)
         in_Material_box_sizer.Add(a_param_txt, pos=(0,9), flag=flagSizer)
         in_Material_box_sizer.Add(self.a_param, pos=(0,10), flag=flagSizer)
         in_Material_box_sizer.Add(b_param_txt, pos=(0,11), flag=flagSizer)
@@ -230,71 +273,84 @@ class InitialDataPanel(wx.Panel):
         Strain_DW_choice = ["B-splines smooth", "B-splines abrupt", "B-splines histogram"]
         strainname_txt = wx.StaticText(self, -1, label=u'Strain: model', size=(85,vStatictextsize))
         strainname_txt.SetFont(font_Statictext)
-        self.cb_strainname = wx.ComboBox(self, pos=(50, 30), choices=Strain_DW_choice, style=wx.CB_READONLY)
+        self.cb_strainname = wx.ComboBox(self, pos=(50, 30), choices=Strain_DW_choice,\
+                                         style=wx.CB_READONLY)
         self.cb_strainname.SetStringSelection(Strain_DW_choice[0])
         self.cb_strainname.SetFont(font_combobox)
         
         dwname_txt = wx.StaticText(self, -1, label=u'DW: model', size=(75,vStatictextsize))
         dwname_txt.SetFont(font_Statictext)
-        self.cb_dwname = wx.ComboBox(self, pos=(50, 30), choices=Strain_DW_choice, style=wx.CB_READONLY)
+        self.cb_dwname = wx.ComboBox(self, pos=(50, 30), choices=Strain_DW_choice,\
+                                     style=wx.CB_READONLY)
         self.cb_dwname.SetStringSelection(Strain_DW_choice[0])
         self.cb_dwname.SetFont(font_combobox)
         
         self.StrainBfunction_ID = wx.NewId()
         self.dwBfunction_ID = wx.NewId()
        
-        StrainBfunction_txt = wx.StaticText(self, id=self.StrainBfunction_ID, label=u'Basis functions', size=(95,vStatictextsize))
+        StrainBfunction_txt = wx.StaticText(self, id=self.StrainBfunction_ID, label=u'Basis functions',\
+                                            size=(95,vStatictextsize))
         StrainBfunction_txt.SetFont(font_Statictext)
-        self.StrainBfunction = wx.TextCtrl(self, size=size_value_lattice)
+        self.StrainBfunction = wx.TextCtrl(self, size=size_value_lattice, validator = TextValidator(DIGIT_ONLY))
         self.StrainBfunction.SetFont(font_TextCtrl)
 
-        dwBfunction_txt = wx.StaticText(self, id=self.dwBfunction_ID, label=u'Basis functions', size=(95,vStatictextsize))
+        dwBfunction_txt = wx.StaticText(self, id=self.dwBfunction_ID, label=u'Basis functions',\
+                                        size=(95,vStatictextsize))
         dwBfunction_txt.SetFont(font_Statictext)
         self.dwBfunction_choice = [""]
-        self.dwBfunction = wx.ComboBox(self, pos=(50, 30), choices=self.dwBfunction_choice, style=wx.CB_READONLY, size=(65, 22))
+        self.dwBfunction = wx.ComboBox(self, pos=(50, 30), choices=self.dwBfunction_choice,\
+                                        style=wx.CB_READONLY, size=(65, -1))
         self.dwBfunction.SetStringSelection(self.dwBfunction_choice[0])
         self.dwBfunction.SetFont(font_combobox)
         
         self.dwBfunction.Bind(wx.EVT_COMBOBOX, self.OnChangeDW)
         
-        self.dwBfunction_hide = wx.TextCtrl(self,size=(0,vStatictextsize))
+        self.dwBfunction_hide = wx.TextCtrl(self,size=(0,vStatictextsize), validator = TextValidator(DIGIT_ONLY))
         self.dwBfunction_hide.Hide()
         
         dwMinMax_txt = wx.StaticText(self, -1, label=u'Min./ Max.', size=(70,vStatictextsize))
         dwMinMax_txt.SetFont(font_Statictext)
-        self.dwMin = wx.TextCtrl(self, size=size_value_lattice)
-        self.dwMax = wx.TextCtrl(self, size=size_value_lattice)
+        self.dwMin = wx.TextCtrl(self, size=size_value_lattice, validator = TextValidator(DIGIT_ONLY))
+        self.dwMax = wx.TextCtrl(self, size=size_value_lattice, validator = TextValidator(DIGIT_ONLY))
         self.dwMin.SetFont(font_TextCtrl)
         self.dwMax.SetFont(font_TextCtrl)
 
         StrainMinMax_txt = wx.StaticText(self, -1, label=u'Min./ Max.', size=(70,vStatictextsize))
         StrainMinMax_txt.SetFont(font_Statictext)
-        self.StrainMin = wx.TextCtrl(self, size=size_value_lattice)
-        self.StrainMax = wx.TextCtrl(self, size=size_value_lattice)
+        self.StrainMin = wx.TextCtrl(self, size=size_value_lattice, validator = TextValidator(DIGIT_ONLY))
+        self.StrainMax = wx.TextCtrl(self, size=size_value_lattice, validator = TextValidator(DIGIT_ONLY))
         self.StrainMin.SetFont(font_TextCtrl)
         self.StrainMax.SetFont(font_TextCtrl)
         
-        damaged_depth_txt = wx.StaticText(self, -1, label=u'Damaged depth (\u212B)', size=(115,vStatictextsize))
+        damaged_depth_txt = wx.StaticText(self, -1, label=u'Damaged depth (\u212B)',\
+                                          size=(115,vStatictextsize))
         damaged_depth_txt.SetFont(font_Statictext)
-        self.damaged_depth = wx.TextCtrl(self, size=size_damaged_depth)
+        self.damaged_depth = wx.TextCtrl(self, size=size_damaged_depth, validator = TextValidator(DIGIT_ONLY))
         self.damaged_depth.SetFont(font_TextCtrl)
 
-        Nb_slice_txt = wx.StaticText(self, -1, label=u'Number of slices (for XRD computation)', size=(260,vStatictextsize))
+        Nb_slice_txt = wx.StaticText(self, -1, label=u'Number of slices (for XRD computation)',\
+                                     size=(260,vStatictextsize))
         Nb_slice_txt.SetFont(font_Statictext)
-        self.Nb_slice = wx.TextCtrl(self, size=size_damaged_depth)
+        self.Nb_slice = wx.TextCtrl(self, size=size_damaged_depth, validator = TextValidator(DIGIT_ONLY))
         self.Nb_slice.SetFont(font_TextCtrl)
 
         self.m_strain_ID = wx.NewId()
         self.m_DW_ID = wx.NewId()
-        DW_horizontal_ctrl_txt = wx.StaticText(self, -1, label=u'Scale', size=(40,vStatictextsize))
-        self.DW_horizontal_ctrl = wx.StaticText(self, -1, label=u'', size=(35,vStatictextsize))
-        self.DW_horizontal_ctrl.SetFont(font_Statictext)
-        self.DW_horizontal_ctrl.SetLabel('1.00')
 
-        strain_horizontal_ctrl_txt = wx.StaticText(self, -1, label=u'Scale', size=(40,vStatictextsize))
-        self.strain_horizontal_ctrl = wx.StaticText(self, -1, label=u'', size=(35,vStatictextsize))
-        self.strain_horizontal_ctrl.SetFont(font_Statictext)
-        self.strain_horizontal_ctrl.SetLabel('1.00')
+        self.scale_strain_Btn = wx.Button(self, id=self.m_strain_ID, label=u'Scale', size=size_scale, style=wx.NO_BORDER)
+        self.scale_strain_Btn.SetFont(font_scale)
+        self.scale_strain_Btn.Bind(wx.EVT_BUTTON, self.onUpdateScale)
+        self.strain_horizontal_ctrl = wx.TextCtrl(self, size=size_scale, validator = TextValidator(DIGIT_ONLY))
+        self.strain_horizontal_ctrl.SetFont(font_TextCtrl)
+        self.strain_horizontal_ctrl.SetValue(str(1))
+
+        self.scale_DW_Btn = wx.Button(self, id=self.m_DW_ID, label=u'Scale', size=size_scale, style=wx.NO_BORDER)
+        self.scale_DW_Btn.SetFont(font_scale)
+        self.scale_DW_Btn.Bind(wx.EVT_BUTTON, self.onUpdateScale)
+        self.DW_horizontal_ctrl = wx.TextCtrl(self, size=size_scale, validator = TextValidator(DIGIT_ONLY))
+        self.DW_horizontal_ctrl.SetFont(font_TextCtrl)
+        self.DW_horizontal_ctrl.SetValue(str(1))
+
         
         in_Strain_DW_box_sizer.Add(strainname_txt, pos=(0,0), flag=flagSizer)
         in_Strain_DW_box_sizer.Add(self.cb_strainname, pos=(0,1), flag=flagSizer)
@@ -309,16 +365,17 @@ class InitialDataPanel(wx.Panel):
         in_Strain_DW_box_sizer.Add(StrainMinMax_txt, pos=(0,6), flag=flagSizer)
         in_Strain_DW_box_sizer.Add(self.StrainMin, pos=(0,7), flag=flagSizer)
         in_Strain_DW_box_sizer.Add(self.StrainMax, pos=(0,8), flag=flagSizer)
-        in_Strain_DW_box_sizer.Add(strain_horizontal_ctrl_txt, pos=(0,9), flag=flagSizer)
+        in_Strain_DW_box_sizer.Add(self.scale_strain_Btn, pos=(0,9), flag=flagSizer)
         in_Strain_DW_box_sizer.Add(self.strain_horizontal_ctrl, pos=(0,10), flag=flagSizer)
         in_Strain_DW_box_sizer.Add(dwMinMax_txt, pos=(1,6), flag=flagSizer)
         in_Strain_DW_box_sizer.Add(self.dwMin, pos=(1,7), flag=flagSizer)
         in_Strain_DW_box_sizer.Add(self.dwMax, pos=(1,8), flag=flagSizer)
-        in_Strain_DW_box_sizer.Add(DW_horizontal_ctrl_txt, pos=(1,9), flag=flagSizer)
+        in_Strain_DW_box_sizer.Add(self.scale_DW_Btn, pos=(1,9), flag=flagSizer)
         in_Strain_DW_box_sizer.Add(self.DW_horizontal_ctrl, pos=(1,10), flag=flagSizer)
         in_Strain_DW_box_sizer.Add(damaged_depth_txt, pos=(2,0), flag=flagSizer)
         in_Strain_DW_box_sizer.Add(self.damaged_depth, pos=(2,1), flag=flagSizer)
-        in_Strain_DW_box_sizer.Add(Nb_slice_txt, pos=(2,3), span=(1,4), flag=wx.ALL|wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT)
+        in_Strain_DW_box_sizer.Add(Nb_slice_txt, pos=(2,3), span=(1,4),\
+                                   flag=wx.ALL|wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT)
         in_Strain_DW_box_sizer.Add(self.Nb_slice, pos=(2,7), span=(1,2), flag=flagSizer)
         
         Strain_DW_box_sizer.Add(in_Strain_DW_box_sizer, 0, wx.ALL, 5)
@@ -389,6 +446,8 @@ class InitialDataPanel(wx.Panel):
         
 
     def KeyPressed(self, event, case):
+        """ctrl+U emulate the update button
+        ctrl+I reload the last open project"""
         if case == 0:
             self.onUpdate(event)
         elif case == 1:
@@ -404,12 +463,18 @@ class InitialDataPanel(wx.Panel):
         self.dwBfunction_hide.SetValue(event.GetString())
 
     def ReadCrystalList(self):
+        """Reading of the structures directory
+        we list all the files present in this directory
+        we get back the files name, sort them by name and used them in the crsytal combobox"""
         if os.listdir(structures_name) != []:
             self.crystal_choice = sorted(list(os.listdir(structures_name)))
             self.cb_crystalname.SetItems(self.crystal_choice)
             self.cb_crystalname.SetStringSelection(self.crystal_choice[0])
     
     def OnSelectSymmetry(self, event, choice=None):
+        """Symmetry combobox selection
+        quite simple choice selection according to the symmetry condition
+        """
         if choice != None:
             i = choice
         else:
@@ -483,6 +548,8 @@ class InitialDataPanel(wx.Panel):
                         self.data_fields[8+i].SetValue(str(self.data_fields[8 + temp_value[i]].GetValue()))
 
     def onNewProject(self, event=None):
+        """Launch new project with default inital parameters
+        all variables are initialized and graph are eventually removed"""
         a = P4Diff()
         self.Reset_Deformation_Multiplication()
         for ii in self.data_fields:
@@ -529,8 +596,10 @@ class InitialDataPanel(wx.Panel):
             self.Calc_DW()
             spline_strain = self.cb_strainname.GetSelection()
             spline_DW = self.cb_dwname.GetSelection()
-            nb_slice, dw_func = self.OnChangeBasisFunction(self.par4diff['strain_basis_func'], self.par4diff['dw_basis_func'], \
-                                                            spline_strain, spline_DW, self.par4diff['number_slices'])
+            nb_slice, dw_func = self.OnChangeBasisFunction(self.par4diff['strain_basis_func'],\
+                                                           self.par4diff['dw_basis_func'],\
+                                                            spline_strain, spline_DW,\
+                                                            self.par4diff['number_slices'])
             
             self.data_paths_dict['Compound_name'] = self.cb_crystalname.GetStringSelection()
             self.data_paths_dict['DW_file'] = ""
@@ -543,6 +612,8 @@ class InitialDataPanel(wx.Panel):
             self.Layout()
         
     def onLoadXRD(self, event):
+        """Loading and extracting of XRD data file with no default extension, 
+        but needed a two columns format file"""
         a = P4Diff()
         b = ReadFile(self)
         wildcard = "All files (*.*)|*.*"
@@ -565,6 +636,8 @@ class InitialDataPanel(wx.Panel):
                 self.Reset_Deformation_Multiplication()
                 b.read_xrd_file(paths[0])                
                 P4Diff.Iobs = a.data_xrd[1]
+                minval = np.min(a.Iobs[np.nonzero(a.Iobs)])
+                P4Diff.Iobs[a.Iobs==0] = minval
                 P4Diff.Iobs = a.Iobs / a.Iobs.max()
                 P4Diff.Iobs_backup = a.Iobs
                 P4Diff.th = (a.data_xrd[0])*pi/360.
@@ -575,6 +648,8 @@ class InitialDataPanel(wx.Panel):
                 logger.log(logging.WARNING, "!!! Please check your input file !!!")
 
     def onLoadStrain(self, event):
+        """Loading of Strain data file with no default extension, 
+        but needed a two columns format file"""
         wildcard = "All files (*.*)|*.*"
         dlg = wx.FileDialog(
             self, message="Import Strain file",
@@ -594,6 +669,8 @@ class InitialDataPanel(wx.Panel):
                 logger.log(logging.WARNING, "!!! Please check your input file !!!")
 
     def onLoadDW(self, event):
+        """Loading of DW data file with no default extension, 
+        but needed a two columns format file"""
         wildcard = "All files (*.*)|*.*"
         dlg = wx.FileDialog(
             self, message="Import DW file",
@@ -612,27 +689,8 @@ class InitialDataPanel(wx.Panel):
             except TypeError:
                 logger.log(logging.WARNING, "!!! Please check your input file !!!")
 
-    def Calc_DW(self, paths=None, choice=None):
-        a = P4Diff()
-        b = ReadFile(self)
-        spline_DW = self.cb_dwname.GetSelection()
-        if choice == 0:
-            data = b.read_dw_xy_file(paths[0])
-            P4Diff.dwp = fit_input_DW(data, self.par4diff['dw_basis_func'],self.par4diff['damaged_depth'], spline_DW)
-        P4Diff.dwp_backup = a.dwp
-        P4Diff.dw_basis_backup = float(self.par4diff['dw_basis_func'])
-        P4Diff.DW_i = f_DW(a.z, a.dwp, self.par4diff['damaged_depth'], spline_DW)
-        t = self.par4diff['damaged_depth']
-        P4Diff.x_dwp = t - linspace(1, len(a.dwp), len(a.dwp))*t / (len(a.dwp))
-        shifted_dwp = append(array([1.]),a.dwp[:-1:])
-        P4Diff.scale_dw = shifted_dwp /a.DW_i[ in1d(around(a.depth, decimals=3),  around(a.x_dwp, decimals=3))]
-        P4Diff.scale_dw[a.scale_dw==0] = 1.
-        P4Diff.DW_shifted = shifted_dwp/a.scale_dw
-        if choice == 0:
-            self.Save_Deformation('DW_file', 'DW', a.dwp)
-        pub.sendMessage(pubsub_Draw_DW)
-
     def Calc_Strain(self, paths=None, choice=None):
+        """Reading and calcul of Strain coefficient"""
         a = P4Diff()
         b = ReadFile(self)
         spline_strain = self.cb_strainname.GetSelection()
@@ -653,7 +711,31 @@ class InitialDataPanel(wx.Panel):
             self.Save_Deformation('Strain_file', 'strain', a.sp)
         pub.sendMessage(pubsub_Draw_Strain)
 
+    def Calc_DW(self, paths=None, choice=None):
+        """Reading and calcul of DW coefficient"""
+        a = P4Diff()
+        b = ReadFile(self)
+        spline_DW = self.cb_dwname.GetSelection()
+        if choice == 0:
+            data = b.read_dw_xy_file(paths[0])
+            P4Diff.dwp = fit_input_DW(data, self.par4diff['dw_basis_func'],self.par4diff['damaged_depth'], spline_DW)
+        P4Diff.dwp_backup = a.dwp
+        P4Diff.dw_basis_backup = float(self.par4diff['dw_basis_func'])
+        P4Diff.DW_i = f_DW(a.z, a.dwp, self.par4diff['damaged_depth'], spline_DW)
+        t = self.par4diff['damaged_depth']
+        P4Diff.x_dwp = t - linspace(1, len(a.dwp), len(a.dwp))*t / (len(a.dwp))
+        shifted_dwp = append(array([1.]),a.dwp[:-1:])
+        
+        P4Diff.scale_dw = shifted_dwp /a.DW_i[ in1d(around(a.depth, decimals=3),  around(a.x_dwp, decimals=3))]
+        P4Diff.scale_dw[a.scale_dw==0] = 1.
+        P4Diff.DW_shifted = shifted_dwp/a.scale_dw
+        if choice == 0:
+            self.Save_Deformation('DW_file', 'DW', a.dwp)
+        pub.sendMessage(pubsub_Draw_DW)
+
     def onLoadProject(self, event):
+        """Loading of project with '.ini' extension, 
+        format created for the RaDMax application"""
         wildcard = "text file (*.ini)|*.ini|" \
                 "All files (*.*)|*.*"
         dlg = wx.FileDialog(
@@ -744,6 +826,7 @@ class InitialDataPanel(wx.Panel):
         savetxt(path, data , fmt='%10.8f')
 
     def onSaveProject(self, event, case):
+        """Saving project, save or save as depending of the action needed"""
         a = P4Diff()
         if self.project_name == "":
             case = 1
@@ -821,6 +904,21 @@ class InitialDataPanel(wx.Panel):
                 logger.log(logging.WARNING, "There are some problem in the data")
                 return False
                            
+    def OnCheckDataValue(self):
+        """Check if some data are not off limit for the program"""
+        if self.par4diff['resolution'] == 0:
+            self.par4diff['resolution'] = 1e-4
+            self.data_fields[1].Clear()
+            self.data_fields[1].AppendText(str(self.par4diff['resolution']))
+        if self.par4diff['shape'] <= 0:
+            self.par4diff['shape'] = 1e-5
+            self.data_fields[2].Clear()
+            self.data_fields[2].AppendText(str(self.par4diff['shape']))
+        if self.par4diff['shape'] > 1:
+            self.par4diff['shape'] = 1
+            self.data_fields[2].Clear()
+            self.data_fields[2].AppendText(str(self.par4diff['shape']))
+            
     def OnLaunchCalc(self):
         success = self.Read_Initial_File()
         if success == True:
@@ -880,6 +978,8 @@ class InitialDataPanel(wx.Panel):
                 """READING XRD FILE"""
                 b.read_xrd_file(self.data_paths_dict['XRD_file'])
                 P4Diff.Iobs = a.data_xrd[1]
+                minval = np.min(a.Iobs[np.nonzero(a.Iobs)])
+                P4Diff.Iobs[a.Iobs==0] = minval
                 P4Diff.Iobs = a.Iobs / a.Iobs.max()
                 P4Diff.Iobs_backup = a.Iobs
                 P4Diff.th = (a.data_xrd[0])*pi/360.
@@ -951,6 +1051,15 @@ class InitialDataPanel(wx.Panel):
         self.StrainBfunction.GetValue()
         self.dwBfunction.GetValue()
 
+    def onUpdateScale(self, event):
+        widget = event.GetId()
+        if widget == self.m_strain_ID:
+            pub.sendMessage(pubsub_Update_Scale_Strain, event=event, \
+            val=float(self.strain_horizontal_ctrl.GetValue()))
+        elif widget == self.m_DW_ID:
+            pub.sendMessage(pubsub_Update_Scale_DW, event=event, \
+            val=float(self.DW_horizontal_ctrl.GetValue()))
+
     def calculsupplementaryparameters(self):
         a = P4Diff()
         name = self.cb_crystalname.GetStringSelection()
@@ -959,10 +1068,12 @@ class InitialDataPanel(wx.Panel):
         temp = [self.spline_strain, self.spline_DW]
         P4Diff.splinenumber = temp
         self.par4diff = dict(zip(Parameters_panel_keys,a.initial_parameters))
+        self.OnCheckDataValue()
         nb_slice, dw_func = self.OnChangeBasisFunction(self.par4diff['strain_basis_func'], self.par4diff['dw_basis_func'], \
                                                         self.spline_strain, self.spline_DW, self.par4diff['number_slices'])
         self.par4diff['dw_basis_func'] = dw_func
         self.par4diff['number_slices'] = nb_slice
+
         if name != []:
             P4Diff.par = np.concatenate((a.sp,a.dwp),axis=0)
             P4Diff.resol = f_pVoigt(a.th, [1, (a.th.min()+a.th.max())/2 ,\
@@ -1194,4 +1305,3 @@ class InitialDataPanel(wx.Panel):
                 self.parent.notebook.EnableTab(1, False)
                 self.Fit()  
                 self.Layout()
-

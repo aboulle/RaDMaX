@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# A_BOULLE & M_SOUILAH
-# Version du : 24/07/2015
+# Author: A_BOULLE & M_SOUILAH
+# Radmax project
+
+'''
+*Radmax Graph module*
+'''
 
 import matplotlib
 matplotlib.use('WXAgg')
@@ -24,6 +28,8 @@ pubsub_Draw_Fit_Live_XRD = "DrawFitLiveXRD"
 pubsub_Update_Fit_Live = "UpdateFitLive"
 pubsub_Re_Read_field_paramters_panel = "ReReadParametersPanel"
 pubsub_OnFit_Graph = "OnFitGraph"
+pubsub_Update_Scale_Strain = "OnUpdateScaleStrain"
+pubsub_Update_Scale_DW = "OnUpdateScaleDW"
 
 colorBackgroundGraph = '#F0F0F0'
 
@@ -126,6 +132,7 @@ class LeftGraphTop(wx.Panel):
         mastersizer.Add(self.canvas, 1, wx.ALL)
         mastersizer.Add(self.toolbar, 1, wx.ALL)
         pub.subscribe(self.OnDrawGraph, pubsub_Draw_Strain)
+        pub.subscribe(self.scale_manual, pubsub_Update_Scale_Strain)    
         
         self.SetSizer(mastersizer)
         self.Raise()
@@ -243,6 +250,13 @@ class LeftGraphTop(wx.Panel):
         P4Diff.sp = multiply(a.sp_backup,a.strain_multiplication)
         pub.sendMessage(pubsub_Re_Read_field_paramters_panel, event=event)
 
+    def scale_manual(self, event, val=None):
+        a = P4Diff()
+        if val != None:
+            P4Diff.strain_multiplication = val
+        P4Diff.sp = multiply(a.sp_backup,a.strain_multiplication)
+        pub.sendMessage(pubsub_Re_Read_field_paramters_panel, event=event)
+
     def motion_notify_callback(self, event):
         'on mouse movement'
         a = P4Diff()
@@ -345,6 +359,7 @@ class LeftGraphBottom(wx.Panel):
         
         pub.subscribe(self.draw_c, pubsub_draw_graph)
         pub.subscribe(self.OnDrawGraph, pubsub_Draw_DW)
+        pub.subscribe(self.scale_manual, pubsub_Update_Scale_DW)    
         
         self.SetSizer(mastersizer)
         self.Raise()
@@ -457,6 +472,13 @@ class LeftGraphBottom(wx.Panel):
             P4Diff.DW_multiplication = a.DW_multiplication + 0.01
         elif event.key == 'u' and event.button == 'down':
             P4Diff.DW_multiplication = a.DW_multiplication - 0.01
+        P4Diff.dwp = multiply(a.dwp_backup,a.DW_multiplication)
+        pub.sendMessage(pubsub_Re_Read_field_paramters_panel, event=event)
+
+    def scale_manual(self, event, val=None):
+        a = P4Diff()
+        if val != None:
+            P4Diff.DW_multiplication = val
         P4Diff.dwp = multiply(a.dwp_backup,a.DW_multiplication)
         pub.sendMessage(pubsub_Re_Read_field_paramters_panel, event=event)
 

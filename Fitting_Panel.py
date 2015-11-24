@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# A_BOULLE & M_SOUILAH
+# Author: A_BOULLE & M_SOUILAH
+# Radmax project
+
+'''
+*Radmax Fiting panel module*
+'''
 
 from  threading import Thread, Event
 from scipy.optimize import leastsq
@@ -11,7 +16,7 @@ from def_XRD import f_Refl
 from sim_anneal import SimAnneal
 from sys import platform as _platform
 from time import sleep
-from Icon4Radmax import error_icon, ok_icon, warning_icon
+from Icon4Radmax import error_icon, ok_icon
 
 New_project_initial_data = {0:10, 1:1000, 2:10, 3:0.99, 4:2.6, 5:1.001}
 
@@ -45,29 +50,35 @@ class FittingPanel(wx.Panel):
         self.statusbar = statusbar
         self.parent = parent
 
-        vStatictextsize = 16
         size_text = (55,22)
         
         font = wx.Font(10, wx.DEFAULT, wx.ITALIC, wx.BOLD)
-        font_update = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.BOLD)
-        font_end_fit = wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.BOLD, False, u'Arial')
         if _platform == "linux" or _platform == "linux2":
             font_Statictext = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
             font_TextCtrl = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
             font_combobox = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
+            font_update = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.BOLD)
+            vStatictextsize = 16
         elif _platform == "win32":
-            info = wx.NativeFontInfo()
-            info.SetFaceName("arial")
-            info.SetPointSize(9)
-            font_Statictext = wx.FontFromNativeInfoString(info.ToString())
-            font_TextCtrl = wx.FontFromNativeInfoString(info.ToString())
-            font_combobox = wx.FontFromNativeInfoString(info.ToString())
-        
+            font_Statictext = wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
+            font_TextCtrl = wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
+            font_combobox = wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
+            font_update = wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD)
+            vStatictextsize = 16
+        elif _platform == 'darwin':
+            font_Statictext = wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
+            font_TextCtrl = wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
+            font_combobox = wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
+            font_update = wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.BOLD)
+            vStatictextsize = 18
+
+        font_end_fit = wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.BOLD, False, u'Arial')        
         size_StaticBox = (700, 140)
 
         """master sizer for the whole panel"""
         mainsizer = wx.GridBagSizer(hgap=0, vgap=1)
         topsizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.errorsizer = wx.BoxSizer(wx.HORIZONTAL)
         self.centersizer = wx.BoxSizer(wx.VERTICAL)
 
 
@@ -92,17 +103,17 @@ class FittingPanel(wx.Panel):
         
         temperature_txt = wx.StaticText(self, -1, label=u'Temperature (k)', size=(110,vStatictextsize))
         temperature_txt.SetFont(font_Statictext)
-        self.temperature = wx.TextCtrl(self, size=size_text)
+        self.temperature = wx.TextCtrl(self, size=size_text, validator = TextValidator(DIGIT_ONLY))
         self.temperature.SetFont(font_TextCtrl)
 
         cycle_number_txt = wx.StaticText(self, -1, label=u'Number of cycle', size=(110,vStatictextsize))
         cycle_number_txt.SetFont(font_Statictext)
-        self.cycle_number = wx.TextCtrl(self, size=size_text)
+        self.cycle_number = wx.TextCtrl(self, size=size_text, validator = TextValidator(DIGIT_ONLY))
         self.cycle_number.SetFont(font_TextCtrl)
 
         cooling_number_txt = wx.StaticText(self, -1, label=u'Number of cooling steps', size=(140,vStatictextsize))
         cooling_number_txt.SetFont(font_Statictext)
-        self.cooling_number = wx.TextCtrl(self, size=size_text)
+        self.cooling_number = wx.TextCtrl(self, size=size_text, validator = TextValidator(DIGIT_ONLY))
         self.cooling_number.SetFont(font_TextCtrl)
         
         in_GSA_options_box_sizer.Add(temperature_txt, pos=(0,0), flag=flagSizer)
@@ -120,17 +131,17 @@ class FittingPanel(wx.Panel):
         
         qa_txt = wx.StaticText(self, -1, label=u'qa', size=(20,vStatictextsize))
         cooling_number_txt.SetFont(font_Statictext)
-        self.qa = wx.TextCtrl(self, size=size_text)
+        self.qa = wx.TextCtrl(self, size=size_text, validator = TextValidator(DIGIT_ONLY))
         self.qa.SetFont(font_TextCtrl)
 
         qv_txt = wx.StaticText(self, -1, label=u'qv', size=(20,vStatictextsize))
         qv_txt.SetFont(font_Statictext)
-        self.qv = wx.TextCtrl(self, size=size_text)
+        self.qv = wx.TextCtrl(self, size=size_text, validator = TextValidator(DIGIT_ONLY))
         self.qv.SetFont(font_TextCtrl)
 
         qt_txt = wx.StaticText(self, -1, label=u'qt', size=(20,vStatictextsize))
         qt_txt.SetFont(font_Statictext)
-        self.qt = wx.TextCtrl(self, size=size_text)
+        self.qt = wx.TextCtrl(self, size=size_text, validator = TextValidator(DIGIT_ONLY))
         self.qt.SetFont(font_TextCtrl)
         
         in_AGSA_options_box_sizer.Add(qa_txt, pos=(0,0), flag=flagSizer)
@@ -218,6 +229,14 @@ class FittingPanel(wx.Panel):
         self.information_text = wx.StaticText(self, -1, label=u'', size=(150,20))
         self.information_text.SetFont(font_end_fit)
         self.information_icon.Hide()
+
+        self.residual_error_txt = wx.StaticText(self, -1, label=u'Residual error: ', size=(130,vStatictextsize))
+        self.residual_error_txt.SetFont(font_end_fit)
+        self.residual_error = wx.StaticText(self, -1, label=u'', size=(100,vStatictextsize))
+        self.residual_error.SetFont(font_end_fit)
+        self.residual_error_txt.Hide()
+        self.errorsizer.Add(self.residual_error_txt, 0, wx.ALL, 5)
+        self.errorsizer.Add(self.residual_error, 0, wx.ALL, 5)
         
         self.GSA_options_box_sizer.Add(in_GSA_options_box_sizer, 0, wx.ALL, 5)
         self.AGSA_options_box_sizer.Add(in_AGSA_options_box_sizer, 0, wx.ALL, 5)
@@ -230,10 +249,13 @@ class FittingPanel(wx.Panel):
         self.centersizer.Add(self.GSA_results_sizer, 0, wx.ALL, 5)
         
         mainsizer.Add(topsizer, pos=(0,0))
-        mainsizer.Add(self.centersizer, pos=(1,0), span=(2,1))
+        mainsizer.Add(self.centersizer, pos=(1,0), span=(3,1))
         mainsizer.Add(self.Restore_box_sizer, pos=(1,1), span=(1,2))
         mainsizer.Add(self.information_icon, pos=(2,1), flag=wx.ALL, border=10)
         mainsizer.Add(self.information_text, pos=(2,2), flag=wx.TOP, border=15)
+        mainsizer.Add(self.errorsizer, pos=(3,1), span=(1,2), flag=wx.TOP, border=15)        
+#        mainsizer.Add(self.residual_error_txt, pos=(3,1), span=(1,2), flag=wx.TOP, border=10)
+#        mainsizer.Add(self.residual_error, pos=(3,3), flag=wx.TOP, border=10)
         
         
         self.data_fields = {}
@@ -348,6 +370,9 @@ class FittingPanel(wx.Panel):
         
     def onStopFit(self, event):
         self.worker_live.stop()
+        busy = wx.BusyInfo("One moment please, waiting for threads to die...")
+        sleep(2)
+        wx.Yield()
 
     def onRestore(self, event):
         a = P4Diff()
@@ -372,6 +397,8 @@ class FittingPanel(wx.Panel):
             self.cb_FitAlgo.Disable()
             self.information_icon.Hide()
             self.information_text.SetLabel(u"")
+            self.residual_error_txt.Hide()
+            self.residual_error.SetLabel(u"")
         elif option == 1:
             a = P4Diff()
             self.parent.notebook.EnableTab(0, True)
@@ -382,10 +409,16 @@ class FittingPanel(wx.Panel):
             self.cb_FitAlgo.Enable()
             P4Diff.fitlive = 0
             P4Diff.I_i = a.I_fit
+            y_cal = f_Refl(self.par4diff)
+            y_cal = y_cal/y_cal.max() + self.par4diff['background']
+            P4Diff.residual_error = ((log10(a.Iobs) - log10(y_cal))**2).sum() / len(y_cal)
+            error = round(a.residual_error, 4)
             if case == 0:
                 self.png = wx.BitmapFromIcon(ok_icon.GetIcon())
                 self.information_icon.SetBitmap(self.png)
                 self.information_icon.Show()
+                self.residual_error_txt.Show()
+                self.residual_error.SetLabel(str(error))
                 label = u"Fit ended normally"
                 logger.log(logging.INFO, label)
                 self.statusbar.SetStatusText(label, 0)
@@ -396,6 +429,8 @@ class FittingPanel(wx.Panel):
                 self.png = wx.BitmapFromIcon(error_icon.GetIcon())
                 self.information_icon.SetBitmap(self.png)
                 self.information_icon.Show()
+                self.residual_error_txt.Show()
+                self.residual_error.SetLabel(str(error))
                 label = u"Fit aborted by user"
                 logger.log(logging.WARNING, label)
                 self.statusbar.SetStatusText(label, 0)    
@@ -644,6 +679,7 @@ class Fit_launcher(Thread):
             P4Diff.par_fit, P4Diff.success = leastsq(self.residual, a.par, args = (a.Iobs, a.th))
         elif self.choice == 0:
             P4Diff.par_fit = b.gsa(self.residual_square, self.LimitExceeded, self.data)
+
         if self.need_abort == 1:
             evt = LiveEvent(Live_COUNT, -1, [], None, None, 1)
             wx.PostEvent(self.parent, evt)

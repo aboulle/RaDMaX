@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# A_BOULLE & M_SOUILAH
+# Author: A_BOULLE & M_SOUILAH
+# Radmax project
 
 from numpy import array, append, ones
 from scipy.optimize import leastsq

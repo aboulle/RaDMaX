@@ -1,14 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# A_BOULLE & M_SOUILAH
+# Author: A_BOULLE & M_SOUILAH
+# Radmax project
+
+'''
+*Radmax parameters module*
+'''
 
 try:
     import wx, wx.html
 except ImportError:
     raise ImportError, "The wxPython module is required to run this program"
 
+from inspect import getsourcefile
+from os.path import abspath
 import os
-import sys
 from sys import exit
 from sys import platform as _platform
 import string
@@ -41,6 +47,11 @@ LEVELS = [
     logging.ERROR,
     logging.CRITICAL
 ]
+
+"""
+Definition of the variable name used in the program
+They are call for all the different module
+"""
 NamePath_panel_keys = ['Compound_name', 'DW_file', 'Strain_file', 'XRD_file']
 Parameters_panel_keys = ['wavelength', 'resolution', 'shape', 'background', 'h', 'k', 'l',\
 'crystal_symmetry', 'a', 'b', 'c', 'alpha', 'beta', 'gamma', 'strain_basis_func', 'min_strain',\
@@ -51,28 +62,35 @@ Folder_paths_key = ['project_file', 'DW_file', 'Strain_file', 'XRD_file', 'Save_
 init_parameters = [1] * len(Initial_data_key)
 value4rounddamaged = int(200)
 header_project = 4
+ALPHA_ONLY = 1
+DIGIT_ONLY = 2
 
 Application_name = "RaDMaX"
 filename = "Radmax"
-Application_version = 1.4
-last_modification = "16/09/2015"
+Application_version = 1.7
+last_modification = "24/11/2015"
 log_filename = "activity"
 ConfigDataFile = 'ConfigDataFile'
 ConfigFile = 'ConfigFile'
 
-description = """RaDMaX: Radiation Damage in Materials analyzed with X-ray diffraction"""
+description = "RaDMaX: Radiation Damage in Materials analyzed with X-ray diffraction"
 licence = "RaDMaX is distributed freely under the CeCILL license (see LICENSE.txt and COPYRIGHT.txt)."
 
 output_name = {'out_strain':'output_strain_coeff.txt', 'out_dw':'output_DW_coeff.txt', 'out_strain_profile':'output_strain.txt',\
             'out_dw_profile':'output_DW.txt', 'in_strain':'input_strain_coeff.txt', 'in_dw':'input_DW_coeff.txt', 'out_XRD':'out_XRD_fit.txt',}
 
-current_dir = os.path.dirname(os.path.realpath(filename))
+current_dir = os.path.dirname(abspath(getsourcefile(lambda:0)))
 structures_name = os.path.join(current_dir, 'structures')
 struc_factors = os.path.join(current_dir, 'f0f1f2')
 log_file_path = os.path.join(current_dir, log_filename + ".log")
 
 #------------------------------------------------------------------------------
 class LogWindow(wx.Frame):
+    """
+    Creation of the log window
+    we use the 'log_window_status' variable to ensure that only one instance of the
+    window in launch at one time
+    """
     def __init__(self):
         wx.Frame.__init__(self, None, wx.ID_ANY, Application_name + " log window")
         wx.Frame.CenterOnScreen(self)
@@ -107,6 +125,9 @@ class LogWindow(wx.Frame):
 
 #------------------------------------------------------------------------------
 class LogSaver(wx.Panel):
+    """
+    class used all along the modules to record the information available
+    """
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, id=wx.ID_ANY)
         self.Fit()
@@ -130,7 +151,9 @@ class LogSaver(wx.Panel):
 
 #------------------------------------------------------------------------------
 class WxTextCtrlHandler(logging.Handler):
-    """ Redirect the logger to a wxPython textCtrl """
+    """
+    Redirect the logger to a wxPython textCtrl
+    """
     def __init__(self, ctrl):
         logging.Handler.__init__(self)
         self.ctrl = ctrl
@@ -139,9 +162,95 @@ class WxTextCtrlHandler(logging.Handler):
         s = self.format(record) + '\n'
         wx.CallAfter(self.ctrl.WriteText, s)
 
+
+#------------------------------------------------------------------------------
+class TextValidator(wx.PyValidator):
+    """
+    Used to test in the character enter in the textctrl are the one desired
+    (letters, digits or punctuations)
+    """
+    def __init__(self, flag=None, pyVar=None):
+        wx.PyValidator.__init__(self)
+        self.flag = flag
+        self.Bind(wx.EVT_CHAR, self.OnChar)
+
+    def Clone(self):
+        return TextValidator(self.flag)
+
+    def Validate_Point_Coma(self, win):
+        tc = self.GetWindow()
+        val = tc.GetValue()
+        temp = []
+        
+        for x in val:
+            if x == '.' or x == ',':
+                temp.append(True)
+            else:
+                temp.append(False)
+        if True in temp:
+            return True
+        else:
+            return False
+
+    def Validate_Sign(self, win):
+        tc = self.GetWindow()
+        val = tc.GetValue()
+        temp = []
+        
+        for x in val:
+            if x == '-':
+                temp.append(True)
+            else:
+                temp.append(False)
+        if True in temp:
+            return True
+        else:
+            return False
+
+    def OnChar(self, event):
+        key = event.GetKeyCode()
+
+        if key < wx.WXK_SPACE or key == wx.WXK_DELETE or key > 255:
+            event.Skip()
+            return
+
+        if self.flag == ALPHA_ONLY and chr(key) in string.letters:
+            event.Skip()
+            return
+
+        if self.flag == DIGIT_ONLY and chr(key) in string.digits:
+            event.Skip()
+            return
+
+        if self.flag == DIGIT_ONLY and chr(key) in "eE":
+            event.Skip()
+            return
+
+        if self.flag == DIGIT_ONLY and chr(key) in ".,":
+            test = self.Validate_Point_Coma(self)
+            if test == False:
+                event.Skip()
+            return
+
+        if self.flag == DIGIT_ONLY and chr(key) in "-":
+            test = self.Validate_Sign(self)
+            if test == False:
+                event.Skip()
+            return
+
+        if not wx.Validator_IsSilent():
+            wx.Bell()
+        return
+
+
 #------------------------------------------------------------------------------
 class P4Diff():
-    """Parameters4Diff"""
+    """
+    Parameters4Diff:
+    All the variable passed and shared along the different module
+    This is quite a long list but all this parameters are used and it prevent
+    the use of local variable in some module
+    """
     log_window_status = ""
     logfile_Radmax_path = ""
     logfile_currentP_path = ""
@@ -154,6 +263,7 @@ class P4Diff():
     frequency_refresh_leastsq = 50
     frequency_refresh_gsa = 30
     gaugeUpdate = 0
+    residual_error = 0
     
     zoomOn = 0
 

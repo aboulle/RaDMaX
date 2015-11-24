@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# A_BOULLE & M_SOUILAH
+# Author: A_BOULLE & M_SOUILAH
+# Radmax project
 
 from def_strain import f_strain
 from def_DW import f_DW

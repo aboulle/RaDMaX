@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# A_BOULLE & M_SOUILAH
+# Author: A_BOULLE & M_SOUILAH
+# Radmax project
+
+'''
+*Radmax Initial Parameters module*
+'''
 
 from Parameters4Radmax import *
 from ConfigParser import SafeConfigParser
@@ -28,6 +33,11 @@ result_values = []
         
 #------------------------------------------------------------------------------
 class ReadFile(wx.Panel):
+    """
+    Reading '.ini' project
+    Test if the config file has the waiting structure
+    if not, the project can't be launch, and a warning is write in the log file
+    """
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, id=wx.ID_ANY)
         self.section_name = []
@@ -42,7 +52,7 @@ class ReadFile(wx.Panel):
             self.section_name = Config_DataFile_all_section
             self.structure_section = Config_DataFile_section
         if not os.path.exists(filename):
-            logger.log(logging.WARNING, "! Attention, the config file does not exist: " + str(filename))
+            logger.log(logging.WARNING, "! Pay attention, the config file does not exist: " + str(filename))
             if choice == 'ConfigFile':
                 logger.log(logging.WARNING, "Making of the config file with initial parameters" + str(filename))
                 a = SaveFile4Diff(self)
@@ -141,6 +151,9 @@ class ReadFile(wx.Panel):
     """End of read config file"""
     
 #------------------------------------------------------------------------------
+    """
+    Read method for XRD, Strain and DW files
+    """
     def read_dw_file(self, filename_):
         """Opening file containing the experimental data"""
         logger.log(logging.INFO, "Reading experimental data file: " + filename_)
@@ -201,6 +214,11 @@ class ReadFile(wx.Panel):
 
 #------------------------------------------------------------------------------
 class SaveFile4Diff(wx.Panel):
+    """
+    Save the project in a '.ini' file
+    several method are available, create a new file, update an existing file
+    or making the 'RaDMax.ini' config file
+    """
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, id=wx.ID_ANY)
         self.Fit()

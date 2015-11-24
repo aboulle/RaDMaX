@@ -27,6 +27,17 @@ Radmax requires python 2.7, SciPy, Matplotlib and wxPython. For the moment, the 
  
 For other distributions please visit the [python 2.7] (http://www.python.org), [SciPy](http://www.scipy.org), [Matplotlib](http://www.matplotlib.org) and [wxPython] (http://www.wxpython.org) websites.
 
+## Mac OSX
+1. Macs don’t come with a package manager. Fortunately, you can use for instance a private package manager [Macports](http://www.macports.org/) to install the SciPy package which already contains Matplotlib.
+Run (as root): `port install py27-numpy py27-scipy py27-matplotlib py27-ipython +notebook py27-pandas py27-sympy py27-nose`.
+2. Download and install [wxPython](http://www.wxpython.org/download.php#osx), choose the install that fit your system, if OSX < 10.5, [wxPython](http://sourceforge.net/projects/wxpython/files/wxPython/3.0.2.0/wxPython3.0-osx-3.0.2.0-carbon-py2.7.dmg/download?use_mirror=kent)
+or OSX > 10.5 [wxPython](http://sourceforge.net/projects/wxpython/files/wxPython/3.0.2.0/wxPython3.0-osx-3.0.2.0-cocoa-py2.7.dmg/download?use_mirror=vorboss) 
+3. In a terminal, run the Radmax.py file with `python Radmax.py`.
+
+## Development environment
+The RaDMax program has been developed on MS Windows using python 2.7.10, Matplotlib 1.4.3 and 1.5.0 and WxPython 3.0.2.0.
+It has been tested on Linux Debian and on virtual machine Kubuntu 15.04 using python 2.7.9, Matplotlib 1.4.2 and WxPython 3.0.1.1.
+It also has been tested on MacMini OSX Yosemite 10.10.5 with python 2.7.10, Matplotlib 1.5.0 and WxPython 3.0.2.0.
 
 
 # Quick test of the program
