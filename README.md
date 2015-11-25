@@ -36,8 +36,7 @@ or OSX > 10.5 [wxPython](http://sourceforge.net/projects/wxpython/files/wxPython
 
 ## Development environment
 The RaDMax program has been developed on MS Windows using python 2.7.10, Matplotlib 1.4.3 and 1.5.0 and WxPython 3.0.2.0.
-It has been tested on Linux Debian and on virtual machine Kubuntu 15.04 using python 2.7.9, Matplotlib 1.4.2 and WxPython 3.0.1.1.
-It also has been tested on MacMini OSX Yosemite 10.10.5 with python 2.7.10, Matplotlib 1.5.0 and WxPython 3.0.2.0.
+It has been tested on several GNU/Linux distributions including Debian 8 and Kubuntu 15.04, using python 2.7.9, Matplotlib 1.4.2 and WxPython 3.0.1.1. It also has been tested on a MacMini running OSX Yosemite 10.10.5 with python 2.7.10, Matplotlib 1.5.0 and WxPython 3.0.2.0.
 
 
 # Quick test of the program
