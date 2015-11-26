@@ -456,6 +456,7 @@ class InitialDataPanel(wx.Panel):
                 for ii in self.data_fields:
                     self.data_fields[ii].Clear()
                 paths = a.path2inicomplete
+                self.Reset_Deformation_Multiplication()
                 self.onReadDataLoaded(event, paths)
                 logger.log(logging.INFO, "File has been reloaded by shortcut")
 

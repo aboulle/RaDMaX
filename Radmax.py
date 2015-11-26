@@ -7,10 +7,24 @@
 *Radmax Main Module*
 '''
 
+from Parameters4Radmax import *
+
 try:
-    import wx, wx.html
+    import wx, wx.html, matplotlib, scipy, sys, numpy
+    print('******************************')
+    print('           RaDMax'             )
+    print('         Version:%s' %Application_version)
+    print(' Last modification:%s' %last_modification)
+    print('******************************\n')
+    print ("Cheking of the modules needed to work with RaDMax:")
+    print ("Version founded on this computer:")      
+    print ("Python: %s" %sys.version)
+    print ("Matplotlib: %s" %matplotlib.__version__)
+    print ("Wxpython: %s" %wx.__version__)
+    print ("Scipy: %s" %scipy.__version__)
+    print ("Numpy: %s" %numpy.__version__)
 except ImportError:
-    raise ImportError, "The wxPython module is required to run this program"
+    raise ImportError, "WxPython, Matplotlib and scipy modules are required to run this program"
     exit()
 
 from Icon4Radmax import NewP24, LoadP24, saveP24, saveasP24, shutdown24, logP32
@@ -19,7 +33,6 @@ from Icon4Radmax import prog_icon, About_icon_24
 from Graph4Radmax import GraphPanel
 from Parameters_Panel import InitialDataPanel
 from Fitting_Panel import FittingPanel
-from Parameters4Radmax import *
 
 """Pubsub message"""
 pubsub_Load = "LoadP"
@@ -137,24 +150,10 @@ class MainFrame(wx.Frame):
         pub.subscribe(self.OnChangeTitle, pubsub_ChangeFrameTitle)
         pub.subscribe(self.OnActivateImport, pubsub_Activate_Import)
         
-        self.TestModuleVersion()
         MainPanel(self, self.sb)
         
         self.Show()
         pub.sendMessage(pubsub_Launch_GUI)
-
-    def TestModuleVersion(self):
-        print('******************************')
-        print('           RaDMax'             )
-        print('         Version:%s' %Application_version)
-        print(' Last modification:%s' %last_modification)
-        print('******************************\n')
-        print ("Cheking of the main module needed to work with RaDMax:")
-        print ("Version founded on this computer:")
-        import matplotlib, sys       
-        print ("Python: %s" %sys.version)
-        print ("Matplotlib: %s" %matplotlib.__version__)
-        print ("Wxpython: %s" %wx.__version__)
         
     def some_method(self, event):
         self.statusbar.SetStatusText('', 0)
