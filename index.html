@@ -21,18 +21,18 @@
     <section class="main-content">
       <p>RaDMaX is a program that allows to retrieve strain and damage profiles in ion-irradiated materials from the simulation of X-ray diffraction data recorded in symmetric thêta-2thêta geometry. It is distributed freely under the CeCILL license (see LICENSE.txt and COPYRIGHT.txt).</p>
 
-<p>If you use this program in academic work, please cite:
-M. Souilah, A. Boulle, A. Debelle, "RaDMaX: a graphical program for the determination of strain and damage profiles in irradiated crystals", J. Appl.Cryst. 49, 2016. <a href="http://dx.doi.org/10.1107/S1600576715021019">Link to article.</a></p>
+<p><strong>If you use this program in academic work, please cite:</strong>
+M. Souilah, A. Boulle, A. Debelle, "RaDMaX: a graphical program for the determination of strain and damage profiles in irradiated crystals", <em>J. Appl.Cryst.</em> <strong>49</strong>, 311-316 (2016). <a href="http://dx.doi.org/10.1107/S1600576715021019">Link to article.</a></p>
 
 <h1>
-<a id="installation-instructions" class="anchor" href="#installation-instructions" aria-hidden="true"><span class="octicon octicon-link"></span></a>Installation instructions</h1>
+<a id="installation-instructions" class="anchor" href="#installation-instructions" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Installation instructions</h1>
 
 <p>Download zip file and extract it to your disk.</p>
 
 <p>RaDMaX requires python 2.7, SciPy, Matplotlib and wxPython. For the moment, the wxpython library is not compatible with Python 3 and above. <strong>RaDMaX won't work with Python 3.</strong> Instructions for Windows and GNU/Linux are given below.</p>
 
 <h2>
-<a id="ms-windows" class="anchor" href="#ms-windows" aria-hidden="true"><span class="octicon octicon-link"></span></a>MS Windows</h2>
+<a id="ms-windows" class="anchor" href="#ms-windows" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>MS Windows</h2>
 
 <ol>
 <li>
@@ -56,7 +56,7 @@ M. Souilah, A. Boulle, A. Debelle, "RaDMaX: a graphical program for the determin
 </ol>
 
 <h2>
-<a id="gnu--linux" class="anchor" href="#gnu--linux" aria-hidden="true"><span class="octicon octicon-link"></span></a>GNU / Linux</h2>
+<a id="gnu--linux" class="anchor" href="#gnu--linux" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>GNU / Linux</h2>
 
 <ol>
 <li>On most Linux systems the dependencies are available in the software repositories. For debian based systems run (as root): <code>apt-get install python python-scipy python-matplolib python-wxgtk3.0</code>. </li>
@@ -66,7 +66,7 @@ M. Souilah, A. Boulle, A. Debelle, "RaDMaX: a graphical program for the determin
 <p>For other distributions please visit the <a href="http://www.python.org">python 2.7</a>, <a href="http://www.scipy.org">SciPy</a>, <a href="http://www.matplotlib.org">Matplotlib</a> and <a href="http://www.wxpython.org">wxPython</a> websites.</p>
 
 <h2>
-<a id="mac-osx" class="anchor" href="#mac-osx" aria-hidden="true"><span class="octicon octicon-link"></span></a>Mac OSX</h2>
+<a id="mac-osx" class="anchor" href="#mac-osx" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Mac OSX</h2>
 
 <ol>
 <li>Macs don’t come with a package manager. Fortunately, you can use for instance a private package manager <a href="http://www.macports.org/">Macports</a> to install the SciPy package which already contains Matplotlib.
@@ -77,13 +77,13 @@ or OSX &gt; 10.5 <a href="http://sourceforge.net/projects/wxpython/files/wxPytho
 </ol>
 
 <h2>
-<a id="development-environment" class="anchor" href="#development-environment" aria-hidden="true"><span class="octicon octicon-link"></span></a>Development environment</h2>
+<a id="development-environment" class="anchor" href="#development-environment" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Development environment</h2>
 
 <p>The RaDMaX program has been developed on MS Windows using python 2.7.10, Matplotlib 1.4.3 and 1.5.0 and WxPython 3.0.2.0.
 It has been tested on several GNU/Linux distributions including Debian 8 and Kubuntu 15.04, using python 2.7.9, Matplotlib 1.4.2 and WxPython 3.0.1.1. It also has been tested on a MacMini running OSX Yosemite 10.10.5 with python 2.7.10, Matplotlib 1.5.0 and WxPython 3.0.2.0.</p>
 
 <h1>
-<a id="quick-test-of-the-program" class="anchor" href="#quick-test-of-the-program" aria-hidden="true"><span class="octicon octicon-link"></span></a>Quick test of the program</h1>
+<a id="quick-test-of-the-program" class="anchor" href="#quick-test-of-the-program" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Quick test of the program</h1>
 
 <ol>
 <li>
@@ -109,21 +109,21 @@ It has been tested on several GNU/Linux distributions including Debian 8 and Kub
 </ul>
 
 <h1>
-<a id="data-format" class="anchor" href="#data-format" aria-hidden="true"><span class="octicon octicon-link"></span></a>Data format</h1>
+<a id="data-format" class="anchor" href="#data-format" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Data format</h1>
 
 <p>XRD data can be loaded from the "File" menu. The data should be provided as a two-columns (2thêta, intensity) ASCII file in space- (or tab-) separated format. The 2thêta values have to be equally spaced (constant step). For the moment RaDMaX can only handle data recorded in symmetric coplanar geometry (conventional thêta-2thêta scan), as this is the most commonly used geometry in the analysis of irradiated materials.</p>
 
 <p>Guess strain/damage profile can be imported from the "File" menu. The data should be providedas a two-columns ASCII file with the depth below the surface (in Angstroms) as first column.</p>
 
 <h1>
-<a id="screenshots" class="anchor" href="#screenshots" aria-hidden="true"><span class="octicon octicon-link"></span></a>Screenshots</h1>
+<a id="screenshots" class="anchor" href="#screenshots" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Screenshots</h1>
 
 <p>RaDMaX running in Windows 10</p>
 
 <p><img src="https://raw.github.com/aboulle/RaDMaX/master/Screen1.png" alt="Screenshot"></p>
 
 <h1>
-<a id="screencast" class="anchor" href="#screencast" aria-hidden="true"><span class="octicon octicon-link"></span></a>Screencast</h1>
+<a id="screencast" class="anchor" href="#screencast" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Screencast</h1>
 
       <footer class="site-footer">
         <span class="site-footer-owner"><a href="https://github.com/aboulle/RaDMaX">RaDMaX</a> is maintained by <a href="https://github.com/aboulle">aboulle</a>.</span>
