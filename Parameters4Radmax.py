@@ -15,6 +15,7 @@ except ImportError:
 from inspect import getsourcefile
 from os.path import abspath
 import os
+import sys
 from sys import exit
 from sys import platform as _platform
 import string
@@ -54,10 +55,13 @@ They are call for all the different module
 """
 NamePath_panel_keys = ['Compound_name', 'DW_file', 'Strain_file', 'XRD_file']
 Parameters_panel_keys = ['wavelength', 'resolution', 'shape', 'background', 'h', 'k', 'l',\
-'crystal_symmetry', 'a', 'b', 'c', 'alpha', 'beta', 'gamma', 'strain_basis_func', 'min_strain',\
+'crystal_symmetry', 'a', 'b', 'c', 'alpha', 'beta', 'gamma', 'model', 'strain_basis_func', 'min_strain',\
 'max_strain', 'dw_basis_func', 'min_dw', 'max_dw', 'damaged_depth', 'number_slices']
 Fitting_panel_keys = ['tmax', 'nb_cycle_max', 'nb_palier', 'qa', 'qv', 'qt']
 Initial_data_key = Parameters_panel_keys + Fitting_panel_keys 
+asym_pv_list = ['heigt_strain', 'loc_strain', 'fwhm_1_strain', 'fwhm_2_strain', 'eta_1_strain',\
+'eta_2_strain', 'bkg_strain', 'heigt_dw', 'loc_dw', 'fwhm_1_dw', 'fwhm_2_dw', 'eta_1_dw', \
+'eta_2_dw', 'bkg_dw']
 Folder_paths_key = ['project_file', 'DW_file', 'Strain_file', 'XRD_file', 'Save_as_file']
 init_parameters = [1] * len(Initial_data_key)
 value4rounddamaged = int(200)
@@ -67,19 +71,37 @@ DIGIT_ONLY = 2
 
 Application_name = "RaDMaX"
 filename = "Radmax"
-Application_version = 1.7
-last_modification = "24/11/2015"
+Application_version = "1.8.7"
+last_modification = "12/02/2016"
 log_filename = "activity"
 ConfigDataFile = 'ConfigDataFile'
 ConfigFile = 'ConfigFile'
 
 description = "RaDMaX: Radiation Damage in Materials analyzed with X-ray diffraction"
 licence = "RaDMaX is distributed freely under the CeCILL license (see LICENSE.txt and COPYRIGHT.txt)."
+copyright_ = "(C) 2016 SPCTS"
+website_ = "http://www.unilim.fr/spcts/"
 
 output_name = {'out_strain':'output_strain_coeff.txt', 'out_dw':'output_DW_coeff.txt', 'out_strain_profile':'output_strain.txt',\
             'out_dw_profile':'output_DW.txt', 'in_strain':'input_strain_coeff.txt', 'in_dw':'input_DW_coeff.txt', 'out_XRD':'out_XRD_fit.txt',}
 
-current_dir = os.path.dirname(abspath(getsourcefile(lambda:0)))
+# determine if application is a script file or frozen exe
+if getattr(sys, 'frozen', False):
+    if _platform == 'darwin':
+        application_path = os.path.dirname(sys.argv[0])
+        path = os.path.split(application_path)
+        path_temp = os.path.split(path[0])
+        current_dir = os.path.dirname(abspath(path_temp[0]))
+    elif _platform == 'win32':
+        application_path = os.path.dirname(sys.executable)
+        config_path = os.path.join(application_path, filename)
+        current_dir = os.path.dirname(abspath(config_path))
+else:
+    # we are running in a normal Python environment
+    application_path = os.path.dirname(os.path.abspath(__file__))  
+    config_path = os.path.join(application_path, filename)
+    current_dir = os.path.dirname(abspath(config_path))
+
 structures_name = os.path.join(current_dir, 'structures')
 struc_factors = os.path.join(current_dir, 'f0f1f2')
 log_file_path = os.path.join(current_dir, log_filename + ".log")
@@ -264,8 +286,12 @@ class P4Diff():
     frequency_refresh_gsa = 30
     gaugeUpdate = 0
     residual_error = 0
+    resol = 0
     
     zoomOn = 0
+    
+    from_Calc_Strain = 0
+    from_Calc_DW = 0
 
     DragDrop_Strain_x = []
     DragDrop_Strain_y = []
@@ -276,6 +302,10 @@ class P4Diff():
     dwp = []   
     sp_backup = []
     dwp_backup = []   
+    sp_pv_backup = []
+    dwp_pv_backup = []   
+    sp_bspline_backup = []
+    dwp_bspline_backup = []   
     x_sp = []
     x_dwp = []
     Iobs = []
@@ -322,9 +352,12 @@ class P4Diff():
     slice_backup = ""
     par_fit = []
     success = []
+    resultFit = ""
     path2ini = ""
     path2drx = ""
     path2inicomplete = ""
     namefromini = ""
     checkDataField = 0
+    modelPv = ""
+    name4lmfit = ""
     

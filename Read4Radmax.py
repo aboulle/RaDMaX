@@ -17,10 +17,12 @@ structure_Crystal = ['crystal_name']
 structure_Data_filename = ['input_dw', 'input_strain', 'xrd_data']
 structure_Experiment = ['wavelength', 'resolution', 'shape', 'background']
 structure_Material = ['h', 'k', 'l', 'crystal_symmetry', 'a', 'b', 'c', 'alpha', 'beta', 'gamma']
-structure_Strain_and_DW = ['strain_basis_func', 'min_strain', 'max_strain', 'dw_basis_func', 'min_dw', 'max_dw', 'damaged_depth', 'number_slices']
+structure_Strain_and_DW = ['model', 'strain_basis_func', 'min_strain', 'max_strain', 'dw_basis_func', 'min_dw', 'max_dw', 'damaged_depth', 'number_slices']
+structure_Strain_and_DW_old = ['strain_basis_func', 'min_strain', 'max_strain', 'dw_basis_func', 'min_dw', 'max_dw', 'damaged_depth', 'number_slices']
 structure_GSA_options = ['tmax', 'nb_cycle_max', 'nb_palier']
 structure_Adv_GSA_options = ['qa', 'qv', 'qt']
 Config_DataFile_all_section = structure_Crystal + structure_Data_filename + structure_Experiment + structure_Material + structure_Strain_and_DW + structure_GSA_options + structure_Adv_GSA_options
+Config_DataFile_all_section_old = structure_Crystal + structure_Data_filename + structure_Experiment + structure_Material + structure_Strain_and_DW_old + structure_GSA_options + structure_Adv_GSA_options
 
 Config_File_section = ['RaDMax', 'Folder Paths']
 Config_File_section_1 = ['version', 'last_modification']
@@ -42,6 +44,7 @@ class ReadFile(wx.Panel):
         wx.Panel.__init__(self, parent, id=wx.ID_ANY)
         self.section_name = []
         self.structure_section = []
+        self.old_file_version = 0
         self.Fit()
 
     def Read_init_Parameters(self, filename, choice):
@@ -80,7 +83,7 @@ class ReadFile(wx.Panel):
            for char in indices_section:
               print self.structure_section[char]
         else:
-             self.test_existence_option(filename, self.section_name)
+            self.test_existence_option(filename, self.section_name)
 
     def test_existence_option(self, filename, section_name):
         test_true_false = []
@@ -89,22 +92,27 @@ class ReadFile(wx.Panel):
         lecture_fichier[:] = []
         for nameofsection in self.structure_section:
             for name, value in parser.items(nameofsection):
-    #            print '%s.%s : %s' % (self.section_name, name, parser.has_option(self.section_name, name))
+        #            print '%s.%s : %s' % (self.section_name, name, parser.has_option(self.section_name, name))
                 var = name
                 test_true_false.append(var)
         difference = self.diff(section_name, test_true_false)
         if difference == []:
-           for nameofsection in parser.sections():
-               for name, value in parser.items(nameofsection):
-                   var = parser.get(nameofsection, name)
-                   lecture_fichier.append(var)
-           self.test_existence_value(filename, section_name)
+            for nameofsection in parser.sections():
+                for name, value in parser.items(nameofsection):
+                    var = parser.get(nameofsection, name)
+                    lecture_fichier.append(var)
+            self.test_existence_value(filename, section_name)
         else:
-           print "\n! Check your config file!"
-           print 'The following options are not being present:'
-           for chare in difference:
-               print chare
-
+            if 'model' in difference:
+                self.section_name = Config_DataFile_all_section_old
+                self.test_existence_section(filename)
+                self.old_file_version = 1
+            else:
+                print "\n! Check your config file!"
+                print 'The following options are not being present:'
+                for chare in difference:
+                    print chare
+                
     def test_existence_value(self, filename, section_name):
         parser = SafeConfigParser(allow_no_value = True)
         parser.read(filename)
@@ -119,17 +127,23 @@ class ReadFile(wx.Panel):
                     #print '  %s = %s' % (name, value)
                     #print
         else:
-           print "\n! Check your config file!"
-           print "Value of option section are not being present:"
-           logger.log(logging.WARNING, "Check your config file!")
-           logger.log(logging.WARNING, "Value of option section are not being present:")
-           for chare in nulle:
-               print section_name[chare]
-               logger.log(logging.ERROR, "Missing data from: " + str(section_name[chare]))
+            print "\n! Check your config file!"
+            print "Value of option section are not being present:"
+            logger.log(logging.WARNING, "Check your config file!")
+            logger.log(logging.WARNING, "Value of option section are not being present:")
+            for chare in nulle:
+                print section_name[chare]
+                logger.log(logging.ERROR, "Missing data from: " + str(section_name[chare]))
              
     def read_result_value(self):
-        if result_values != []:
-            return result_values
+        if self.old_file_version == 0:
+            if result_values != []:
+                return result_values
+        else:
+            if result_values != []:
+                result_values.insert( 18, '0')
+                self.old_file_version = 0
+                return result_values            
 
     def all_indices(self, value, qlist):
         """return indice of list containing identical value"""

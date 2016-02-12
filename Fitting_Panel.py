@@ -12,10 +12,12 @@ from scipy.optimize import leastsq
 
 from Read4Radmax import LogSaver
 from Parameters4Radmax import *
-from def_XRD import f_Refl
+from def_XRD import f_Refl, f_Refl_lmfit
 from sim_anneal import SimAnneal
 from sys import platform as _platform
 from time import sleep
+from wx.lib.ticker import Ticker
+
 from Icon4Radmax import error_icon, ok_icon
 
 New_project_initial_data = {0:10, 1:1000, 2:10, 3:0.99, 4:2.6, 5:1.001}
@@ -37,6 +39,7 @@ pubsub_save_project_before_fit = "SaveProjectBeforeFit"
 pubsub_gauge_to_zero = "Gauge2zero"
 pubsub_On_Limit_Before_Graph = "OnLimitBeforeGraph"
 pubsub_Draw_XRD = "DrawXRD"
+pubsub_Read_sp_dwp = "ReadSpDwp"
 
 Live_COUNT = wx.NewEventType()
 LiveLimitExceeded_COUNT = wx.NewEventType()
@@ -58,18 +61,21 @@ class FittingPanel(wx.Panel):
             font_TextCtrl = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
             font_combobox = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
             font_update = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.BOLD)
+            font_Ticker = wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.FONTWEIGHT_BOLD, False, u'Arial')
             vStatictextsize = 16
         elif _platform == "win32":
             font_Statictext = wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
             font_TextCtrl = wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
             font_combobox = wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
             font_update = wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.BOLD)
+            font_Ticker = wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.FONTWEIGHT_BOLD, False, u'Arial')
             vStatictextsize = 16
         elif _platform == 'darwin':
             font_Statictext = wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
             font_TextCtrl = wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
             font_combobox = wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
             font_update = wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.BOLD)
+            font_Ticker = wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.FONTWEIGHT_BOLD, False, u'Arial')
             vStatictextsize = 18
 
         font_end_fit = wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.BOLD, False, u'Arial')        
@@ -194,6 +200,15 @@ class FittingPanel(wx.Panel):
         self.stopfit_Btn.Bind(wx.EVT_BUTTON, self.onStopFit)
         self.stopfit_Btn.Disable()
         
+        self.ticker = Ticker(self, size=(300,22))
+        self.ticker.SetDirection("ltr")
+        self.ticker.SetText('')
+        self.ticker.SetFPS(20)
+        self.ticker.SetPPF(3)
+        self.ticker.SetFont(font_Ticker)
+        self.txt = wx.TextCtrl(self, value='', size=(2,-1))
+        self.txt.Show(False)
+        
         self.restore_strain_btn = wx.Button(self, id=self.Restore_strain_Id, label="Strain values", size=(120, 30))
         self.restore_strain_btn.SetFont(font_update)
         self.restore_dw_btn = wx.Button(self, id=self.Restore_dw_Id, label="DW values", size=(120, 30))
@@ -203,7 +218,9 @@ class FittingPanel(wx.Panel):
         
         in_Fit_box_sizer.Add(self.fit_Btn, pos=(0,0), flag=flagSizer)
         in_Fit_box_sizer.Add(self.stopfit_Btn, pos=(0,1), flag=flagSizer)
-
+        in_Fit_box_sizer.Add(self.ticker, pos=(0,2), flag=wx.EXPAND|wx.ALL)
+        in_Fit_box_sizer.Add(self.txt, pos=(0,3))
+        
         in_GSA_results_sizer.Add(self.gauge, pos=(0,0), flag=flagSizer)
         in_GSA_results_sizer.Add(Emin_txt, pos=(0,1), flag=flagSizer)
         in_GSA_results_sizer.Add(self.Emin_change_txt, pos=(0,2), flag=flagSizer)
@@ -268,12 +285,17 @@ class FittingPanel(wx.Panel):
         self.resultprojectfile = len(Fitting_panel_keys)*[1]
         self.resultprojectfile_backup = []
         self.test_limit = []
+        self.fit_params = ""
+        self.lmfit_install = False
         
         self.worker_live = None        
         self.par4diff = []
         self.Bind(EVT_Live_COUNT, self.OnLive)
         self.Bind(EVT_LiveLimitExceeded_COUNT, self.Update_Limit)
-        
+
+        self.timer = wx.Timer(self)
+        self.val4timer = 10000
+        self.Bind(wx.EVT_TIMER, self.OnTimerUpdate, self.timer)        
        
         pub.subscribe(self.onLoadProject, pubsub_Load_fitting_panel)
         pub.subscribe(self.RefreshAfterFit, pubsub_Refresh_fitting_panel)
@@ -285,6 +307,13 @@ class FittingPanel(wx.Panel):
         
         self.SetSizer(mainsizer)
 
+
+    def OnTimerUpdate(self, event):
+        if self.ticker.GetDirection() == "rtl":
+            self.ticker.SetDirection("ltr")
+        else:
+            self.ticker.SetDirection("rtl")
+        
     def onChangeFit(self, event):
         fitname = event.GetString()
         if fitname == 'GSA':
@@ -329,30 +358,109 @@ class FittingPanel(wx.Panel):
                 logger.log(logging.INFO, "Leastsq Fit has been launched")
             self.RefreshAfterFit(0)
             P4Diff.sp_backup = a.sp
-            P4Diff.dwp_backup = a.dwp 
+            P4Diff.dwp_backup = a.dwp
+            self.timer.Start(self.val4timer)
             self.statusbar.SetStatusText(u"Fitting... Please Wait...This may take some time", 0)
+            self.txt.SetValue('Fit in pogress...')
+            self.ticker.SetText(self.txt.GetValue())
+            wx.CallAfter(self.txt.SetInsertionPoint, -10)
+            self.ticker.Start()
             self.Refresh()  
             pub.sendMessage(pubsub_OnFit_Graph)
             P4Diff.fitlive = 1
             self.gauge.SetValue(0)
-            self.worker_live = Fit_launcher(self, fitname, self.par4diff)
+            if fitname == 1:
+                success = self.OnTestLmfit()
+                if success == True:
+                    self.worker_live = Fit_launcher(self, 2, self.par4diff, self.fit_params)
+                else:
+                    self.worker_live = Fit_launcher(self, 1, self.par4diff)
+            else:
+                self.worker_live = Fit_launcher(self, fitname, self.par4diff)                
         else:
             self.parent.notebook.SetSelection(0)
             pub.sendMessage(pubsub_On_Limit_Before_Graph, limit=self.test_limit)
 
+    def OnTestLmfit(self):
+        try:
+            from lmfit import Parameters
+        except ImportError:
+            raise ImportError, "Please install Lmfit module to have better fit with constraint eta value between 0 and 1."
+            return False
+        else:
+            a = P4Diff()
+            self.lmfit_install = True
+            self.fit_params = Parameters()
+            if self.par4diff['model'] == 2:
+                self.fit_params.add('heigt_strain', value=a.sp[0])
+                self.fit_params.add('loc_strain', value=a.sp[1])
+                self.fit_params.add('fwhm_1_strain', value=a.sp[2])
+                self.fit_params.add('fwhm_2_strain', value=a.sp[3])
+                self.fit_params.add('eta_1_strain', value=a.sp[4], min=0, max=1)
+                self.fit_params.add('eta_2_strain', value=a.sp[5], min=0, max=1)
+                self.fit_params.add('bkg_strain', value=a.sp[6])
+                self.fit_params.add('heigt_dw', value=a.dwp[0])
+                self.fit_params.add('loc_dw', value=a.dwp[1])
+                self.fit_params.add('fwhm_1_dw', value=a.dwp[2])
+                self.fit_params.add('fwhm_2_dw', value=a.dwp[3])
+                self.fit_params.add('eta_1_dw', value=a.dwp[4], min=0, max=1)
+                self.fit_params.add('eta_2_dw', value=a.dwp[5], min=0, max=1)
+                self.fit_params.add('bkg_dw', value=a.dwp[6])
+            else:
+                P4Diff.name4lmfit = []
+                for ii in range(len(a.sp)):
+                    name = 'sp_' + str(ii)
+                    self.fit_params.add(name, value=a.sp[ii])
+                    P4Diff.name4lmfit.append(name)
+                self.fit_params.add('nb_sp_val', value=len(a.sp), vary=False)
+                for jj in range(len(a.dwp)):
+                    name = 'dwp_' + str(jj)
+                    self.fit_params.add(name, value=a.dwp[jj])
+                    P4Diff.name4lmfit.append(name)
+                self.fit_params.add('nb_dwp_val', value=len(a.dwp), vary=False)
+            return True
+
+    def OnReadDataFromLmfit(self):
+        result = P4Diff.resultFit
+        i = 0
+        if self.par4diff['model'] == 2:
+            for param in result.params.values():
+                if i in range(1, 7):
+                    P4Diff.sp[i] = param.value
+                if i in range(7, 14):
+                    P4Diff.dwp[i - 7] = param.value
+                i += 1
+        else:
+            len_sp = int(result.params['nb_sp_val'])
+            len_dwp = int(result.params['nb_dwp_val'])
+            for ii in range(len_dwp):
+                name = 'dwp_' + str(ii)
+                P4Diff.dwp[ii] = result.params[name].value
+            for jj in range(len_sp):
+                name = 'sp_' + str(jj)
+                P4Diff.sp[jj] = result.params[name].value            
+
     def onTestDataBeforeFit(self):
         a = P4Diff()
-        """ do not use the last value of strain because ou of the scope """
-        test_dw = (a.dwp > self.par4diff['min_dw']).all() and (a.dwp[:-1] < self.par4diff['max_dw']).all()
-        test_strain = (a.sp[:-1] > self.par4diff['min_strain']).all() and (a.sp < self.par4diff['max_strain']).all()
+        P4Diff.sp = np.asarray(a.sp)
+        P4Diff.dwp = np.asarray(a.dwp)
+        """ do not use the last value of strain because is out of the scope """
+        test_dw = all(a.dwp > self.par4diff['min_dw']) and all(a.dwp[:-1] < self.par4diff['max_dw'])
+        test_strain = all(a.sp[:-1] > self.par4diff['min_strain']) and all(a.sp < self.par4diff['max_strain'])
+#        test_dw = (a.dwp > self.par4diff['min_dw']).all() and (a.dwp[:-1] < self.par4diff['max_dw']).all()
+#        test_strain = (a.sp[:-1] > self.par4diff['min_strain']).all() and (a.sp < self.par4diff['max_strain']).all()
         if test_dw and test_strain == True:
             return True
         else:
             self.test_limit = []
-            self.test_limit.append((a.sp[:-1] > self.par4diff['min_strain']).all())
-            self.test_limit.append((a.sp < self.par4diff['max_strain']).all())
-            self.test_limit.append((a.dwp > self.par4diff['min_dw']).all())
-            self.test_limit.append((a.dwp[:-1] < self.par4diff['max_dw']).all())
+            self.test_limit.append(all(a.sp[:-1] > self.par4diff['min_strain']))
+            self.test_limit.append(all(a.sp < self.par4diff['max_strain']))
+            self.test_limit.append(all(a.dwp > self.par4diff['min_dw']))
+            self.test_limit.append(all(a.dwp[:-1] < self.par4diff['max_dw']))
+#            self.test_limit.append((a.sp[:-1] > self.par4diff['min_strain']).all())
+#            self.test_limit.append((a.sp < self.par4diff['max_strain']).all())
+#            self.test_limit.append((a.dwp > self.par4diff['min_dw']).all())
+#            self.test_limit.append((a.dwp[:-1] < self.par4diff['max_dw']).all())
             return False            
         
     def OnLive(self, event):
@@ -401,6 +509,9 @@ class FittingPanel(wx.Panel):
             self.residual_error.SetLabel(u"")
         elif option == 1:
             a = P4Diff()
+            self.ticker.Stop()
+            self.txt.SetValue('')
+            self.ticker.SetText(self.txt.GetValue())
             self.parent.notebook.EnableTab(0, True)
             self.fit_Btn.Enable()
             self.stopfit_Btn.Disable()
@@ -423,8 +534,11 @@ class FittingPanel(wx.Panel):
                 logger.log(logging.INFO, label)
                 self.statusbar.SetStatusText(label, 0)
                 self.gauge.SetValue(0)
-                P4Diff.sp = a.par_fit[:int(self.par4diff['strain_basis_func'])]
-                P4Diff.dwp = a.par_fit[-1*int(self.par4diff['dw_basis_func']):]
+                if self.lmfit_install == True:
+                    self.OnReadDataFromLmfit()
+                else:
+                    P4Diff.sp = a.par_fit[:int(self.par4diff['strain_basis_func'])]
+                    P4Diff.dwp = a.par_fit[-1*int(self.par4diff['dw_basis_func']):]
             elif case == 1:
                 self.png = wx.BitmapFromIcon(error_icon.GetIcon())
                 self.information_icon.SetBitmap(self.png)
@@ -434,10 +548,11 @@ class FittingPanel(wx.Panel):
                 label = u"Fit aborted by user"
                 logger.log(logging.WARNING, label)
                 self.statusbar.SetStatusText(label, 0)    
-            if a.par_fit != []:
+            if a.par_fit != [] or self.lmfit_install == True:
 #                pub.sendMessage(pubsub_Update_Fit_Live)
                 pub.sendMessage(pubsub_Draw_XRD)
                 pub.sendMessage(pubsub_Update_deformation_multiplicator_coef)
+                pub.sendMessage(pubsub_Read_sp_dwp)
                 self.information_text.SetLabel(label)
                 self.OnSavefromFit()
                 self.Refresh()  
@@ -616,11 +731,12 @@ class LiveLimitExceeded(wx.PyCommandEvent):
        
 #------------------------------------------------------------------------------
 class Fit_launcher(Thread):
-    def __init__(self, parent, choice, data):
+    def __init__(self, parent, choice, data, fit_params=None):
         Thread.__init__(self)
         self.parent = parent
         self.choice = choice
         self.data = data
+        self.fit_params = fit_params
         self.need_abort = 0
         self.launch = 0
         self.count = 0
@@ -635,6 +751,30 @@ class Fit_launcher(Thread):
             evt = LiveLimitExceeded(LiveLimitExceeded_COUNT, -1, val)
             wx.PostEvent(self.parent, evt)
 
+    def per_iteration(self, pars, iter, resid, *args, **kws):
+        if self.need_abort == 1:
+            return True
+        if iter < 3 or iter % 10 == 0:
+            y_cal = f_Refl_lmfit(self.data, pars)
+            y_cal = y_cal/y_cal.max() + self.data['background']
+            p = []
+            if self.data['model'] == 2:
+                for j in asym_pv_list:
+                    p.append(pars[j].value)
+            else:
+                a = P4Diff()
+                for j in a.name4lmfit:
+                    p.append(pars[j].value)
+            P4Diff._fp_min = p
+            deformation = [p]
+            evt = LiveEvent(Live_COUNT, -1, y_cal, None, deformation)
+            wx.PostEvent(self.parent, evt)
+
+    def residual_lmfit(self, pars, x, y):
+        y_cal = f_Refl_lmfit(self.data, pars)
+        y_cal = y_cal/y_cal.max() + self.data['background']
+        return (log10(y) - log10(y_cal))
+
     def residual(self, p, y, x):
         P4Diff._fp_min = p
         y_cal = f_Refl(self.data)
@@ -644,7 +784,7 @@ class Fit_launcher(Thread):
             deformation = [p]
             evt = LiveEvent(Live_COUNT, -1, y_cal, None, deformation)
             wx.PostEvent(self.parent, evt)
-            sleep(0.5)
+#            sleep(0.1)
         return (log10(y) - log10(y_cal))
 
     def residual_square(self, p, E_min, nb_minima, val4gauge):
@@ -677,6 +817,10 @@ class Fit_launcher(Thread):
 
         if self.choice == 1:
             P4Diff.par_fit, P4Diff.success = leastsq(self.residual, a.par, args = (a.Iobs, a.th))
+        elif self.choice == 2:
+            from lmfit import minimize
+            P4Diff.resultFit = minimize(self.residual_lmfit, self.fit_params, args=(a.th,), \
+                                kws={'y':a.Iobs}, iter_cb=self.per_iteration)
         elif self.choice == 0:
             P4Diff.par_fit = b.gsa(self.residual_square, self.LimitExceeded, self.data)
 

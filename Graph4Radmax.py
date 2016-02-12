@@ -30,6 +30,7 @@ pubsub_Re_Read_field_paramters_panel = "ReReadParametersPanel"
 pubsub_OnFit_Graph = "OnFitGraph"
 pubsub_Update_Scale_Strain = "OnUpdateScaleStrain"
 pubsub_Update_Scale_DW = "OnUpdateScaleDW"
+pubsub_Permute_Graph = "PermuteGrpah"
 
 colorBackgroundGraph = '#F0F0F0'
 
@@ -54,8 +55,9 @@ class GraphPanel(wx.Panel):
         Graph_Strain_DW_box = wx.StaticBox(self, -1, " Strain and DW profiles ", size=size_Strain_DW_Box)
         Graph_Strain_DW_box.SetFont(fontStaticBox)
         Graph_Strain_DW_box_sizer = wx.StaticBoxSizer(Graph_Strain_DW_box, wx.VERTICAL)
-        in_Graph_Strain_DW_box_sizer = wx.GridBagSizer(hgap=1, vgap=2)
-
+        self.in_Graph_Strain_DW_box_sizer = wx.GridBagSizer(hgap=1, vgap=2)
+        self.in_Graph_Strain_DW_box_sizer_Pv = wx.GridBagSizer(hgap=1, vgap=2)
+        
         Graph_XRD_box = wx.StaticBox(self, -1, " XRD profile ", size=size_XRD_Box)
         Graph_XRD_box.SetFont(fontStaticBox)
         Graph_XRD_box_sizer = wx.StaticBoxSizer(Graph_XRD_box, wx.VERTICAL)
@@ -68,13 +70,24 @@ class GraphPanel(wx.Panel):
         in_Graph_XRD_box_sizer.Add(panelThree, pos=(0,0))
         Graph_XRD_box_sizer.Add(in_Graph_XRD_box_sizer, 0, wx.ALL, 5)
 
-        in_Graph_Strain_DW_box_sizer.Add(panelOne, pos=(0,0))
-        in_Graph_Strain_DW_box_sizer.Add(panelTwo, pos=(1,0))
-        Graph_Strain_DW_box_sizer.Add(in_Graph_Strain_DW_box_sizer, 0, wx.ALL, 5)
+        self.in_Graph_Strain_DW_box_sizer.Add(panelOne, pos=(0,0))
+        self.in_Graph_Strain_DW_box_sizer.Add(panelTwo, pos=(1,0))
+        Graph_Strain_DW_box_sizer.Add(self.in_Graph_Strain_DW_box_sizer, 0, wx.ALL, 5)
 
         mastersizer.Add(Graph_Strain_DW_box_sizer, 0, wx.ALL, 5)
         mastersizer.Add(Graph_XRD_box_sizer, 0, wx.ALL, 5)
+
+        pub.subscribe(self.OnPermuteGraph, pubsub_Permute_Graph)
+
         self.SetSizer(mastersizer)
+        self.Fit()
+        self.Layout()
+
+    def OnPermuteGraph(self, choice):
+        if choice == 0:
+            self.in_Graph_Strain_DW_box_sizer.Show(True)
+        elif choice == 1:
+            self.in_Graph_Strain_DW_box_sizer.Show(True)
         self.Fit()
         self.Layout()
         
@@ -111,6 +124,7 @@ class LeftGraphTop(wx.Panel):
         self.showverts = True
         self.epsilon = 5  # max pixel distance to count as a vertex hit
         self.new_coord = {'indice':0, 'x':0, 'y':0}
+        self.modelpv = False
         
         self.u_key_press = False
 
@@ -141,9 +155,10 @@ class LeftGraphTop(wx.Panel):
 
 
     def OnDrawGraph(self, b=None):
+        a = P4Diff()
+        self.modelpv = a.modelPv
         self.ax.clear() 
         if b != 2:
-            a = P4Diff()
             x_sp = a.x_sp
             y_sp = a.strain_shifted
             xs = deepcopy(a.depth)
@@ -161,11 +176,16 @@ class LeftGraphTop(wx.Panel):
             ys = [-1]    
             self.ax.set_xlim([0, 1])
             self.ax.set_ylim([-1, 1])
-        poly = Polygon(list(zip(x_sp, y_sp)), ls='dashdot', color='g', fill =False, closed=False, animated=True)
-#        poly = Polygon(list(zip(x_sp, y_sp)), ls='dashdot', color='g', fill =False, closed=False, animated=True, joinstyle='round')
+        poly = Polygon(list(zip(x_sp, y_sp)), lw=0, ls='dashdot', color='g', fill =False, closed=False, animated=True)
+        if self.modelpv == True:
+            P4Diff.sp_pv_backup = a.sp
         self.draw_c(poly, xs, ys)
 
     def draw_c(self, data, x, y):
+#        print len(x)
+#        print len(y)
+#        print x
+#        print y
         self.ax.plot(x[1:], y[1:], 'g', lw=2.)
 #        self.ax.plot(x, y, marker='o', alpha=0.0)
         self.ax.set_ylabel("Strain", fontdict=font)
@@ -173,7 +193,7 @@ class LeftGraphTop(wx.Panel):
         self.poly = data
         xs, ys = zip(*self.poly.xy)
 #        self.line = Line2D(xs, ys, marker='o', ms = 12, markerfacecolor='g', color='g')
-        self.line = Line2D(xs, ys,lw=1., ls='-.', color='g', marker='.', ms=32, markerfacecolor='g', markeredgecolor='k', mew=1.0)
+        self.line = Line2D(xs, ys, lw=0, ls='-.', color='g', marker='.', ms=32, markerfacecolor='g', markeredgecolor='k', mew=1.0)
         self.ax.add_line(self.line)
         self.ax.add_patch(self.poly)
 #        self.canvas.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
@@ -220,6 +240,19 @@ class LeftGraphTop(wx.Panel):
             self._ind = self.get_ind_under_point(event)
             self.new_coord['indice'] = self._ind
 
+#                    t = t_temp[0]
+#                    sp_temp = range(7)
+#                    sp_temp[0] = a.DragDrop_Strain_y[0]
+#                    sp_temp[1] = a.sp[1]
+#                    sp_temp[2] = 2*(-1 + a.sp[1] + a.DragDrop_Strain_x[1]/t)
+#                    sp_temp[3] = 2*(1 - a.sp[1] - 1*a.DragDrop_Strain_x[2]/t)
+#                    sp_temp[4] = a.sp[4]
+#                    sp_temp[5] = a.sp[5]
+#                    sp_temp[6] = a.DragDrop_Strain_y[3]
+#                    P4Diff.sp = deepcopy(sp_temp)
+#                    P4Diff.sp_backup = deepcopy(sp_temp)
+#                    P4Diff.sp_pv_backup = deepcopy(sp_temp)
+
     def button_release_callback(self, event):
         'whenever a mouse button is released'
         if self.canvas.HasCapture():
@@ -230,13 +263,30 @@ class LeftGraphTop(wx.Panel):
             if self.new_coord['indice'] != None:
                 a = P4Diff()
                 P4Diff.DragDrop_Strain_y[self.new_coord['indice']] = self.new_coord['y']
-#                print self.new_coord            
-                temp = [strain*scale/100 for strain, scale in zip(a.DragDrop_Strain_y, a.scale_strain)]
-                temp = [float(format(val, '.8f')) for val in temp]
-                temp1 = temp[1:]
-                temp2 =  [a.stain_out_save]
-                P4Diff.sp = deepcopy(np.concatenate((temp1, temp2), axis=0))
-                P4Diff.sp_backup = deepcopy(np.concatenate((temp1, temp2), axis=0))
+                P4Diff.DragDrop_Strain_x[self.new_coord['indice']] = self.new_coord['x']
+                if self.modelpv == True:
+                    t_temp = a.depth + a.z
+                    t = t_temp[0]
+                    sp_temp = range(7)
+                    sp_temp[0] = a.DragDrop_Strain_y[0]
+                    sp_temp[1] = 1 - a.DragDrop_Strain_x[0]/t
+                    sp_temp[2] = 2*(-1 + a.sp[1] + a.DragDrop_Strain_x[1]/t)
+                    sp_temp[3] = 2*(1 - a.sp[1] - 1*a.DragDrop_Strain_x[2]/t)
+                    sp_temp[4] = a.sp[4]
+                    sp_temp[5] = a.sp[5]
+                    sp_temp[6] = a.DragDrop_Strain_y[3]
+                    P4Diff.sp = deepcopy(sp_temp)
+                    P4Diff.sp_backup = deepcopy(sp_temp)
+                    P4Diff.sp_pv_backup = deepcopy(sp_temp)
+                else:
+                    P4Diff.DragDrop_Strain_y[self.new_coord['indice']] = self.new_coord['y']
+                    temp = [strain*scale/100 for strain, scale in zip(a.DragDrop_Strain_y, a.scale_strain)]
+                    temp = [float(format(val, '.8f')) for val in temp]
+                    temp1 = temp[1:]
+                    temp2 =  [a.stain_out_save]
+                    P4Diff.sp = deepcopy(np.concatenate((temp1, temp2), axis=0))
+                    P4Diff.sp_backup = deepcopy(np.concatenate((temp1, temp2), axis=0))
+
                 pub.sendMessage(pubsub_Update_Fit_Live)
             self._ind = None
 
@@ -264,9 +314,20 @@ class LeftGraphTop(wx.Panel):
         if self._ind is None: return
         if event.inaxes is None: return
         if event.button != 1: return
-#        x,y = event.xdata, event.ydata
-        y = event.ydata
-        x = a.DragDrop_Strain_x[self.new_coord['indice']]
+        if self.modelpv == True:
+            if self._ind == 0:
+                y = event.ydata
+                x = event.xdata
+            elif self._ind == 1 or self._ind == 2:
+                y = a.DragDrop_Strain_y[self.new_coord['indice']]
+                x = event.xdata
+            else:
+                x = a.DragDrop_Strain_x[self.new_coord['indice']]
+                y = event.ydata
+        else:
+            y = event.ydata
+            x = a.DragDrop_Strain_x[self.new_coord['indice']]
+            
         self.new_coord['x'] = x
         self.new_coord['y'] = y
         
@@ -340,6 +401,7 @@ class LeftGraphBottom(wx.Panel):
         self.epsilon = 5  # max pixel distance to count as a vertex hit
         self.new_coord = {'indice':0, 'x':0, 'y':0}
         self.u_key_press = True
+        self.modelpv = False
 
         xs = [-1]
         ys = [-1]    
@@ -367,9 +429,10 @@ class LeftGraphBottom(wx.Panel):
         self.Fit()
 
     def OnDrawGraph(self, b=None):
+        a = P4Diff()
+        self.modelpv = a.modelPv
         self.ax.clear() 
         if b != 2:
-            a = P4Diff()
             x_dwp = a.x_dwp
             y_dwp = a.DW_shifted
             xs = deepcopy(a.depth)
@@ -379,7 +442,6 @@ class LeftGraphBottom(wx.Panel):
             ymin = min(ys) - min(ys)*10/100
             ymax = max(ys) + max(ys)*10/100
             self.ax.set_ylim([ymin, ymax])
-#            self.ax.set_ylim([a.initial_parameters[17]*a.DW_multiplication, max(y_dwp)])
         elif b == 2:
             x_dwp = [-1]
             y_dwp = [-1]
@@ -387,8 +449,9 @@ class LeftGraphBottom(wx.Panel):
             ys = [-1]    
             self.ax.set_xlim([0, 1])
             self.ax.set_ylim([0, 1])
-        poly = Polygon(list(zip(x_dwp, y_dwp)), ls='dashdot', color='r', fill =False, closed=False, animated=True)
-#        poly = Polygon(list(zip(x_dwp, y_dwp)), ls='dashdot', color='r', fill =False, closed=False, animated=True, joinstyle='round')
+        poly = Polygon(list(zip(x_dwp, y_dwp)),lw=0, ls='dashdot', color='r', fill =False, closed=False, animated=True)
+        if self.modelpv == True:
+            P4Diff.dwp_pv_backup = a.dwp
         self.draw_c(poly, xs, ys)
 
     def draw_c(self, data, x, y):
@@ -398,7 +461,7 @@ class LeftGraphBottom(wx.Panel):
 #        self.ax.set_xticklabels([])
         self.poly = data
         xs, ys = zip(*self.poly.xy)
-        self.line = Line2D(xs, ys,lw=1., ls='-.', color='r', marker='.', ms=32, markerfacecolor='r', markeredgecolor='k', mew=1.0)
+        self.line = Line2D(xs, ys,lw=0, ls='-.', color='r', marker='.', ms=32, markerfacecolor='r', markeredgecolor='k', mew=1.0)
         self.ax.add_line(self.line)
         self.ax.add_patch(self.poly)
         self.canvas.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
@@ -426,7 +489,6 @@ class LeftGraphBottom(wx.Panel):
         xy = np.asarray(self.poly.xy)
         xyt = self.poly.get_transform().transform(xy)
         xt, yt = xyt[:, 0], xyt[:, 1]
-#        d = np.sqrt((xt-event.x)**2 + (yt-event.y)**2)
         d = np.sqrt((xt-event.x)**2 + (yt-event.y)**2)
         indseq = np.nonzero(np.equal(d, np.amin(d)))[0]
         ind = indseq[0]
@@ -453,15 +515,32 @@ class LeftGraphBottom(wx.Panel):
             if not self.showverts: return
             if event.button != 1: return            
             if self.new_coord['indice'] != None:
+                a = P4Diff()
                 P4Diff.DragDrop_DW_y[self.new_coord['indice']] = self.new_coord['y']
-#                print self.new_coord             
-                a= P4Diff()
-                temp = [dw*scale for dw, scale in zip(a.DragDrop_DW_y, a.scale_dw)]
-                temp = [float(format(val, '.8f')) for val in temp]
-                temp1 = temp[1:]
-                temp2 =  [a.dw_out_save]
-                P4Diff.dwp = deepcopy(np.concatenate((temp1, temp2), axis=0))
-                P4Diff.dwp_backup = deepcopy(np.concatenate((temp1, temp2), axis=0))
+                P4Diff.DragDrop_DW_x[self.new_coord['indice']] = self.new_coord['x']
+                if self.modelpv == True:
+                    t_temp = a.depth + a.z
+                    t = t_temp[0]
+                    dwp_temp = range(7)
+                    dwp_temp[0] = a.DragDrop_DW_y[0]
+                    dwp_temp[1] = a.dwp[1]
+                    dwp_temp[2] = 2*(-1 + a.dwp[1] + a.DragDrop_DW_x[1]/t)
+                    dwp_temp[3] = 2*(1 - a.dwp[1] - 1*a.DragDrop_DW_x[2]/t)
+                    dwp_temp[4] = a.dwp[4]
+                    dwp_temp[5] = a.dwp[5]
+                    dwp_temp[6] = a.DragDrop_DW_y[3]
+                    P4Diff.dwp = deepcopy(dwp_temp)
+                    P4Diff.dwp_backup = deepcopy(dwp_temp)
+                    P4Diff.dwp_pv_backup = deepcopy(dwp_temp)
+                else:
+                    P4Diff.DragDrop_DW_y[self.new_coord['indice']] = self.new_coord['y']
+                    temp = [dw*scale for dw, scale in zip(a.DragDrop_DW_y, a.scale_dw)]
+                    temp = [float(format(val, '.8f')) for val in temp]
+                    temp1 = temp[1:]
+                    temp2 =  [a.dw_out_save]
+                    P4Diff.dwp = deepcopy(np.concatenate((temp1, temp2), axis=0))
+                    P4Diff.dwp_backup = deepcopy(np.concatenate((temp1, temp2), axis=0))
+
                 pub.sendMessage(pubsub_Update_Fit_Live)
             self._ind = None
 
@@ -489,8 +568,19 @@ class LeftGraphBottom(wx.Panel):
         if self._ind is None: return
         if event.inaxes is None: return
         if event.button != 1: return
-        y = event.ydata
-        x = a.DragDrop_DW_x[self.new_coord['indice']]
+
+        if self.modelpv == True:
+            if self._ind == 0 or self._ind == 3:
+                y = event.ydata
+                x = a.DragDrop_DW_x[self.new_coord['indice']]
+            else:
+                x = event.xdata
+                y = a.DragDrop_DW_y[self.new_coord['indice']]
+        else:
+            y = event.ydata
+            x = a.DragDrop_DW_x[self.new_coord['indice']]
+
+
         self.new_coord['x'] = x
         self.new_coord['y'] = y
         

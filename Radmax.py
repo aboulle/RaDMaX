@@ -12,12 +12,15 @@ from Parameters4Radmax import *
 try:
     import wx, wx.html, matplotlib, scipy, sys, numpy
     print('******************************')
-    print('           RaDMax'             )
+    print('            RaDMax'             )
     print('         Version:%s' %Application_version)
     print(' Last modification:%s' %last_modification)
     print('******************************\n')
-    print ("Cheking of the modules needed to work with RaDMax:")
-    print ("Version founded on this computer:")      
+    if getattr(sys, 'frozen', False):
+        print ("Versions of modules compile for this application:")     
+    else:
+        print ("Cheking of the modules needed to work with RaDMax:")
+        print ("Version founded on this computer:")      
     print ("Python: %s" %sys.version)
     print ("Matplotlib: %s" %matplotlib.__version__)
     print ("Wxpython: %s" %wx.__version__)
@@ -193,9 +196,9 @@ class MainFrame(wx.Frame):
         info = wx.AboutDialogInfo()
         info.SetName(Application_name)
         info.SetVersion(str(Application_version))
-        info.SetCopyright('(C) 2015 SPCTS')
+        info.SetCopyright(copyright_)
         info.SetDescription(description)
-        info.SetWebSite('http://www.unilim.fr/spcts/')
+        info.SetWebSite(website_)
         info.AddDeveloper('Alexandre Boulle')
         info.AddDeveloper('Marc Souilah')
         info.SetLicence(licence)

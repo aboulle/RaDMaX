@@ -20,7 +20,9 @@ DIGIT_ONLY = 2
 
 """New Project initial data"""
 New_project_initial = [1.48806, 0.013, 0.000001, 5e-6, 1, 1, 0, 0, 5.4135,\
-5.4135, 5.4135, 90, 90, 90, 10, -3, 3.5, 10, 0, 4, 3500, 70]
+5.4135, 5.4135, 90, 90, 90, 0, 10, -3, 3.5, 10, 0, 4, 3500, 70]
+sp_pv_initial = [2, 0.2, 0.1, 0.1, 0.1, 0.1, 0.05]
+dwp_pv_initial = [0.5, 0.2, 0.1, 0.1, 0.1, 0.1, 0.85]
 New_project_initial_size = range(len(New_project_initial))
 New_project_initial_data = dict(zip(New_project_initial_size, New_project_initial))
 
@@ -53,6 +55,8 @@ pubsub_shortcut = "Shortcut"
 pubsub_On_Limit_Before_Graph = "OnLimitBeforeGraph"
 pubsub_Update_Scale_Strain = "OnUpdateScaleStrain"
 pubsub_Update_Scale_DW = "OnUpdateScaleDW"
+pubsub_Permute_Graph = "PermuteGrpah"
+pubsub_Read_sp_dwp = "ReadSpDwp"
 
 #------------------------------------------------------------------------------
 class InitialDataPanel(wx.Panel):
@@ -85,7 +89,7 @@ class InitialDataPanel(wx.Panel):
             font = wx.Font(10, wx.DEFAULT, wx.ITALIC, wx.BOLD)
             vStatictextsize = 16
         elif _platform == "win32":
-            size_StaticBox = (920, 140)
+            size_StaticBox = (960, 140)
             crystal_combobox = (80, -1)
             symmetry_combobox = (80, -1)
             font_Statictext = wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
@@ -96,7 +100,7 @@ class InitialDataPanel(wx.Panel):
             font = wx.Font(9, wx.DEFAULT, wx.ITALIC, wx.BOLD)
             vStatictextsize = 16
         elif _platform == 'darwin':
-            size_StaticBox = (950, 140)
+            size_StaticBox = (980, 140)
             crystal_combobox = (80, -1)
             symmetry_combobox = (80, -1)
             font_Statictext = wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.NORMAL, False, u'Arial')
@@ -270,20 +274,32 @@ class InitialDataPanel(wx.Panel):
         Strain_DW_box_sizer = wx.StaticBoxSizer(Strain_DW_box, wx.VERTICAL)
         in_Strain_DW_box_sizer = wx.GridBagSizer(hgap=10, vgap=1)
 
-        Strain_DW_choice = ["B-splines smooth", "B-splines abrupt", "B-splines histogram"]
-        strainname_txt = wx.StaticText(self, -1, label=u'Strain: model', size=(85,vStatictextsize))
+        self.Strainname_ID = wx.NewId()
+        self.dwname_ID = wx.NewId()
+        
+        self.modelChoice = wx.TextCtrl(self,size=(0,vStatictextsize), validator = TextValidator(DIGIT_ONLY))
+        self.modelChoice.Hide()
+        self.modelCalc = 0
+
+        self.Strain_DW_choice = ["B-splines smooth", "B-splines abrupt", "Asymmetric pv"]
+#        self.modelChoice = 0:"B-splines smooth", 1:"B-splines abrupt", 2:"B-splines pv", 3:"B-splines histogram"
+
+        strainname_txt = wx.StaticText(self, self.Strainname_ID, label=u'Strain: model', size=(85,vStatictextsize))
         strainname_txt.SetFont(font_Statictext)
-        self.cb_strainname = wx.ComboBox(self, pos=(50, 30), choices=Strain_DW_choice,\
+        self.cb_strainname = wx.ComboBox(self, pos=(50, 30), choices=self.Strain_DW_choice,\
                                          style=wx.CB_READONLY)
-        self.cb_strainname.SetStringSelection(Strain_DW_choice[0])
+        self.cb_strainname.SetStringSelection(self.Strain_DW_choice[0])
         self.cb_strainname.SetFont(font_combobox)
         
-        dwname_txt = wx.StaticText(self, -1, label=u'DW: model', size=(75,vStatictextsize))
+        dwname_txt = wx.StaticText(self, self.dwname_ID, label=u'DW: model', size=(75,vStatictextsize))
         dwname_txt.SetFont(font_Statictext)
-        self.cb_dwname = wx.ComboBox(self, pos=(50, 30), choices=Strain_DW_choice,\
+        self.cb_dwname = wx.ComboBox(self, pos=(50, 30), choices=self.Strain_DW_choice,\
                                      style=wx.CB_READONLY)
-        self.cb_dwname.SetStringSelection(Strain_DW_choice[0])
+        self.cb_dwname.SetStringSelection(self.Strain_DW_choice[0])
         self.cb_dwname.SetFont(font_combobox)
+        
+        self.cb_strainname.Bind(wx.EVT_COMBOBOX, self.OnSelectStrainDwName)
+        self.cb_dwname.Bind(wx.EVT_COMBOBOX, self.OnSelectStrainDwName)
         
         self.StrainBfunction_ID = wx.NewId()
         self.dwBfunction_ID = wx.NewId()
@@ -351,33 +367,60 @@ class InitialDataPanel(wx.Panel):
         self.DW_horizontal_ctrl.SetFont(font_TextCtrl)
         self.DW_horizontal_ctrl.SetValue(str(1))
 
+        self.eta_strain_1 = wx.TextCtrl(self, size=size_scale, validator = TextValidator(DIGIT_ONLY))
+        self.eta_strain_1.SetFont(font_TextCtrl)
+        self.eta_strain_1.SetValue(str(0.5))
+
+        self.eta_strain_2 = wx.TextCtrl(self, size=size_scale, validator = TextValidator(DIGIT_ONLY))
+        self.eta_strain_2.SetFont(font_TextCtrl)
+        self.eta_strain_2.SetValue(str(0.5))
+
+        self.eta_dw_1 = wx.TextCtrl(self, size=size_scale, validator = TextValidator(DIGIT_ONLY))
+        self.eta_dw_1.SetFont(font_TextCtrl)
+        self.eta_dw_1.SetValue(str(0.5))
+
+        self.eta_dw_2 = wx.TextCtrl(self, size=size_scale, validator = TextValidator(DIGIT_ONLY))
+        self.eta_dw_2.SetFont(font_TextCtrl)
+        self.eta_dw_2.SetValue(str(0.5))
+        
+        self.eta_txt_label = u'Eta1/Eta2 parameters'
+        self.eta_txt = wx.StaticText(self, -1, label=self.eta_txt_label,size=(130,vStatictextsize))
+        self.eta_txt.SetFont(font_Statictext)
         
         in_Strain_DW_box_sizer.Add(strainname_txt, pos=(0,0), flag=flagSizer)
         in_Strain_DW_box_sizer.Add(self.cb_strainname, pos=(0,1), flag=flagSizer)
-        in_Strain_DW_box_sizer.Add(dwname_txt, pos=(1,0), flag=flagSizer)
-        in_Strain_DW_box_sizer.Add(self.cb_dwname, pos=(1,1), flag=flagSizer)
         
         in_Strain_DW_box_sizer.Add(StrainBfunction_txt, pos=(0,3), flag=flagSizer)
         in_Strain_DW_box_sizer.Add(self.StrainBfunction, pos=(0,4), flag=flagSizer)
-        in_Strain_DW_box_sizer.Add(dwBfunction_txt, pos=(1,3), flag=flagSizer)
-        in_Strain_DW_box_sizer.Add(self.dwBfunction, pos=(1,4), flag=flagSizer)
-        in_Strain_DW_box_sizer.Add(self.dwBfunction_hide, pos=(1,5), flag=flagSizer)
         in_Strain_DW_box_sizer.Add(StrainMinMax_txt, pos=(0,6), flag=flagSizer)
         in_Strain_DW_box_sizer.Add(self.StrainMin, pos=(0,7), flag=flagSizer)
         in_Strain_DW_box_sizer.Add(self.StrainMax, pos=(0,8), flag=flagSizer)
         in_Strain_DW_box_sizer.Add(self.scale_strain_Btn, pos=(0,9), flag=flagSizer)
         in_Strain_DW_box_sizer.Add(self.strain_horizontal_ctrl, pos=(0,10), flag=flagSizer)
+        in_Strain_DW_box_sizer.Add(self.eta_strain_1, pos=(0,11), flag=flagSizer)
+        in_Strain_DW_box_sizer.Add(self.eta_strain_2, pos=(0,12), flag=flagSizer)
+
+        in_Strain_DW_box_sizer.Add(dwname_txt, pos=(1,0), flag=flagSizer)
+        in_Strain_DW_box_sizer.Add(self.cb_dwname, pos=(1,1), flag=flagSizer)
+        in_Strain_DW_box_sizer.Add(dwBfunction_txt, pos=(1,3), flag=flagSizer)
+        in_Strain_DW_box_sizer.Add(self.dwBfunction, pos=(1,4), flag=flagSizer)
+        in_Strain_DW_box_sizer.Add(self.dwBfunction_hide, pos=(1,5), flag=flagSizer)
         in_Strain_DW_box_sizer.Add(dwMinMax_txt, pos=(1,6), flag=flagSizer)
         in_Strain_DW_box_sizer.Add(self.dwMin, pos=(1,7), flag=flagSizer)
         in_Strain_DW_box_sizer.Add(self.dwMax, pos=(1,8), flag=flagSizer)
         in_Strain_DW_box_sizer.Add(self.scale_DW_Btn, pos=(1,9), flag=flagSizer)
         in_Strain_DW_box_sizer.Add(self.DW_horizontal_ctrl, pos=(1,10), flag=flagSizer)
+        in_Strain_DW_box_sizer.Add(self.eta_dw_1, pos=(1,11), flag=flagSizer)
+        in_Strain_DW_box_sizer.Add(self.eta_dw_2, pos=(1,12), flag=flagSizer)
+        
         in_Strain_DW_box_sizer.Add(damaged_depth_txt, pos=(2,0), flag=flagSizer)
         in_Strain_DW_box_sizer.Add(self.damaged_depth, pos=(2,1), flag=flagSizer)
         in_Strain_DW_box_sizer.Add(Nb_slice_txt, pos=(2,3), span=(1,4),\
                                    flag=wx.ALL|wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT)
         in_Strain_DW_box_sizer.Add(self.Nb_slice, pos=(2,7), span=(1,2), flag=flagSizer)
-        
+        in_Strain_DW_box_sizer.Add(self.modelChoice, pos=(2,10), flag=flagSizer)
+        in_Strain_DW_box_sizer.Add(self.eta_txt, pos=(2,11), span=(1,2), flag=flagSizer)
+       
         Strain_DW_box_sizer.Add(in_Strain_DW_box_sizer, 0, wx.ALL, 5)
         
         self.updateId = wx.NewId()
@@ -385,11 +428,16 @@ class InitialDataPanel(wx.Panel):
         self.update_Btn.SetFont(font_update)
         self.update_Btn.Bind(wx.EVT_BUTTON, self.onUpdate)
         self.update_Btn.SetFocus()
-
+        
+        self.Textcontrolhide = [self.eta_strain_1, self.eta_strain_2, self.eta_dw_1, self.eta_dw_2]
+        for i in range(len(self.Textcontrolhide)):
+            self.Textcontrolhide[i].Show(False)
+        self.eta_txt.SetLabelText("")
+ 
         self.Textcontrol = [self.wavelength, self.resolution, self.shape, self.bckground,
                             self.h_direction, self.k_direction, self.l_direction, self.symmetry_txt_hide,
                             self.a_param, self.b_param, self.c_param, self.alpha_param, self.beta_param,
-                            self.gamma_param, self.StrainBfunction, self.StrainMin, self.StrainMax,
+                            self.gamma_param, self.modelChoice, self.StrainBfunction, self.StrainMin, self.StrainMax,
                             self.dwBfunction_hide, self.dwMin, self.dwMax, self.damaged_depth, self.Nb_slice]
         Textcontrolen = range(len(self.Textcontrol))
         self.data_fields = dict(zip(Textcontrolen,self.Textcontrol))
@@ -408,6 +456,7 @@ class InitialDataPanel(wx.Panel):
         self.loadproject = ""
         
         self.load_data = 0
+        self.load_init = 0
         self.data_change = 0
         self.empty_field = 0
         self.not_a_float = 0
@@ -435,6 +484,8 @@ class InitialDataPanel(wx.Panel):
         pub.subscribe(self.f_strain_DW, pubsub_Draw_Fit_Live_Deformation)
         pub.subscribe(self.KeyPressed, pubsub_shortcut)
         pub.subscribe(self.LimitReach, pubsub_On_Limit_Before_Graph)
+        pub.subscribe(self.OnReadspDW, pubsub_Read_sp_dwp)
+        
         
         b = ReadFile(self)
         b.Read_init_Parameters(os.path.join(current_dir, filename + '.ini'), ConfigFile)
@@ -558,6 +609,10 @@ class InitialDataPanel(wx.Panel):
         for i in range(len(self.data_fields)):
             self.data_fields[i].AppendText(str(New_project_initial_data[i]))
             self.resultprojectfile_backup.append(New_project_initial_data[i])
+
+        self.cb_strainname.SetSelection(0)
+        self.cb_dwname.SetSelection(0)
+        self.HideShowEta(False)
         
         success = self.ReadDataField()
         if success == True:
@@ -590,6 +645,10 @@ class InitialDataPanel(wx.Panel):
             P4Diff.dwp = int(self.par4diff['dw_basis_func'])*[1]
             P4Diff.sp = np.array(a.sp)
             P4Diff.dwp = np.array(a.dwp)
+            P4Diff.sp_pv_backup = sp_pv_initial
+            P4Diff.dwp_pv_backup = dwp_pv_initial
+            P4Diff.sp_bspline_backup = a.sp
+            P4Diff.dwp_bspline_backup = a.dwp 
             pub.sendMessage(pubsub_Load_fitting_panel, data=None, b=1)
             pub.sendMessage(pubsub_Draw_XRD, b=2)
             pub.sendMessage(pubsub_Activate_Import)
@@ -697,20 +756,25 @@ class InitialDataPanel(wx.Panel):
         spline_strain = self.cb_strainname.GetSelection()
         if choice == 0:
             data = b.read_strain_xy_file(paths[0])
-            P4Diff.sp = fit_input_strain(data, self.par4diff['strain_basis_func'],self.par4diff['damaged_depth'], spline_strain)
+            if spline_strain == 2:
+                t = data[0].max()
+                P4Diff.t_l = t/self.par4diff['number_slices']
+                P4Diff.z = arange(self.par4diff['number_slices']+1) * a.t_l
+                P4Diff.depth = t-a.z
+            else:
+                t = self.par4diff['damaged_depth']
+            P4Diff.sp = fit_input_strain(data, self.par4diff['strain_basis_func'], self.par4diff['damaged_depth'], spline_strain)
+        else:
+             t = self.par4diff['damaged_depth']
         P4Diff.sp_backup = a.sp
         P4Diff.strain_basis_backup = float(self.par4diff['strain_basis_func'])
-        P4Diff.strain_i = f_strain(a.z, a.sp, self.par4diff['damaged_depth'], spline_strain)
-        t = self.par4diff['damaged_depth']
-        P4Diff.x_sp = t - linspace(1, len(a.sp), len(a.sp))*t / (len(a.sp))
-        shifted_sp = append(array([0.]),a.sp[:-1:])
-        
-        P4Diff.scale_strain = shifted_sp /a.strain_i[ in1d(around(a.depth, decimals=3),  around(a.x_sp,decimals=3))]
-        P4Diff.scale_strain[a.scale_strain==0] = 1. #avoids div by 0 error
-        P4Diff.strain_shifted = shifted_sp*100./a.scale_strain  
+        P4Diff.strain_i = f_strain(a.z, a.sp, t, spline_strain)
+
+        self.Shifted_sp_curves(t)
+        P4Diff.from_Calc_Strain = 1
+        self.draw_curves()
         if choice == 0:
             self.Save_Deformation('Strain_file', 'strain', a.sp)
-        pub.sendMessage(pubsub_Draw_Strain)
 
     def Calc_DW(self, paths=None, choice=None):
         """Reading and calcul of DW coefficient"""
@@ -719,20 +783,25 @@ class InitialDataPanel(wx.Panel):
         spline_DW = self.cb_dwname.GetSelection()
         if choice == 0:
             data = b.read_dw_xy_file(paths[0])
+            if spline_strain == 2:
+                t = data[0].max()
+                P4Diff.t_l = t/self.par4diff['number_slices']
+                P4Diff.z = arange(self.par4diff['number_slices']+1) * a.t_l
+                P4Diff.depth = t-a.z
+            else:
+                t = self.par4diff['damaged_depth']
             P4Diff.dwp = fit_input_DW(data, self.par4diff['dw_basis_func'],self.par4diff['damaged_depth'], spline_DW)
+        else:
+             t = self.par4diff['damaged_depth']
         P4Diff.dwp_backup = a.dwp
         P4Diff.dw_basis_backup = float(self.par4diff['dw_basis_func'])
         P4Diff.DW_i = f_DW(a.z, a.dwp, self.par4diff['damaged_depth'], spline_DW)
-        t = self.par4diff['damaged_depth']
-        P4Diff.x_dwp = t - linspace(1, len(a.dwp), len(a.dwp))*t / (len(a.dwp))
-        shifted_dwp = append(array([1.]),a.dwp[:-1:])
         
-        P4Diff.scale_dw = shifted_dwp /a.DW_i[ in1d(around(a.depth, decimals=3),  around(a.x_dwp, decimals=3))]
-        P4Diff.scale_dw[a.scale_dw==0] = 1.
-        P4Diff.DW_shifted = shifted_dwp/a.scale_dw
+        self.Shifted_dwp_curves(t)
+        P4Diff.from_Calc_DW = 1
+        self.draw_curves()
         if choice == 0:
             self.Save_Deformation('DW_file', 'DW', a.dwp)
-        pub.sendMessage(pubsub_Draw_DW)
 
     def onLoadProject(self, event):
         """Loading of project with '.ini' extension, 
@@ -786,10 +855,12 @@ class InitialDataPanel(wx.Panel):
                     self.OnSelectSymmetry(event, val)
     
                     P4Diff.slice_backup = self.par4diff['number_slices']
-                    P4Diff.strain_basis_backup = self.par4diff['strain_basis_func']
-                    P4Diff.dw_basis_backup = self.par4diff['dw_basis_func']
                     P4Diff.damaged_value_backup = self.par4diff['damaged_depth']
                     
+                    self.modelCalc = self.par4diff['model']
+                    P4Diff.strain_basis_backup = self.par4diff['strain_basis_func']
+                    P4Diff.dw_basis_backup = self.par4diff['dw_basis_func']
+                        
                     self.dwBfunction_choice = [a.strain_basis_backup]
                     self.dwBfunction.SetItems(self.dwBfunction_choice)
                     self.dwBfunction.SetStringSelection(self.dwBfunction_choice[0])
@@ -801,13 +872,20 @@ class InitialDataPanel(wx.Panel):
                     else:
                         logger.log(logging.INFO, "You need to add the proper strcuture to continue")
                     '''change name of the main title window'''
+                    P4Diff.sp_pv_backup = sp_pv_initial
+                    P4Diff.dwp_pv_backup = dwp_pv_initial
+                    P4Diff.sp_bspline_backup = a.sp
+                    P4Diff.dwp_bspline_backup = a.dwp
+
                     pub.sendMessage(pubsub_ChangeFrameTitle, NewTitle=Application_name + " - " + str(self.project_name))
                     pub.sendMessage(pubsub_Load_fitting_panel, data=self.resultprojectfile[-6:])
                     pub.sendMessage(pubsub_Activate_Import)
                     pub.sendMessage(pubsub_OnFit_Graph, b=1)
                     pub.sendMessage(pubsub_gauge_to_zero)
+
                     self.update_Btn.SetFocus()
                     self.load_data = 1
+                    self.load_init = 1
                     self.OnLaunchCalc()
 
     def onUpdateConfigFile(self, folder):
@@ -890,7 +968,6 @@ class InitialDataPanel(wx.Panel):
 #                    logger.log(logging.INFO, "End of the project\n")
 #                    sys.exit()
 
-
     def ReadDataField(self, case=None):
         logger.log(logging.INFO, "Test if fields are full and contains float")
         check_empty = self.search4emptyfields()
@@ -952,7 +1029,7 @@ class InitialDataPanel(wx.Panel):
             self.not_a_float = 0
 
     def LimitReach(self, limit):
-        limit_list = [15,16,18,19]
+        limit_list = [16,17,19,20]
         for i in range(len(limit)):
             if limit[i] == False:
                 self.data_fields[limit_list[i]].SetBackgroundColour('yellow')
@@ -1061,20 +1138,109 @@ class InitialDataPanel(wx.Panel):
             pub.sendMessage(pubsub_Update_Scale_DW, event=event, \
             val=float(self.DW_horizontal_ctrl.GetValue()))
 
+    def OnSelectStrainDwName(self, event):
+        a = P4Diff()
+        bsplinename = event.GetString()
+        self.modelCalc = self.Strain_DW_choice.index(bsplinename)
+        self.modelChoice.Clear()
+        self.modelChoice.AppendText(str(self.modelCalc))
+        self.par4diff['model'] = self.modelCalc
+        if bsplinename == "Asymmetric pv":
+            self.HideShowEta(True)
+            self.cb_strainname.SetSelection(2)
+            self.cb_dwname.SetSelection(2)
+            self.StrainBfunction.Disable()
+            P4Diff.sp_bspline_backup = a.sp
+            P4Diff.dwp_bspline_backup = a.dwp 
+            P4Diff.sp = a.sp_pv_backup
+            P4Diff.dwp = a.dwp_pv_backup
+            self.OnTestModel()
+            pub.sendMessage(pubsub_Permute_Graph, choice = 1)
+        else:
+            self.HideShowEta(False)
+            self.StrainBfunction.Enable()
+            self.cb_strainname.SetSelection(0)
+            self.cb_dwname.SetSelection(0)
+            P4Diff.sp = a.sp_bspline_backup
+            P4Diff.dwp = a.dwp_bspline_backup
+            self.OnTestModel()
+            pub.sendMessage(pubsub_Permute_Graph, choice = 0)
+
+    def HideShowEta(self, state):
+        for i in range(len(self.Textcontrolhide)):
+            self.Textcontrolhide[i].Show(state)
+        if state == True:
+            self.eta_txt.SetLabelText(self.eta_txt_label)
+        else:
+            self.eta_txt.SetLabelText("")
+        self.Layout()
+
+    def OnReadspDW(self):
+        a = P4Diff()
+        for i in range(len(self.Textcontrolhide)):
+            self.Textcontrolhide[i].Clear()
+        roundval = 3
+        self.eta_strain_1.AppendText(str(round(a.sp[4], roundval)))
+        self.eta_strain_2.AppendText(str(round(a.sp[5], roundval)))
+        self.eta_dw_1.AppendText(str(round(a.dwp[4], roundval)))
+        self.eta_dw_2.AppendText(str(round(a.dwp[5], roundval)))
+        self.load_init = 0
+
+    def OnUpdatespDW(self):
+        a = P4Diff()
+        P4Diff.sp[4] = self.eta_strain_1.GetValue()
+        P4Diff.sp[5] = self.eta_strain_2.GetValue()
+        P4Diff.dwp[4] = self.eta_dw_1.GetValue()
+        P4Diff.dwp[5] = self.eta_dw_2.GetValue()
+        P4Diff.sp = [float(r) for r in a.sp]
+        P4Diff.dwp = [float(r) for r in a.dwp]
+
+    def OnTestModel(self):
+        val = 7.0
+        if self.par4diff['model'] == 2:
+            self.HideShowEta(True)
+            self.par4diff['strain_basis_func'] = val
+            self.par4diff['dw_basis_func'] = val
+            self.StrainBfunction.Clear()
+            self.StrainBfunction.AppendText(str(val))
+            self.StrainBfunction.Disable()
+            self.dwBfunction_hide.Clear()
+            self.dwBfunction_hide.AppendText(str(val))
+            temp = [str(val)]
+            self.dwBfunction.SetItems(temp)
+            self.dwBfunction.SetStringSelection(temp[0])
+            
+            self.cb_strainname.SetSelection(2)
+            self.cb_dwname.SetSelection(2)
+            P4Diff.modelPv = True
+            if self.load_init == 1:
+                self.OnReadspDW()
+            else:
+                self.OnUpdatespDW()
+        else:
+            self.HideShowEta(False)
+            self.StrainBfunction.Enable()
+            self.cb_strainname.SetSelection(self.par4diff['model'])
+            self.cb_dwname.SetSelection(self.par4diff['model'])
+            P4Diff.modelPv = False
+            
     def calculsupplementaryparameters(self):
         a = P4Diff()
         name = self.cb_crystalname.GetStringSelection()
+        self.par4diff = dict(zip(Parameters_panel_keys,a.initial_parameters))
+        self.OnTestModel()
+        self.OnCheckDataValue()
         self.spline_strain = self.cb_strainname.GetSelection()
         self.spline_DW = self.cb_dwname.GetSelection()
         temp = [self.spline_strain, self.spline_DW]
         P4Diff.splinenumber = temp
-        self.par4diff = dict(zip(Parameters_panel_keys,a.initial_parameters))
-        self.OnCheckDataValue()
-        nb_slice, dw_func = self.OnChangeBasisFunction(self.par4diff['strain_basis_func'], self.par4diff['dw_basis_func'], \
-                                                        self.spline_strain, self.spline_DW, self.par4diff['number_slices'])
-        self.par4diff['dw_basis_func'] = dw_func
-        self.par4diff['number_slices'] = nb_slice
 
+        if self.par4diff['model'] != 2:
+            nb_slice, dw_func = self.OnChangeBasisFunction(self.par4diff['strain_basis_func'], self.par4diff['dw_basis_func'], \
+                                                            self.spline_strain, self.spline_DW, self.par4diff['number_slices'])
+            self.par4diff['dw_basis_func'] = dw_func
+            self.par4diff['number_slices'] = nb_slice
+            
         if name != []:
             P4Diff.par = np.concatenate((a.sp,a.dwp),axis=0)
             P4Diff.resol = f_pVoigt(a.th, [1, (a.th.min()+a.th.max())/2 ,\
@@ -1101,12 +1267,12 @@ class InitialDataPanel(wx.Panel):
                         
             P4Diff.DW_i = f_DW(a.z, a.dwp, self.par4diff['damaged_depth'], self.spline_DW)
             P4Diff.strain_i = f_strain(a.z, a.sp, self.par4diff['damaged_depth'], self.spline_strain)
+            
 
             t = self.par4diff['damaged_depth']
-            P4Diff.x_sp = t - linspace(1, len(a.sp), len(a.sp))*t / (len(a.sp))  # generate depth (x axis) for the strain basis function
-            P4Diff.x_dwp = t - linspace(1, len(a.dwp), len(a.dwp))*t / (len(a.dwp))
-            
-            self.Shifted_and_draw_curves()
+            self.Shifted_sp_curves(t)
+            self.Shifted_dwp_curves(t)
+            self.draw_curves()
         else:
             logger.log(logging.WARNING, "check if the structure file really exists")
 
@@ -1118,42 +1284,91 @@ class InitialDataPanel(wx.Panel):
         
         P4Diff.DW_i = f_DW(a.z, a.dwp, self.par4diff['damaged_depth'], self.spline_DW)
         P4Diff.strain_i = f_strain(a.z, a.sp, self.par4diff['damaged_depth'], self.spline_strain)
+        
 
         t = self.par4diff['damaged_depth']
-        P4Diff.x_sp = t - linspace(1, len(a.sp), len(a.sp))*t / (len(a.sp))  # generate depth (x axis) for the strain basis function
-        P4Diff.x_dwp = t - linspace(1, len(a.dwp), len(a.dwp))*t / (len(a.dwp))
+        self.Shifted_sp_curves(t)
+        self.Shifted_dwp_curves(t)
+        self.draw_curves()
         
-        self.Shifted_and_draw_curves()
-
-    def Shifted_and_draw_curves(self):
+    def Shifted_dwp_curves(self, t):
         a = P4Diff()
-        
-        shifted_sp = append(array([0.]),a.sp[:-1:]) # shifts the array so as to set center ofl each Bspline on the maximum
-        shifted_dwp = append(array([1.]),a.dwp[:-1:])
-#        print 'shifted_sp.shape', shifted_sp.shape
-#        print 'a.strain_i[ in1d(a.depth,  a.x_sp)].shape', a.strain_i[ in1d(around(a.depth, decimals=3),  around(a.x_sp,decimals=3))].shape
-#        print 'a.x_sp.shape', a.x_sp.shape
 
-        P4Diff.scale_strain = shifted_sp /a.strain_i[ in1d(around(a.depth, decimals=3),  around(a.x_sp,decimals=3))]
-        P4Diff.scale_strain[a.scale_strain==0] = 1. #avoids div by 0 error
-        P4Diff.scale_dw = shifted_dwp /a.DW_i[ in1d(around(a.depth, decimals=3),  around(a.x_dwp, decimals=3))]
-        P4Diff.scale_dw[a.scale_dw==0] = 1.
+        if self.par4diff['model'] == 2:
+            x_dw_temp = []
+            x_dw_temp.append(t*(1-a.dwp[1]))
+            x_dw_temp.append(t*(1-a.dwp[1] + a.dwp[2]/2))
+            x_dw_temp.append(t*(1-a.dwp[1] - a.dwp[3]/2))
+            x_dw_temp.append(t*0.05)
+            P4Diff.x_dwp = x_dw_temp
 
-        P4Diff.DW_shifted = shifted_dwp/a.scale_dw
-        P4Diff.strain_shifted = shifted_sp*100./a.scale_strain
-        P4Diff.stain_out_save = a.sp[-1]
-        P4Diff.dw_out_save = a.dwp[-1]
-        
-        self.DW_horizontal_ctrl.SetLabel(str(a.DW_multiplication))
-        self.strain_horizontal_ctrl.SetLabel(str(a.strain_multiplication))
+            y_dw_temp = []
+            y_dw_temp.append(a.dwp[0])
+            y_dw_temp.append(1. - (1-a.dwp[0])/2)
+            y_dw_temp.append(1. - (1-a.dwp[0])/2 - (1-a.dwp[6])/2)
+            y_dw_temp.append(a.dwp[6])
+            P4Diff.DW_shifted = y_dw_temp
 
-        if a.fitlive == 1:
-            pub.sendMessage(pubsub_Draw_Strain)
-            pub.sendMessage(pubsub_Draw_DW)        
+            self.DW_horizontal_ctrl.SetLabel(str(a.DW_multiplication))
         else:
-            pub.sendMessage(pubsub_Draw_XRD)
+            P4Diff.x_dwp = t - linspace(1, len(a.dwp), len(a.dwp))*t / (len(a.dwp))
+            shifted_dwp = append(array([1.]),a.dwp[:-1:])
+
+            P4Diff.scale_dw = shifted_dwp /a.DW_i[ in1d(around(a.depth, decimals=3),  around(a.x_dwp, decimals=3))]
+            P4Diff.scale_dw[a.scale_dw==0] = 1.
+
+            P4Diff.DW_shifted = shifted_dwp/a.scale_dw
+            P4Diff.dw_out_save = a.dwp[-1]
+
+            self.DW_horizontal_ctrl.SetLabel(str(a.DW_multiplication))
+            
+    def Shifted_sp_curves(self, t):
+        a = P4Diff()
+
+        if self.par4diff['model'] == 2:
+            x_sp_temp = []
+            x_sp_temp.append(t*(1-a.sp[1]))
+            x_sp_temp.append(t*(1-a.sp[1] + a.sp[2]/2))
+            x_sp_temp.append(t*(1-a.sp[1] - a.sp[3]/2))
+            x_sp_temp.append(t*0.05)
+            P4Diff.x_sp = x_sp_temp
+
+            y_sp_temp = []
+            y_sp_temp.append(a.sp[0])
+            y_sp_temp.append(a.sp[0]/2)
+            y_sp_temp.append(a.sp[0]/2 + a.sp[6]/2)
+            y_sp_temp.append(a.sp[6])
+            P4Diff.strain_shifted = y_sp_temp
+
+            self.strain_horizontal_ctrl.SetLabel(str(a.strain_multiplication))
+        else:
+            P4Diff.x_sp = t - linspace(1, len(a.sp), len(a.sp))*t / (len(a.sp))  # generate depth (x axis) for the strain basis function
+            shifted_sp = append(array([0.]),a.sp[:-1:]) # shifts the array so as to set center ofl each Bspline on the maximum
+
+            P4Diff.scale_strain = shifted_sp /a.strain_i[ in1d(around(a.depth, decimals=3),  around(a.x_sp,decimals=3))]
+            P4Diff.scale_strain[a.scale_strain==0] = 1. #avoids div by 0 error
+
+            P4Diff.strain_shifted = shifted_sp*100./a.scale_strain
+            P4Diff.stain_out_save = a.sp[-1]
+
+            self.strain_horizontal_ctrl.SetLabel(str(a.strain_multiplication))
+
+    def draw_curves(self):
+        a = P4Diff()
+        if a.from_Calc_Strain == 1:
+            P4Diff.from_Calc_Strain = 0
             pub.sendMessage(pubsub_Draw_Strain)
-            pub.sendMessage(pubsub_Draw_DW)        
+        elif a.from_Calc_DW ==1:
+            P4Diff.from_Calc_DW = 0
+            pub.sendMessage(pubsub_Draw_DW)
+        else:
+            if a.fitlive == 1:
+                pub.sendMessage(pubsub_Draw_Strain)
+                pub.sendMessage(pubsub_Draw_DW)        
+            else:
+                pub.sendMessage(pubsub_Draw_XRD)
+                pub.sendMessage(pubsub_Draw_Strain)
+                pub.sendMessage(pubsub_Draw_DW)
 
     def search4emptyfields(self):
         """search for empty field"""
