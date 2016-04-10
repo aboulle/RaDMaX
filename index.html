@@ -40,13 +40,13 @@ M. Souilah, A. Boulle, A. Debelle, "RaDMaX: a graphical program for the determin
 
 <ul>
 <li>
-<a href="http://continuum.io/downloads">Anaconda</a>: A free distribution for the SciPy stack. Supports Linux, Windows and Mac. <a href="https://3230d63b5fc54e62148e-c95ac804525aac4b6dba79b00b39d1d3.ssl.cf1.rackcdn.com/Anaconda-2.3.0-Windows-x86.exe">Download.</a>
+<a href="http://continuum.io/downloads">Anaconda</a> (recommended): A free distribution for the SciPy stack. Supports Linux, Windows and Mac. <a href="https://3230d63b5fc54e62148e-c95ac804525aac4b6dba79b00b39d1d3.ssl.cf1.rackcdn.com/Anaconda-2.3.0-Windows-x86.exe">Download.</a>
 </li>
 <li>
-<a href="http://python-xy.github.io/">Python(x,y)</a>: A free distribution including the SciPy stack, based around the Spyder IDE. Windows only. <a href="http://ftp.ntua.gr/pub/devel/pythonxy/Python(x,y)-2.7.10.0.exe">Download.</a>
+<a href="http://python-xy.github.io/">Python(x,y)</a> (not tested): A free distribution including the SciPy stack, based around the Spyder IDE. Windows only. <a href="http://ftp.ntua.gr/pub/devel/pythonxy/Python(x,y)-2.7.10.0.exe">Download.</a>
 </li>
 <li>
-<a href="http://winpython.github.io/">WinPython</a>: A free distribution including the SciPy stack. Windows only. <a href="http://sourceforge.net/projects/winpython/files/WinPython_2.7/2.7.9.5/WinPython-32bit-2.7.9.5.exe/download">Download.</a>
+<a href="http://winpython.github.io/">WinPython</a> (not tested): A free distribution including the SciPy stack. Windows only. <a href="http://sourceforge.net/projects/winpython/files/WinPython_2.7/2.7.9.5/WinPython-32bit-2.7.9.5.exe/download">Download.</a>
 </li>
 </ul>
 </li>
@@ -69,9 +69,9 @@ M. Souilah, A. Boulle, A. Debelle, "RaDMaX: a graphical program for the determin
 <a id="mac-osx" class="anchor" href="#mac-osx" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Mac OSX</h2>
 
 <ol>
-<li>Macs don’t come with a package manager. Fortunately, you can use for instance a private package manager <a href="http://www.macports.org/">Macports</a> to install the SciPy package which already contains Matplotlib.
+<li>Mac OS doesn’t come with a package manager. You can use a third party package manager like <a href="http://www.macports.org/">Macports</a> to install SciPy and Matplotlib.
 Run (as root): <code>port install py27-numpy py27-scipy py27-matplotlib py27-ipython +notebook py27-pandas py27-sympy py27-nose</code>.</li>
-<li>Download and install <a href="http://www.wxpython.org/download.php#osx">wxPython</a>, choose the install that fit your system, if OSX &lt; 10.5, <a href="http://sourceforge.net/projects/wxpython/files/wxPython/3.0.2.0/wxPython3.0-osx-3.0.2.0-carbon-py2.7.dmg/download?use_mirror=kent">wxPython</a>
+<li>Download and install <a href="http://www.wxpython.org/download.php#osx">wxPython</a>, choose the install that fits your system, if OSX &lt; 10.5, <a href="http://sourceforge.net/projects/wxpython/files/wxPython/3.0.2.0/wxPython3.0-osx-3.0.2.0-carbon-py2.7.dmg/download?use_mirror=kent">wxPython</a>
 or OSX &gt; 10.5 <a href="http://sourceforge.net/projects/wxpython/files/wxPython/3.0.2.0/wxPython3.0-osx-3.0.2.0-cocoa-py2.7.dmg/download?use_mirror=vorboss">wxPython</a> </li>
 <li>In a terminal, run the Radmax.py file with <code>python Radmax.py</code>.</li>
 </ol>
@@ -80,7 +80,7 @@ or OSX &gt; 10.5 <a href="http://sourceforge.net/projects/wxpython/files/wxPytho
 <a id="development-environment" class="anchor" href="#development-environment" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Development environment</h2>
 
 <p>The RaDMaX program has been developed on MS Windows using python 2.7.10, Matplotlib 1.4.3 and 1.5.0 and WxPython 3.0.2.0.
-It has been tested on several GNU/Linux distributions including Debian 8 and Kubuntu 15.04, using python 2.7.9, Matplotlib 1.4.2 and WxPython 3.0.1.1. It also has been tested on a MacMini running OSX Yosemite 10.10.5 with python 2.7.10, Matplotlib 1.5.0 and WxPython 3.0.2.0.</p>
+It has been tested on several GNU/Linux distributions including Debian 8 and Kubuntu 15.04 and 15.10, using python 2.7.9, Matplotlib 1.4.2 and WxPython 3.0.1.1. It also has been tested on MAC OSX Yosemite 10.10.5 with python 2.7.10, Matplotlib 1.5.0 and WxPython 3.0.2.0.</p>
 
 <h1>
 <a id="quick-test-of-the-program" class="anchor" href="#quick-test-of-the-program" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Quick test of the program</h1>
@@ -102,7 +102,7 @@ It has been tested on several GNU/Linux distributions including Debian 8 and Kub
 <ul>
 <li>Any change in any of the upper panels has to be validated with the "Update" button to update the XRD curve.</li>
 <li>The strain and damage profiles can be modified by dragging the control points. The XRD curve is updated in real time.</li>
-<li>The strain and damage profile can be scaled up or down with the mouse wheel + pressing the "u" key. The XRD curve is update when the "u" key is released.</li>
+<li>The strain and damage profile can be scaled up or down with the mouse wheel + pressing the "u" key. The XRD curve is updated when the "u" key is released.</li>
 <li>Calculated XRD curves can be fitted to experimental data in the "Fitting window" tab.</li>
 <li>Conventional least-squares (recommended) or generalized simulated annealing algorithm can be used.</li>
 <li>The fitted curve, the strain and damage profiles are automatically saved (*.txt) in the folder selected above. </li>
