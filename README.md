@@ -12,9 +12,9 @@ RaDMaX requires python 2.7, SciPy, Matplotlib and wxPython. For the moment, the 
 ## MS Windows
 1. For most users, especially on Windows and Mac, the easiest way to install scientific Python is to download **one** of these Python distributions, which includes most of the key packages:
  
- * [Anaconda](http://continuum.io/downloads): A free distribution for the SciPy stack. Supports Linux, Windows and Mac. [Download.](https://3230d63b5fc54e62148e-c95ac804525aac4b6dba79b00b39d1d3.ssl.cf1.rackcdn.com/Anaconda-2.3.0-Windows-x86.exe)
- * [Python(x,y)](http://python-xy.github.io/): A free distribution including the SciPy stack, based around the Spyder IDE. Windows only. [Download.](http://ftp.ntua.gr/pub/devel/pythonxy/Python(x,y)-2.7.10.0.exe)
- * [WinPython](http://winpython.github.io/): A free distribution including the SciPy stack. Windows only. [Download.] (http://sourceforge.net/projects/winpython/files/WinPython_2.7/2.7.9.5/WinPython-32bit-2.7.9.5.exe/download)
+ * [Anaconda](http://continuum.io/downloads) (recommended): A free distribution for the SciPy stack. Supports Linux, Windows and Mac. [Download.](https://3230d63b5fc54e62148e-c95ac804525aac4b6dba79b00b39d1d3.ssl.cf1.rackcdn.com/Anaconda-2.3.0-Windows-x86.exe)
+ * [Python(x,y)](http://python-xy.github.io/) (not tested): A free distribution including the SciPy stack, based around the Spyder IDE. Windows only. [Download.](http://ftp.ntua.gr/pub/devel/pythonxy/Python(x,y)-2.7.10.0.exe)
+ * [WinPython](http://winpython.github.io/) (not tested): A free distribution including the SciPy stack. Windows only. [Download.] (http://sourceforge.net/projects/winpython/files/WinPython_2.7/2.7.9.5/WinPython-32bit-2.7.9.5.exe/download)
 
 
 2. Download and install [wxPython] (http://downloads.sourceforge.net/wxpython/wxPython3.0-win32-3.0.2.0-py27.exe)
@@ -50,7 +50,7 @@ It has been tested on several GNU/Linux distributions including Debian 8 and Kub
 
 * Any change in any of the upper panels has to be validated with the "Update" button to update the XRD curve.
 * The strain and damage profiles can be modified by dragging the control points. The XRD curve is updated in real time.
-* The strain and damage profile can be scaled up or down with the mouse wheel + pressing the "u" key. The XRD curve is update when the "u" key is released.
+* The strain and damage profile can be scaled up or down with the mouse wheel + pressing the "u" key. The XRD curve is updated when the "u" key is released.
 * Calculated XRD curves can be fitted to experimental data in the "Fitting window" tab.
 * Conventional least-squares (recommended) or generalized simulated annealing algorithm can be used.
 * The fitted curve, the strain and damage profiles are automatically saved (*.txt) in the folder selected above. 
