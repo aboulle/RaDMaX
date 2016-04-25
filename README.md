@@ -42,13 +42,9 @@ or OSX > 10.5 [wxPython](http://sourceforge.net/projects/wxpython/files/wxPython
 3. In a terminal, run the Radmax.py file with `python Radmax.py`.
 
 ## Development environment
-<<<<<<< HEAD
 The RaDMaX program has been developed on MS Windows using python 2.7.11, Matplotlib 1.5.1 and WxPython 3.0.2.0.
-It has been tested on several GNU/Linux distributions including Debian 8 and Kubuntu 15.04, using python 2.7.9, Matplotlib 1.4.2 and WxPython 3.0.1.1. It also has been tested on a MacMini running OSX Yosemite 10.10.5 with python 2.7.10, Matplotlib 1.5.0 and WxPython 3.0.2.0.
-=======
-The RaDMaX program has been developed on MS Windows using python 2.7.10, Matplotlib 1.4.3 and 1.5.0 and WxPython 3.0.2.0.
-It has been tested on several GNU/Linux distributions including Debian 8 and Kubuntu 15.04 and 15.10, using python 2.7.9, Matplotlib 1.4.2 and WxPython 3.0.1.1. It also has been tested on MAC OSX Yosemite 10.10.5 with python 2.7.10, Matplotlib 1.5.0 and WxPython 3.0.2.0.
->>>>>>> d71c05b75f130d824a23862c84f3cb4e7bd5641a
+It has been tested on several GNU/Linux distributions including Debian 8 and Kubuntu 15.04, using python 2.7.9, Matplotlib 1.4.2 and WxPython 3.0.1.1.
+It also has been tested on a MacMini running OSX Yosemite 10.10.5 with python 2.7.11, Matplotlib 1.5.1 and WxPython 3.0.2.0.
 
 
 # Quick test of the program
