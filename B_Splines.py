@@ -7,10 +7,11 @@
 Calcule la fonction de base Bspline et la cubic-spline
 attention l'échelle horizontale est arbitraire (z = 0 -> 1ere abscisse
 z=max -> dernière abscisse
-'''	
+'''
+
 
 def bSpline3(z):
-    if z <= 0 :
+    if z <= 0:
         return 0
     elif z <= 1:
         return (z**3)/6
@@ -20,11 +21,13 @@ def bSpline3(z):
         return (-22./3) + z * (10 + z*(-4 + z/2))
     elif z <= 4:
         return (32./3) + z * (-8 + z*(2 - z/6))
-    else :
+    else:
         return 0
 
-##definition de la fonction cubic-spline
-def cubicSpline(z,w):
+# definition de la fonction cubic-spline
+
+
+def cubicSpline(z, w):
     somme = 0
     index = 0
     for poids in w:
@@ -32,17 +35,19 @@ def cubicSpline(z,w):
         index = index + 1
     return somme
 
+
 def bSpline1(z):
-    if z <= 0 :
+    if z <= 0:
         return 0
     elif z <= 1:
         return z
     elif z <= 2:
         return 2-z
-    else :
+    else:
         return 0
 
-def linearSpline(z,w):
+
+def linearSpline(z, w):
     somme = 0
     index = 0
     for poids in w:
@@ -50,15 +55,17 @@ def linearSpline(z,w):
         index = index + 1
     return somme
 
+
 def bSpline0(z):
-    if z <= 0 :
+    if z <= 0:
         return 0
     elif z <= 1:
         return 1
-    else :
+    else:
         return 0
 
-def constantSpline(z,w):
+
+def constantSpline(z, w):
     somme = 0
     index = 0
     for poids in w:

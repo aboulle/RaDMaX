@@ -8,6 +8,13 @@ Download zip file and extract it to your disk.
 
 RaDMaX requires python 2.7, SciPy, Matplotlib and wxPython. For the moment, the wxpython library is not compatible with Python 3 and above. **RaDMaX won't work with Python 3.** Instructions for Windows and GNU/Linux are given below.
 
+#What's new
+## April 2016:
+
+- a new strain/DW model has been added to simulate high-velocity ion irradiation, where a narrow damage peak is formed deep below the surface. It is based on an asymmetric pseudo-Voigt function to model the damage peak + a constant on the left-side of the peak to simulate the region of constant damage. The control points allow to modify the magnitude and location of strain/DW peak, its width (left /right side independently), and the magnitude of the constant strain/DW region. The left/right shape factors of the pseudo-Voigt are accessible through the "eta" fields.
+- the least-square fitting algorithm now uses [LmFit] (https://lmfit.github.io/lmfit-py/) if it is installed on your computer (recommended). Among other features, LmFit allows to set limits on the fitting parameters. Otherwise, SciPy's leastsq algorithm is used.
+- the fitting options (GSA and least-squares) and parameter limits are now accessible through the "Fit" menu.
+
 
 ## MS Windows
 1. For most users, especially on Windows and Mac, the easiest way to install scientific Python is to download **one** of these Python distributions, which includes most of the key packages:
@@ -35,7 +42,7 @@ or OSX > 10.5 [wxPython](http://sourceforge.net/projects/wxpython/files/wxPython
 3. In a terminal, run the Radmax.py file with `python Radmax.py`.
 
 ## Development environment
-The RaDMaX program has been developed on MS Windows using python 2.7.10, Matplotlib 1.4.3 and 1.5.0 and WxPython 3.0.2.0.
+The RaDMaX program has been developed on MS Windows using python 2.7.11, Matplotlib 1.5.1 and WxPython 3.0.2.0.
 It has been tested on several GNU/Linux distributions including Debian 8 and Kubuntu 15.04, using python 2.7.9, Matplotlib 1.4.2 and WxPython 3.0.1.1. It also has been tested on a MacMini running OSX Yosemite 10.10.5 with python 2.7.10, Matplotlib 1.5.0 and WxPython 3.0.2.0.
 
 
@@ -61,7 +68,7 @@ XRD data can be loaded from the "File" menu. The data should be provided as a tw
 Guess strain/damage profile can be imported from the "File" menu. The data should be providedas a two-columns ASCII file with the depth below the surface (in Angstroms) as first column.
 
 # Screenshots
-RaDMaX running in Windows 10
+RaDMaX running in Windows 7
 
 ![Screenshot](https://raw.github.com/aboulle/RaDMaX/master/Screen1.png)
 
