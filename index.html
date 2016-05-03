@@ -25,6 +25,20 @@
 M. Souilah, A. Boulle, A. Debelle, "RaDMaX: a graphical program for the determination of strain and damage profiles in irradiated crystals", <em>J. Appl.Cryst.</em> <strong>49</strong>, 311-316 (2016). <a href="http://dx.doi.org/10.1107/S1600576715021019">Link to article.</a></p>
 
 <h1>
+<a id="whats-new" class="anchor" href="#whats-new" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>What's new</h1>
+
+<h2>
+<a id="april-2016" class="anchor" href="#april-2016" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>April 2016:</h2>
+
+<ul>
+<li>version 2.0. <strong>IMPORTANT: if you encounter an error upon opening an former project or creating a new one, delete the Radmax.ini file in the Radmax folder.</strong>
+</li>
+<li>a new strain/DW model has been added to simulate high-velocity ion irradiation, where a narrow damage peak is formed deep below the surface. It is based on an asymmetric pseudo-Voigt function to model the damage peak + a constant on the left-side of the peak to simulate the region of constant damage. The control points allow to modify the magnitude and location of strain/DW peak, its width (left /right side independently), and the magnitude of the constant strain/DW region. The left/right shape factors of the pseudo-Voigt are accessible through the "eta" fields.</li>
+<li>the least-square fitting algorithm now uses <a href="https://lmfit.github.io/lmfit-py/">LmFit</a> if it is installed on your computer (recommended). Among other features, LmFit allows to set limits on the fitting parameters. Otherwise, SciPy's leastsq algorithm is used.</li>
+<li>the fitting options (GSA and least-squares) and parameter limits are now accessible through the "Fit" menu.</li>
+</ul>
+
+<h1>
 <a id="installation-instructions" class="anchor" href="#installation-instructions" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Installation instructions</h1>
 
 <p>Download zip file and extract it to your disk.</p>
@@ -79,8 +93,9 @@ or OSX &gt; 10.5 <a href="http://sourceforge.net/projects/wxpython/files/wxPytho
 <h2>
 <a id="development-environment" class="anchor" href="#development-environment" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Development environment</h2>
 
-<p>The RaDMaX program has been developed on MS Windows using python 2.7.10, Matplotlib 1.4.3 and 1.5.0 and WxPython 3.0.2.0.
-It has been tested on several GNU/Linux distributions including Debian 8 and Kubuntu 15.04 and 15.10, using python 2.7.9, Matplotlib 1.4.2 and WxPython 3.0.1.1. It also has been tested on MAC OSX Yosemite 10.10.5 with python 2.7.10, Matplotlib 1.5.0 and WxPython 3.0.2.0.</p>
+<p>The RaDMaX program has been developed on MS Windows using python 2.7.11, Matplotlib 1.5.1 and WxPython 3.0.2.0.
+It has been tested on several GNU/Linux distributions including Debian 8 and Kubuntu 15.04, using python 2.7.9, Matplotlib 1.4.2 and WxPython 3.0.1.1.
+It also has been tested on a MacMini running OSX Yosemite 10.10.5 with python 2.7.11, Matplotlib 1.5.1 and WxPython 3.0.2.0.</p>
 
 <h1>
 <a id="quick-test-of-the-program" class="anchor" href="#quick-test-of-the-program" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Quick test of the program</h1>
@@ -118,7 +133,7 @@ It has been tested on several GNU/Linux distributions including Debian 8 and Kub
 <h1>
 <a id="screenshots" class="anchor" href="#screenshots" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Screenshots</h1>
 
-<p>RaDMaX running in Windows 10</p>
+<p>RaDMaX running in Windows 7</p>
 
 <p><img src="https://raw.github.com/aboulle/RaDMaX/master/Screen1.png" alt="Screenshot"></p>
 
