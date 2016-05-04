@@ -16,7 +16,7 @@ pubsub_ModifyDLimits = "ModifyDeformationLimits"
 class GSAParametersWindow(wx.Frame):
     def __init__(self, parent):
         pos = wx.DefaultPosition
-        size = (350, 240)
+        size = (377, 282)
         style = (wx.MINIMIZE_BOX | wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX |
                  wx.CLIP_CHILDREN | wx.FRAME_FLOAT_ON_PARENT)
         wx.Frame.__init__(self, wx.GetApp().TopWindow, wx.ID_ANY,
@@ -42,7 +42,7 @@ class GSAParametersWindow(wx.Frame):
         label_3 = "Obi-Wan Kenobi"
 
         label_txt_a = wx.StaticText(pnl, -1, label=label_0,
-                                    size=(200, 44))
+                                    size=(250, 44))
         self.rb1 = wx.RadioButton(pnl, label=label_1, style=wx.RB_GROUP)
         self.rb2 = wx.RadioButton(pnl, label=label_2)
         self.rb3 = wx.RadioButton(pnl, label=label_3)

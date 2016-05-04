@@ -18,7 +18,7 @@ pubsub_Hide_Show_Option = "HideShowOption"
 class ParametersWindow(wx.Frame):
     def __init__(self, parent):
         pos = wx.DefaultPosition
-        size = (525, 488)
+        size = (580, 522)
         style = (wx.MINIMIZE_BOX | wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX |
                  wx.CLIP_CHILDREN | wx.FRAME_FLOAT_ON_PARENT)
         wx.Frame.__init__(self, wx.GetApp().TopWindow, wx.ID_ANY,
