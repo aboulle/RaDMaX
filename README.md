@@ -3,18 +3,17 @@ RaDMaX is a program that allows to retrieve strain and damage profiles in ion-ir
 **If you use this program in academic work, please cite:**
 M. Souilah, A. Boulle, A. Debelle, "RaDMaX: a graphical program for the determination of strain and damage profiles in irradiated crystals", _J. Appl.Cryst._ **49**, 311-316 (2016). [Link to article.] (http://dx.doi.org/10.1107/S1600576715021019)
 
-# Installation instructions
-Download zip file and extract it to your disk.
-
-RaDMaX requires python 2.7, SciPy, Matplotlib and wxPython. For the moment, the wxpython library is not compatible with Python 3 and above. **RaDMaX won't work with Python 3.** Instructions for Windows and GNU/Linux are given below.
-
 #What's new
 ## April 2016:
-
+- version 2.0. **IMPORTANT: if you encounter an error upon opening an former project or creating a new one, delete the Radmax.ini file in the Radmax folder.**
 - a new strain/DW model has been added to simulate high-velocity ion irradiation, where a narrow damage peak is formed deep below the surface. It is based on an asymmetric pseudo-Voigt function to model the damage peak + a constant on the left-side of the peak to simulate the region of constant damage. The control points allow to modify the magnitude and location of strain/DW peak, its width (left /right side independently), and the magnitude of the constant strain/DW region. The left/right shape factors of the pseudo-Voigt are accessible through the "eta" fields.
 - the least-square fitting algorithm now uses [LmFit] (https://lmfit.github.io/lmfit-py/) if it is installed on your computer (recommended). Among other features, LmFit allows to set limits on the fitting parameters. Otherwise, SciPy's leastsq algorithm is used.
 - the fitting options (GSA and least-squares) and parameter limits are now accessible through the "Fit" menu.
 
+# Installation instructions
+Download zip file and extract it to your disk.
+
+RaDMaX requires python 2.7, SciPy, Matplotlib and wxPython. For the moment, the wxpython library is not compatible with Python 3 and above. **RaDMaX won't work with Python 3.** Instructions for Windows and GNU/Linux are given below.
 
 ## MS Windows
 1. For most users, especially on Windows and Mac, the easiest way to install scientific Python is to download **one** of these Python distributions, which includes most of the key packages:
