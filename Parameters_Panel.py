@@ -834,15 +834,15 @@ class InitialDataPanel(wx.Panel):
                 self.on_reset_deformation_multiplication()
                 b.read_xrd_file(paths[0])
                 P4Radmax.ParamDict['Iobs'] = a.ParamDict['data_xrd'][1]
-                minval = np.min(a.Iobs[np.nonzero(a.Iobs)])
-                P4Radmax.ParamDict['Iobs'][a.Iobs == 0] = minval
-                P4Radmax.ParamDict['Iobs'] = a.Iobs / a.Iobs.max()
+                minval = np.min(a.ParamDict['Iobs'][np.nonzero(a.ParamDict['Iobs'])])
+                P4Radmax.ParamDict['Iobs'][a.ParamDict['Iobs'] == 0] = minval
+                P4Radmax.ParamDict['Iobs'] = a.ParamDict['Iobs'] / a.ParamDict['Iobs'].max()
                 P4Radmax.ParamDict['th'] = ((a.ParamDict['data_xrd'][0]) *
                                             np.pi/360.)
                 P4Radmax.ParamDict['th4live'] = 2*a.ParamDict['th']*180/np.pi
 
                 P4Radmax.ParamDictbackup['Iobs'] = a.ParamDict['Iobs']
-                P4Radmax.ParamDictbackup['th'] = ParamDict['th']
+                P4Radmax.ParamDictbackup['th'] = a.ParamDict['th']
 
                 pub.sendMessage(pubsub_Draw_XRD, b=1)
             except TypeError:
@@ -928,7 +928,6 @@ class InitialDataPanel(wx.Panel):
         self.draw_curves()
         if choice == 0:
             self.save_deformation('Strain_file', 'strain', a.ParamDict['sp'])
-            self.save_deformation('Strain_file', 'strain', a.sp)
 
     def calc_DW(self, paths=None, choice=None):
         """
@@ -962,7 +961,6 @@ class InitialDataPanel(wx.Panel):
         self.draw_curves()
         if choice == 0:
             self.save_deformation('DW_file', 'DW', a.ParamDict['dwp'])
-            self.save_deformation('DW_file', 'DW', a.dwp)
 
     def on_load_project(self, event):
         """

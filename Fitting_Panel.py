@@ -711,13 +711,17 @@ class FittingPanel(wx.Panel):
                 P4Radmax.name4lmfit = []
                 for ii in range(len(a.ParamDict['sp'])):
                     name = 'sp_' + str(ii)
-                    self.fit_params.add(name, value=a.ParamDict['sp'][ii])
+                    self.fit_params.add(name, value=a.ParamDict['sp'][ii],
+                                        min=a.DefaultDict['strain_min'],
+                                        max=a.DefaultDict['strain_max'])
                     P4Radmax.name4lmfit.append(name)
                 self.fit_params.add('nb_sp_val',
                                     value=len(a.ParamDict['sp']), vary=False)
                 for jj in range(len(a.ParamDict['dwp'])):
                     name = 'dwp_' + str(jj)
-                    self.fit_params.add(name, value=a.ParamDict['dwp'][jj])
+                    self.fit_params.add(name, value=a.ParamDict['dwp'][jj],
+                                        min=a.DefaultDict['strain_min'],
+                                        max=a.DefaultDict['strain_max'])
                     P4Radmax.name4lmfit.append(name)
                 self.fit_params.add('nb_dwp_val',
                                     value=len(a.ParamDict['dwp']), vary=False)
@@ -883,7 +887,7 @@ class FittingPanel(wx.Panel):
                 name_ = (a.PathDict['namefromini'] + '_' +
                          output_name['out_dw'])
                 data_ = a.ParamDict['dwp']
-                savetxt(os.path.join(path, ), data_, fmt='%10.8f')
+                savetxt(os.path.join(path, name_), data_, fmt='%10.8f')
             else:
                 # -------------------------------------------------------------
                 name_ = (a.PathDict['namefromini'] + '_' +

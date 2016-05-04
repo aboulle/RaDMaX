@@ -63,18 +63,7 @@ class ParametersWindow(wx.Frame):
         self.Layout()
 
     def onClose(self, event):
-        dlg = GMD.GenericMessageDialog(None, "Save changes ?",
-                                       "Attention", agwStyle=wx.OK |
-                                       wx.CANCEL | wx.ICON_QUESTION)
-        result = dlg.ShowModal()
-        dlg.Destroy()
-        if result == wx.ID_OK:
-            pub.sendMessage(pubsub_Read_field)
-            a = P4Radmax()
-            if False not in a.Paramwindowtest:
-                P4Radmax.Option_window_status = False
-        else:
-            P4Radmax.Option_window_status = False
+        P4Radmax.Option_window_status = False
         self.GetParent().Enable()
         pub.sendMessage(pubsub_Hide_Show_Option, test=1)
 
@@ -118,7 +107,7 @@ class BsplinePanel(wx.Panel):
         self.parent = parent
 
         if _platform == "linux" or _platform == "linux2":
-            size_StaticBox = (950, 140)
+            size_StaticBox = (920, 140)
             font_Statictext = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL,
                                       False, u'Arial')
             font_TextCtrl = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL,
@@ -263,7 +252,7 @@ class PseudoVoigtPanel(wx.Panel):
         self.parent = parent
 
         if _platform == "linux" or _platform == "linux2":
-            size_StaticBox = (950, 140)
+            size_StaticBox = (920, 140)
             font_Statictext = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL,
                                       False, u'Arial')
             font_TextCtrl = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL,
@@ -473,7 +462,7 @@ class FitParametersPanel(wx.Panel):
         self.parent = parent
 
         if _platform == "linux" or _platform == "linux2":
-            size_StaticBox = (950, 140)
+            size_StaticBox = (920, 140)
             font_Statictext = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL,
                                       False, u'Arial')
             font_TextCtrl = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL,
@@ -580,14 +569,32 @@ class FitParametersPanel(wx.Panel):
         self.default_1 = wx.Button(self, id=self.default_1_Id,
                                    label="Set as Default")
         self.default_1.SetFont(font_update)
-        self.default_1.Bind(wx.EVT_BUTTON, self.onSaveData)
+        self.default_1.Bind(wx.EVT_BUTTON, self.on_save_data)
+
+        txt_ = u'(only for newly created projects)'
+        txt_end = wx.StaticText(self, -1, label=txt_,
+                                size=(200, vStatictextsize))
+        txt_end.SetFont(font_update)
+
+        self.apply_1_Id = wx.NewId()
+        self.apply_1 = wx.Button(self, id=self.default_1_Id,
+                                 label="Apply changes")
+        self.apply_1.SetFont(font_update)
+        self.apply_1.Bind(wx.EVT_BUTTON, self.on_apply_changes)
 
         mastersizer = wx.BoxSizer(wx.VERTICAL)
+        horsizer = wx.GridBagSizer(hgap=15, vgap=0)
+        
+        horsizer.Add(self.default_1, pos=(0, 0), flag=flagSizer)
+        horsizer.Add(self.apply_1, pos=(0, 12), flag=flagSizer)
+        
         mastersizer.Add(Leastsq_box_sizer, 0, wx.ALL, 5)
         mastersizer.Add(AGSA_options_box_sizer, 0, wx.ALL, 5)
-        mastersizer.Add(self.default_1, 0, wx.ALL, 5)
+#        mastersizer.Add(self.default_1, 0, wx.ALL, 5)
+        mastersizer.Add(horsizer, 0, wx.ALL, 5)
+        mastersizer.Add(txt_end, 0, wx.ALL, 5)
 
-        pub.subscribe(self.onReadField, pubsub_Read_field)
+        pub.subscribe(self.on_read_field, pubsub_Read_field)
 
         self.TextcontrolGSA = [self.qa, self.qv, self.qt]
         self.TextcontrolLeastsq = [self.xtol, self.ftol, self.maxfev]
@@ -596,9 +603,9 @@ class FitParametersPanel(wx.Panel):
         self.SetSizer(mastersizer)
         self.Layout()
         self.Fit()
-        self.onFillTextCtrl()
+        self.on_fill_textCtrl()
 
-    def onFillTextCtrl(self):
+    def on_fill_textCtrl(self):
         a = P4Radmax()
         i = 0
         for k in DefaultParam4Radmax[21:24]:
@@ -609,7 +616,10 @@ class FitParametersPanel(wx.Panel):
             self.TextcontrolLeastsq[i].AppendText(str(a.DefaultDict[k]))
             i += 1
 
-    def onSaveData(self, event):
+    def on_apply_changes(self, event):
+        pub.sendMessage(pubsub_Read_field)
+
+    def on_save_data(self, event):
         _msg = "Save data as default ?\n" + \
                "This change will be applied for all fit !!\n\n"
         dlg = GMD.GenericMessageDialog(None, _msg,
@@ -630,7 +640,7 @@ class FitParametersPanel(wx.Panel):
                     P4Radmax.Paramwindowtest['FitParametersPanel'] = True
                     pub.sendMessage(pubsub_Save_Param_and_quit)
 
-    def onReadField(self):
+    def on_read_field(self):
         success = self.IsDataFloat()
         if success:
             P4Radmax.Paramwindowtest['FitParametersPanel'] = True
