@@ -54,7 +54,7 @@ LEVELS = [
 
 Application_name = "RaDMaX"
 filename = "Radmax"
-Application_version = "2.0.0.0"
+Application_version = "2.0.0.1"
 last_modification = "04/05/2016"
 log_filename = "activity"
 ConfigDataFile = 'ConfigDataFile'

@@ -605,7 +605,7 @@ class FittingPanel(wx.Panel):
                            a.DefaultDict['strain_min']) and
                            all(a.ParamDict['sp'] <
                                a.DefaultDict['strain_max']))
-            if test_dw and test_strain is True:
+            if test_dw and test_strain:
                 return True
             else:
                 return False
@@ -720,8 +720,8 @@ class FittingPanel(wx.Panel):
                 for jj in range(len(a.ParamDict['dwp'])):
                     name = 'dwp_' + str(jj)
                     self.fit_params.add(name, value=a.ParamDict['dwp'][jj],
-                                        min=a.DefaultDict['strain_min'],
-                                        max=a.DefaultDict['strain_max'])
+                                        min=a.DefaultDict['dw_min'],
+                                        max=a.DefaultDict['dw_max'])
                     P4Radmax.name4lmfit.append(name)
                 self.fit_params.add('nb_dwp_val',
                                     value=len(a.ParamDict['dwp']), vary=False)
