@@ -21,7 +21,7 @@ except ImportError:
     pass
 from def_XRD import f_Refl, f_ReflDict
 
-from sim_anneal import SimAnneal
+from sim_anneal import gsa
 from sys import platform as _platform
 from random import randint
 
@@ -51,6 +51,10 @@ pubsub_Draw_XRD = "DrawXRD"
 pubsub_Read_sp_dwp = "ReadSpDwp"
 pubsub_Hide_Show_GSA = "HideShowGSA"
 pubsub_ModifyDLimits = "ModifyDeformationLimits"
+
+pubsub_Draw_XRD = "DrawXRD"
+pubsub_Draw_Strain = "DrawStrain"
+pubsub_Draw_DW = "DrawDW"
 
 Live_COUNT = wx.NewEventType()
 LiveLimitExceeded_COUNT = wx.NewEventType()
@@ -266,7 +270,7 @@ class FittingPanel(wx.Panel):
 
         self.Restore_box_sizer.Add(in_Restore_box_sizer, 0, wx.ALL, 5)
 
-        self.png = wx.BitmapFromIcon(error_icon.GetIcon())
+        self.png = error_icon.GetBitmap()
         self.information_icon = wx.StaticBitmap(self, -1, self.png, (10, 5),
                                                 (self.png.GetWidth(),
                                                  self.png.GetHeight()))
@@ -768,9 +772,9 @@ class FittingPanel(wx.Panel):
         self.worker_live.stop()
         l_numb = [2, 24, 56, 89]
         if self.random_thread_image in l_numb:
-            bmp = wx.BitmapFromIcon(stop_thread_morpheus.GetIcon())
+            bmp = stop_thread_morpheus.GetBitmap()
         else:
-            bmp = wx.BitmapFromIcon(stop_thread.GetIcon())
+            bmp = stop_thread.GetBitmap()
         shadow = wx.WHITE
         AS.AdvancedSplash(None, bitmap=bmp, timeout=2000,
                           agwStyle=AS.AS_TIMEOUT | AS.AS_CENTER_ON_PARENT,
@@ -818,8 +822,8 @@ class FittingPanel(wx.Panel):
             P4Radmax.residual_error = temp / len(y_cal)
             error = round(a.residual_error, 4)
             if case == 0:
-                self.png = wx.BitmapFromIcon(ok_icon.GetIcon())
-                self.information_icon.SetBitmap(self.png)
+                png = ok_icon.GetBitmap()
+                self.information_icon.SetBitmap(png)
                 self.information_icon.Show()
                 self.residual_error_txt.Show()
                 self.residual_error.SetLabel(str(error))
@@ -835,8 +839,8 @@ class FittingPanel(wx.Panel):
                     t_ = a.par_fit[-1*int(a.DataDict['dw_basis_func']):]
                     P4Radmax.ParamDict['dwp'] = t_
             elif case == 1:
-                self.png = wx.BitmapFromIcon(error_icon.GetIcon())
-                self.information_icon.SetBitmap(self.png)
+                png = error_icon.GetBitmap()
+                self.information_icon.SetBitmap(png)
                 self.information_icon.Show()
                 self.residual_error_txt.Show()
                 self.residual_error.SetLabel(str(error))
@@ -1130,6 +1134,9 @@ class Fit_launcher(Thread):
 #            pub.sendMessage(pubsub_Draw_Fit_Live_XRD, val=y_cal)
 #            pub.sendMessage(pubsub_Draw_Fit_Live_Deformation)
             deformation = [p]
+            self.f_strain_DW()
+            sleep(0.5)
+#            wx.CallAfter()
             evt = LiveEvent(Live_COUNT, -1, y_cal, None, deformation)
             wx.PostEvent(self.parent, evt)
             sleep(0.5)
@@ -1274,6 +1281,7 @@ class Fit_launcher(Thread):
 
     def on_pass_data_to_thread(self, y_cal, p, E_min, nb_minima, val4gauge,
                                gaugeUpdate):
+        self.f_strain_DW()
         self.count = self.count + 1
         if self.count == 1:
             data = [E_min, nb_minima, self.gauge_counter]
@@ -1288,7 +1296,6 @@ class Fit_launcher(Thread):
 
     def run(self):
         a = P4Radmax()
-        b = SimAnneal(self.parent)
         P4Radmax.par_fit = []
         P4Radmax.gsa_loop = 0
         self.leastsq_refresh = a.frequency_refresh_leastsq
@@ -1323,12 +1330,13 @@ class Fit_launcher(Thread):
                 func = self.residual_square
             else:
                 func = self.residual_square_jit
-            P4Radmax.par_fit = b.gsa(func, self.on_limit_exceeded,
+            P4Radmax.par_fit = gsa(func, self.on_limit_exceeded,
                                      self.data)
 
         if self.need_abort == 1:
             evt = LiveEvent(Live_COUNT, -1, [], None, None, 1)
             wx.PostEvent(self.parent, evt)
+            self.need_abort = 0
         else:
             evt = LiveEvent(Live_COUNT, -1, [], None, None, 0)
             wx.PostEvent(self.parent, evt)
@@ -1340,3 +1348,91 @@ class Fit_launcher(Thread):
         if self.choice == 1:
             evt = LiveEvent(Live_COUNT, -1, [], None, None, 1)
             wx.PostEvent(self.parent, evt)
+
+    def f_strain_DW(self):
+        a = P4Radmax()
+        P4Radmax.ParamDict['sp'] = a.ParamDict['_fp_min'][:int(a.DataDict['strain_basis_func'])]
+        P4Radmax.ParamDict['dwp'] = a.ParamDict['_fp_min'][-1*int(a.DataDict['dw_basis_func']):]
+
+        P4Radmax.ParamDict['DW_i'] = f_DW(
+                                     a.ParamDict['z'], a.ParamDict['dwp'],
+                                     a.DataDict['damaged_depth'],
+                                     a.DataDict['model'])
+        P4Radmax.ParamDict['strain_i'] = f_strain(
+                                         a.ParamDict['z'], a.ParamDict['sp'],
+                                         a.DataDict['damaged_depth'],
+                                         a.DataDict['model'])
+
+        t = a.DataDict['damaged_depth']
+        self.on_shifted_sp_curves(t)
+        self.on_shifted_dwp_curves(t)
+
+    def on_shifted_dwp_curves(self, t):
+        a = P4Radmax()
+        if a.DataDict['model'] == 2:
+            x_dw_temp = []
+            x_dw_temp.append(t*(1-a.ParamDict['dwp'][1]))
+            x_dw_temp.append(t*(1-a.ParamDict['dwp'][1] +
+                             a.ParamDict['dwp'][2]/2))
+            x_dw_temp.append(t*(1-a.ParamDict['dwp'][1] -
+                             a.ParamDict['dwp'][3]/2))
+            x_dw_temp.append(t*0.05)
+            P4Radmax.ParamDict['x_dwp'] = x_dw_temp
+
+            y_dw_temp = []
+            y_dw_temp.append(a.ParamDict['dwp'][0])
+            y_dw_temp.append(1. - (1-a.ParamDict['dwp'][0])/2)
+            y_dw_temp.append(1. - (1-a.ParamDict['dwp'][0])/2 -
+                             (1-a.ParamDict['dwp'][6])/2)
+            y_dw_temp.append(a.ParamDict['dwp'][6])
+            P4Radmax.ParamDict['DW_shifted'] = y_dw_temp
+        else:
+            temp_1 = linspace(1, len(a.ParamDict['dwp']),
+                              len(a.ParamDict['dwp']))
+            temp_2 = temp_1 * t / (len(a.ParamDict['dwp']))
+            P4Radmax.ParamDict['x_dwp'] = t - temp_2
+            shifted_dwp = append(array([1.]), a.ParamDict['dwp'][:-1:])
+
+            temp_3 = in1d(around(a.ParamDict['depth'], decimals=3),
+                          around(a.ParamDict['x_dwp'], decimals=3))
+            temp_4 = a.ParamDict['DW_i'][temp_3]
+            P4Radmax.ParamDict['scale_dw'] = shifted_dwp / temp_4
+            P4Radmax.ParamDict['scale_dw'][a.ParamDict['scale_dw'] == 0] = 1.
+
+            P4Radmax.ParamDict['DW_shifted'] = shifted_dwp/a.ParamDict['scale_dw']
+            P4Radmax.ParamDict['dw_out'] = a.ParamDict['dwp'][-1]
+
+    def on_shifted_sp_curves(self, t):
+        a = P4Radmax()
+
+        if a.DataDict['model'] == 2:
+            x_sp_temp = []
+            x_sp_temp.append(t*(1-a.ParamDict['sp'][1]))
+            x_sp_temp.append(t*(1-a.ParamDict['sp'][1] +
+                             a.ParamDict['sp'][2]/2))
+            x_sp_temp.append(t*(1-a.ParamDict['sp'][1] -
+                             a.ParamDict['sp'][3]/2))
+            x_sp_temp.append(t*0.05)
+            P4Radmax.ParamDict['x_sp'] = x_sp_temp
+
+            y_sp_temp = []
+            y_sp_temp.append(a.ParamDict['sp'][0])
+            y_sp_temp.append(a.ParamDict['sp'][0]/2)
+            y_sp_temp.append(a.ParamDict['sp'][0]/2 + a.ParamDict['sp'][6]/2)
+            y_sp_temp.append(a.ParamDict['sp'][6])
+            P4Radmax.ParamDict['strain_shifted'] = y_sp_temp
+        else:
+            temp_1 = linspace(1, len(a.ParamDict['sp']),
+                              len(a.ParamDict['sp']))
+            temp_2 = temp_1 * t / (len(a.ParamDict['sp']))
+            P4Radmax.ParamDict['x_sp'] = t - temp_2
+            shifted_sp = append(array([0.]), a.ParamDict['sp'][:-1:])
+
+            temp_3 = in1d(around(a.ParamDict['depth'], decimals=3),
+                          around(a.ParamDict['x_sp'], decimals=3))
+            temp_4 = a.ParamDict['strain_i'][temp_3]
+            P4Radmax.ParamDict['scale_strain'] = shifted_sp / temp_4
+            P4Radmax.ParamDict['scale_strain'][a.ParamDict['scale_strain'] == 0] = 1.
+
+            P4Radmax.ParamDict['strain_shifted'] = shifted_sp*100./a.ParamDict['scale_strain']
+            P4Radmax.ParamDict['stain_out'] = a.ParamDict['sp'][-1]

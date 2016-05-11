@@ -84,8 +84,7 @@ class AUINotebookParameters(aui.AuiNotebook):
         aui.AuiNotebook.__init__(self, parent=parent)
         self.parent = parent
 
-        self.default_style = (aui.AUI_NB_DEFAULT_STYLE &
-                              aui.AUI_NB_CLOSE_ON_ALL_TABS)
+        self.default_style = (aui.AUI_NB_CLOSE_ON_ALL_TABS)
         self.SetAGWWindowStyleFlag(self.default_style)
 
         """create the page windows as children of the notebook"""
@@ -96,8 +95,8 @@ class AUINotebookParameters(aui.AuiNotebook):
         self.AddPage(page1, "Bspline")
         self.AddPage(page2, "PseudoVoigt")
 
-        self.SetCloseButton(page1, False)
-        self.SetCloseButton(page2, False)
+        self.SetCloseButton(0, False)
+        self.SetCloseButton(1, False)
 
 
 # -----------------------------------------------------------------------------
@@ -634,11 +633,12 @@ class FitParametersPanel(wx.Panel):
                 a = P4Radmax()
                 P4Radmax.Paramwindowtest['FitParametersPanel'] = True
                 if False not in a.Paramwindowtest:
-                    a = SaveFile4Diff(self)
-                    a.update_Config_File_Parameters(os.path.join(current_dir,
+                    b = SaveFile4Diff(self)
+                    b.on_update_config_file_parameters(os.path.join(current_dir,
                                                     filename + '.ini'))
                     P4Radmax.Paramwindowtest['FitParametersPanel'] = True
                     pub.sendMessage(pubsub_Save_Param_and_quit)
+            event.Skip()
 
     def on_read_field(self):
         success = self.IsDataFloat()

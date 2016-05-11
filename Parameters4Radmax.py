@@ -55,7 +55,7 @@ LEVELS = [
 Application_name = "RaDMaX"
 filename = "Radmax"
 Application_version = "2.0.0.1"
-last_modification = "04/05/2016"
+last_modification = "11/05/2016"
 log_filename = "activity"
 ConfigDataFile = 'ConfigDataFile'
 ConfigFile = 'ConfigFile'
@@ -325,6 +325,7 @@ class LogWindow(wx.Frame):
     def onClose(self, event):
         P4Radmax.log_window_status = False
         self.Destroy()
+        event.Skip()
 
 
 # -----------------------------------------------------------------------------
@@ -377,7 +378,7 @@ class TextValidator(wx.PyValidator):
     (letters, digits or punctuations)
     """
     def __init__(self, flag=None, pyVar=None):
-        wx.PyValidator.__init__(self)
+        wx.Validator.__init__(self)
         self.flag = flag
         self.Bind(wx.EVT_CHAR, self.OnChar)
 

@@ -6,8 +6,8 @@
 '''
 *Radmax Main Module*
 '''
-
 from Parameters4Radmax import *
+from Parameters4Radmax import P4Radmax, LogWindow
 
 try:
     import wx
@@ -36,6 +36,9 @@ except ImportError:
                       "to run this program")
     exit()
 
+from wx.lib.pubsub import pub
+import wx.lib.agw.genericmessagedialog as GMD
+
 from Icon4Radmax import NewP24, LoadP24, saveP24, saveasP24, shutdown24, logP32
 from Icon4Radmax import prog_icon, About_icon_24, acceleration
 
@@ -45,6 +48,10 @@ from Fitting_Panel import FittingPanel
 from OptionParam4Radmax import ParametersWindow
 from GSAParam4Radmax import GSAParametersWindow
 
+if 'phoenix' in wx.PlatformInfo:
+    from wx.adv import AboutDialogInfo, AboutBox
+else:
+    from wx import AboutDialogInfo, AboutBox
 
 """Pubsub message"""
 pubsub_Load = "LoadP"
@@ -108,53 +115,43 @@ class MainFrame(wx.Frame):
                                             u"New Project" + u"\t" + u"Ctrl+N",
                                             u"Begin a new project",
                                             wx.ITEM_NORMAL)
-        self.m_menunewproject.SetBitmap(wx.BitmapFromIcon(NewP24.GetIcon()))
-        self.m_menufile.AppendItem(self.m_menunewproject)
+        self.m_menunewproject.SetBitmap(NewP24.GetBitmap())
 
         self.m_menuload = wx.MenuItem(self.m_menufile, self.LoadP_ID,
                                       u"Load Project" + u"\t" + u"Ctrl+O",
                                       u"Load .ini file", wx.ITEM_NORMAL)
-        self.m_menuload.SetBitmap(wx.BitmapFromIcon(LoadP24.GetIcon()))
-        self.m_menufile.AppendItem(self.m_menuload)
-        self.m_menufile.AppendSeparator()
+        self.m_menuload.SetBitmap(LoadP24.GetBitmap())
 
         self.m_menuloadXRD = wx.MenuItem(self.m_menufile, self.Load_XRD_ID,
                                          u"Import XRD data" + u"\t" + u"Alt-O",
                                          u"Import XRD data file",
                                          wx.ITEM_NORMAL)
-        self.m_menufile.AppendItem(self.m_menuloadXRD)
 
         self.m_menuloadStrain = wx.MenuItem(self.m_menufile,
                                             self.Load_Strain_ID,
                                             u"Import Strain", wx.EmptyString,
                                             wx.ITEM_NORMAL)
-        self.m_menufile.AppendItem(self.m_menuloadStrain)
         self.m_menuloadStrain.Enable(False)
 
         self.m_menuloadDW = wx.MenuItem(self.m_menufile, self.Load_DW_ID,
                                         u"Import DW", wx.EmptyString,
                                         wx.ITEM_NORMAL)
-        self.m_menufile.AppendItem(self.m_menuloadDW)
         self.m_menuloadDW.Enable(False)
-        self.m_menufile.AppendSeparator()
 
         self.m_menusave = wx.MenuItem(self.m_menufile, self.Save_ID, u"Save" +
                                       u"\t" + u"Ctrl+S", wx.EmptyString,
                                       wx.ITEM_NORMAL)
-        self.m_menusave.SetBitmap(wx.BitmapFromIcon(saveP24.GetIcon()))
-        self.m_menufile.AppendItem(self.m_menusave)
+        self.m_menusave.SetBitmap(saveP24.GetBitmap())
 
         self.m_menusaveas = wx.MenuItem(self.m_menufile, self.SaveP_ID,
                                         u"Save As" + u"\t" + u"Ctrl-Shift+S",
                                         wx.EmptyString, wx.ITEM_NORMAL)
-        self.m_menusaveas.SetBitmap(wx.BitmapFromIcon(saveasP24.GetIcon()))
-        self.m_menufile.AppendItem(self.m_menusaveas)
+        self.m_menusaveas.SetBitmap(saveasP24.GetBitmap())
 
         self.m_menuexit = wx.MenuItem(self.m_menufile, self.Exit, u"Exit" +
                                       u"\t" + u"Alt-X", wx.EmptyString,
                                       wx.ITEM_NORMAL)
-        self.m_menuexit.SetBitmap(wx.BitmapFromIcon(shutdown24.GetIcon()))
-        self.m_menufile.AppendItem(self.m_menuexit)
+        self.m_menuexit.SetBitmap(shutdown24.GetBitmap())
 
         self.m_menubar.Append(self.m_menufile, u"&File")
 
@@ -166,8 +163,7 @@ class MainFrame(wx.Frame):
         self.m_menulog = wx.MenuItem(self.m_menuoptions, self.log_ID,
                                      u"Log file", u"Open log file",
                                      wx.ITEM_NORMAL)
-        self.m_menulog.SetBitmap(wx.BitmapFromIcon(logP32.GetIcon()))
-        self.m_menuoptions.AppendItem(self.m_menulog)
+        self.m_menulog.SetBitmap(logP32.GetBitmap())
 
         """Fit menu"""
         self.m_menufit = wx.Menu()
@@ -179,7 +175,6 @@ class MainFrame(wx.Frame):
                                       u"Open Parameters window",
                                       wx.ITEM_NORMAL)
 
-        
         self.acc_numpy_Id = wx.NewId()
         self.acc_numba_Id = wx.NewId()
         self.menuoptionsId = wx.NewId()
@@ -187,7 +182,7 @@ class MainFrame(wx.Frame):
         self.m_menuacc = wx.MenuItem(self.m_menufit, self.acc_icon_ID,
                                      u"Fit Acceleration", u"",
                                      wx.ITEM_NORMAL)
-        self.m_menuacc.SetBitmap(wx.BitmapFromIcon(acceleration.GetIcon()))
+        self.m_menuacc.SetBitmap(acceleration.GetBitmap())
         self.acc_numpy = choose_acc.AppendRadioItem(self.acc_numpy_Id,
                                                     "Numpy", "")
         self.acc_numba = choose_acc.AppendRadioItem(self.acc_numba_Id,
@@ -196,21 +191,50 @@ class MainFrame(wx.Frame):
         P4Radmax.acc_choice = "Numpy"
 
 
-        self.m_menufit.AppendItem(self.m_menu_fit)
-        self.m_menufit.AppendSeparator()
-        self.m_menufit.AppendItem(self.m_menuacc)
-        self.m_menufit.AppendMenu(self.menuoptionsId, "&Choice",
-                                      choose_acc)
-
         """About menu"""
         self.m_menuhelp = wx.Menu()
         self.m_menuabout = wx.MenuItem(self.m_menuhelp, self.About, u"About." +
                                        u"\t" + u"Alt-L", wx.EmptyString,
                                        wx.ITEM_NORMAL)
-        self.m_menuabout.SetBitmap(wx.BitmapFromIcon(About_icon_24.GetIcon()))
-        self.m_menuhelp.AppendItem(self.m_menuabout)
+        self.m_menuabout.SetBitmap(About_icon_24.GetBitmap())
 
         self.m_menubar.Append(self.m_menuhelp, u"&Help")
+
+        if 'phoenix' in wx.PlatformInfo:
+            self.m_menufile.Append(self.m_menunewproject)
+            self.m_menufile.Append(self.m_menuload)
+            self.m_menufile.AppendSeparator()
+            self.m_menufile.Append(self.m_menuloadXRD)
+            self.m_menufile.Append(self.m_menuloadStrain)
+            self.m_menufile.Append(self.m_menuloadDW)
+            self.m_menufile.AppendSeparator()
+            self.m_menufile.Append(self.m_menusave)
+            self.m_menufile.Append(self.m_menusaveas)
+            self.m_menufile.Append(self.m_menuexit)
+            self.m_menuoptions.Append(self.m_menulog)
+            self.m_menufit.Append(self.m_menu_fit)
+            self.m_menufit.AppendSeparator()
+            self.m_menufit.Append(self.m_menuacc)
+            self.m_menuhelp.Append(self.m_menuabout)
+            self.m_menufit.Append(self.menuoptionsId, "&Choice", choose_acc)
+        else:
+            self.m_menufile.AppendItem(self.m_menunewproject)
+            self.m_menufile.AppendItem(self.m_menuload)
+            self.m_menufile.AppendSeparator()
+            self.m_menufile.AppendItem(self.m_menuloadXRD)
+            self.m_menufile.AppendItem(self.m_menuloadStrain)
+            self.m_menufile.AppendItem(self.m_menuloadDW)
+            self.m_menufile.AppendSeparator()
+            self.m_menufile.AppendItem(self.m_menusave)
+            self.m_menufile.AppendItem(self.m_menusaveas)
+            self.m_menufile.AppendItem(self.m_menuexit)
+            self.m_menuoptions.AppendItem(self.m_menulog)
+            self.m_menufit.AppendItem(self.m_menu_fit)
+            self.m_menufit.AppendSeparator()
+            self.m_menufit.AppendItem(self.m_menuacc)
+            self.m_menuhelp.AppendItem(self.m_menuabout)
+            self.m_menufit.AppendMenu(self.menuoptionsId, "&Choice",
+                                      choose_acc)
 
         self.SetMenuBar(self.m_menubar)
 
@@ -298,7 +322,7 @@ class MainFrame(wx.Frame):
                 P4Radmax.acc_choice = "Numba"
 
     def on_about_box(self, event):
-        info = wx.AboutDialogInfo()
+        info = AboutDialogInfo()
         info.SetName(Application_name)
         info.SetVersion(str(Application_version))
         info.SetCopyright(copyright_)
@@ -307,7 +331,7 @@ class MainFrame(wx.Frame):
         info.AddDeveloper('Alexandre Boulle')
         info.AddDeveloper('Marc Souilah')
         info.SetLicence(licence)
-        wx.AboutBox(info)
+        AboutBox(info)
 
     def on_change_title(self, NewTitle):
         """Change title when create a new project"""
@@ -436,8 +460,7 @@ class AUINotebook(aui.AuiNotebook):
         self.parent = parent
         self.statusbar = statusbar
 
-        self.default_style = (aui.AUI_NB_DEFAULT_STYLE &
-                              aui.AUI_NB_CLOSE_ON_ALL_TABS)
+        self.default_style = (aui.AUI_NB_CLOSE_ON_ALL_TABS)
         self.SetAGWWindowStyleFlag(self.default_style)
 
         """create the page windows as children of the notebook"""
@@ -448,8 +471,8 @@ class AUINotebook(aui.AuiNotebook):
         self.AddPage(page1, "Initial Parameters")
         self.AddPage(page2, "Fitting window")
 
-        self.SetCloseButton(page1, False)
-        self.SetCloseButton(page2, False)
+        self.SetCloseButton(0, False)
+        self.SetCloseButton(1, False)
 
 
 # -----------------------------------------------------------------------------

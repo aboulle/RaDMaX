@@ -8,7 +8,10 @@
 '''
 
 from Parameters4Radmax import *
-from ConfigParser import SafeConfigParser
+try:
+    from ConfigParser import SafeConfigParser
+except (ImportError):
+    from configparser import SafeConfigParser
 
 lecture_fichier = []
 floatconv = []
@@ -66,10 +69,10 @@ class ReadFile(wx.Panel):
             test_true_false.append(var)
         indices_section = self.all_indices(False, test_true_false)
         if indices_section != []:
-            print "\n! Check your config file!"
-            print 'The following sections are not being present:'
+            print ("\n! Check your config file!" +
+                   "The following sections are not being present:")
             for char in indices_section:
-                print self.structure_section[char]
+                print (self.structure_section[char])
         else:
             self.test_existence_option(filename, self.section_name)
 
@@ -90,10 +93,10 @@ class ReadFile(wx.Panel):
                     lecture_fichier.append(var)
             self.test_existence_value(filename, section_name)
         else:
-            print "\n! Check your config file!"
-            print 'The following options are not being present:'
+            print ("\n! Check your config file!" +
+                   "The following sections are not being present:")
             for chare in difference:
-                print chare
+                print (chare)
 
     def test_existence_value(self, filename, section_name):
         parser = SafeConfigParser(allow_no_value=True)
@@ -105,13 +108,13 @@ class ReadFile(wx.Panel):
                     var = parser.get(nameofsection, name)
                     result_values.append(var)
         else:
-            print "\n! Check your config file!"
-            print "Value of option section are not being present:"
+            print ("\n! Check your config file!" +
+                   "The following sections are not being present:")
             logger.log(logging.WARNING, "Check your config file!")
             logger.log(logging.WARNING, "Value of option section are" +
                        "not being present:")
             for chare in nulle:
-                print section_name[chare]
+                print (section_name[chare])
                 logger.log(logging.ERROR, "Missing data from: " +
                            str(section_name[chare]))
 
@@ -143,7 +146,7 @@ class ReadFile(wx.Panel):
     def test_data_file(self, name):
         with open(name, 'r') as f:
             skip_line = 39
-            [next(f) for x in xrange(skip_line)]
+            [next(f) for x in range(skip_line)]
             header = next(f)
             mline = ""
             for i in header:

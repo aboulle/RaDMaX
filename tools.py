@@ -111,7 +111,7 @@ def read_structure(nom):
                                              float(z)])))
         return elements, xyz
     except IOError:
-        print "Cannot open file"
+        print ("Cannot open file")
         return False
 
 
@@ -122,5 +122,5 @@ def dic2file(dictionnaire, nom_fichier):
             for Z in dictionnaire.keys():
                 f.write('%s %s\n' % (Z, dictionnaire[Z]))
     except (IOError):
-        print "Cannot open file"
+        print ("Cannot open file")
         return False

@@ -38,6 +38,11 @@ font = {'family': 'serif',
         'size': 14,
         }
 
+if 'phoenix' in wx.PlatformInfo:
+    from wx import Cursor
+else:
+    from wx import StockCursor as Cursor
+
 
 # ------------------------------------------------------------------------------
 class GraphPanel(wx.Panel):
@@ -366,9 +371,9 @@ class LeftGraphTop(wx.Panel):
             ind = indseq[0]
 
             if d[ind] >= self.epsilon:
-                self.canvas.SetCursor(wx.StockCursor(wx.CURSOR_ARROW))
+                self.canvas.SetCursor(Cursor(wx.CURSOR_ARROW))
             elif d[ind] <= self.epsilon:
-                self.canvas.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
+                self.canvas.SetCursor(Cursor(wx.CURSOR_HAND))
 
 
 # ------------------------------------------------------------------------------
@@ -477,7 +482,7 @@ class LeftGraphBottom(wx.Panel):
                            markerfacecolor='r', markeredgecolor='k', mew=1.0)
         self.ax.add_line(self.line)
         self.ax.add_patch(self.poly)
-        self.canvas.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
+        self.canvas.SetCursor(Cursor(wx.CURSOR_HAND))
         self.canvas.draw()
 
     def draw_callback(self, event):
@@ -643,9 +648,9 @@ class LeftGraphBottom(wx.Panel):
             ind = indseq[0]
 
             if d[ind] >= self.epsilon:
-                self.canvas.SetCursor(wx.StockCursor(wx.CURSOR_ARROW))
+                self.canvas.SetCursor(Cursor(wx.CURSOR_ARROW))
             elif d[ind] <= self.epsilon:
-                self.canvas.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
+                self.canvas.SetCursor(Cursor(wx.CURSOR_HAND))
 
 
 # ------------------------------------------------------------------------------
@@ -717,7 +722,7 @@ class RightGraph(wx.Panel):
             xx = 2*a.ParamDict['th']*180/np.pi
             self.ax.semilogy(xx, a.ParamDict['Iobs'], 'o-k')
             self.ax.semilogy(xx, a.ParamDict['I_i'], 'c-')
-            middle = len(a.ParamDict['th'])/2
+            middle = int(len(a.ParamDict['th'])/2)
             self.ly = self.ax.axvline(x=xx[middle], color='r', lw=0.0)
             self.lx = self.ax.axhline(color='r', lw=0.0)  # the horiz line
         self.ax.set_ylabel("Intensity (a.u.)", fontdict=font)

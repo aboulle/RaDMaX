@@ -859,7 +859,7 @@ class InitialDataPanel(wx.Panel):
             defaultDir=self.folder_paths_dict['Strain_file'],
             defaultFile="",
             wildcard=wildcard,
-            style=wx.OPEN | wx.CHANGE_DIR
+            style=wx.FD_OPEN | wx.FD_CHANGE_DIR
             )
         if dlg.ShowModal() == wx.ID_OK:
             paths = dlg.GetPaths()
@@ -882,7 +882,7 @@ class InitialDataPanel(wx.Panel):
             defaultDir=self.folder_paths_dict['DW_file'],
             defaultFile="",
             wildcard=wildcard,
-            style=wx.OPEN | wx.CHANGE_DIR
+            style=wx.FD_OPEN | wx.FD_CHANGE_DIR
             )
         if dlg.ShowModal() == wx.ID_OK:
             paths = dlg.GetPaths()
@@ -974,7 +974,7 @@ class InitialDataPanel(wx.Panel):
             defaultDir=self.folder_paths_dict['project_file'],
             defaultFile="",
             wildcard=wildcard,
-            style=wx.OPEN | wx.CHANGE_DIR
+            style=wx.FD_OPEN | wx.FD_CHANGE_DIR
             )
         if dlg.ShowModal() == wx.ID_OK:
             for ii in self.data_fields:
@@ -1135,7 +1135,7 @@ class InitialDataPanel(wx.Panel):
                     defaultdir_ = self.folder_paths_dict['Save_as_file']
                     dlg = wx.FileDialog(self, message=textmessage,
                                         defaultDir=defaultdir_, defaultFile="",
-                                        wildcard=wildcard, style=wx.SAVE)
+                                        wildcard=wildcard, style=wx.FD_SAVE)
                     if dlg.ShowModal() == wx.ID_OK:
                         paths = dlg.GetPaths()
                         self.folder_paths_dict['Save_as_file'] = os.path.split(paths[0])[0]
