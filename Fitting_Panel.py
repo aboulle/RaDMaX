@@ -907,7 +907,7 @@ class FittingPanel(wx.Panel):
             name_ = (a.PathDict['namefromini'] + '_' + output_name['out_XRD'])
             data_ = column_stack((a.ParamDict['th4live'], a.ParamDict['Iobs'],
                                   a.ParamDict['I_fit']))
-            savetxt(os.path.join(path, ), data_, header=line,
+            savetxt(os.path.join(path, name_), data_, header=line,
                     fmt='{:^12}'.format('%3.8f'))
             # -----------------------------------------------------------------
             logger.log(logging.INFO, "Data have been saved successfully")
