@@ -7,25 +7,29 @@ from Parameters4Radmax import *
 from Icon4Radmax import prog_icon
 from Read4Radmax import SaveFile4Diff
 from sys import platform as _platform
+import wx.lib.buttons as buttons
+
 
 """Pubsub message"""
-pubsub_Read_field = "ReadField"
+pubsub_Read_field_Bspline = "ReadFieldBspline"
+pubsub_Read_field_PseudoV = "ReadFieldPseudoV"
+pubsub_Read_field_Fit = "ReadFieldFit"
+
 pubsub_Save_Param_and_quit = "SaveParamAndQuit"
 pubsub_Hide_Show_Option = "HideShowOption"
-
+pubsub_Close_OptionWindow = "CloseOptionWindow"
 
 # -----------------------------------------------------------------------------
 class ParametersWindow(wx.Frame):
     def __init__(self, parent):
         pos = wx.DefaultPosition
         size = (580, 522)
-        style = (wx.MINIMIZE_BOX | wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX |
+        style = (wx.SYSTEM_MENU | wx.CAPTION |
                  wx.CLIP_CHILDREN | wx.FRAME_FLOAT_ON_PARENT)
         wx.Frame.__init__(self, wx.GetApp().TopWindow, wx.ID_ANY,
                           Application_name + " - Parameters", pos, size, style)
         self.CenterOnParent()
         self.GetParent().Disable()
-        self.Bind(wx.EVT_CLOSE, self.onClose)
 
         self.SetIcon(prog_icon.GetIcon())
 
@@ -59,15 +63,17 @@ class ParametersWindow(wx.Frame):
 
         self.aui_mgr.Update()
 #        self.Bind(wx.EVT_SIZE, self.OnSize)
-        pub.subscribe(self.onCloseAfterSaving, pubsub_Save_Param_and_quit)
+        pub.subscribe(self.on_close_after_saving, pubsub_Save_Param_and_quit)
+        pub.subscribe(self.on_close, pubsub_Close_OptionWindow)
         self.Layout()
 
-    def onClose(self, event):
+    def on_close(self):
+        a = P4Radmax()
         P4Radmax.Option_window_status = False
         self.GetParent().Enable()
         pub.sendMessage(pubsub_Hide_Show_Option, test=1)
 
-    def onCloseAfterSaving(self):
+    def on_close_after_saving(self):
         self.GetParent().Enable()
         pub.sendMessage(pubsub_Hide_Show_Option, test=1)
 
@@ -88,8 +94,8 @@ class AUINotebookParameters(aui.AuiNotebook):
         self.SetAGWWindowStyleFlag(self.default_style)
 
         """create the page windows as children of the notebook"""
-        page1 = BsplinePanel(self)
-        page2 = PseudoVoigtPanel(self)
+        page1 = BsplinePanel(self.parent)
+        page2 = PseudoVoigtPanel(self.parent)
 
         """add the pages to the notebook with the label to show on the tab"""
         self.AddPage(page1, "Bspline")
@@ -188,7 +194,7 @@ class BsplinePanel(wx.Panel):
         mastersizer = wx.BoxSizer(wx.VERTICAL)
         mastersizer.Add(Fit_box_sizer, 0, wx.ALL, 5)
 
-        pub.subscribe(self.onReadField, pubsub_Read_field)
+        pub.subscribe(self.onReadField, pubsub_Read_field_Bspline)
 
         self.Textcontrol = [self.Min_strain, self.Max_strain, self.Min_dw,
                             self.Max_dw]
@@ -205,9 +211,10 @@ class BsplinePanel(wx.Panel):
             i += 1
 
     def onReadField(self):
-        success = self.IsDataFloat()
-        if success:
-            P4Radmax.Paramwindowtest['BsplinePanel'] = True
+        i = 0
+        for k in DefaultParam4Radmax[17:21]:
+            i += 1
+        self.IsDataFloat()
 
     def Is_number(self, s):
         try:
@@ -217,6 +224,7 @@ class BsplinePanel(wx.Panel):
             return False
 
     def IsDataFloat(self):
+        a = P4Radmax()
         IsFloat = []
         dataFloat = True
         for i in range(len(self.Textcontrol)):
@@ -240,6 +248,8 @@ class BsplinePanel(wx.Panel):
             for k in DefaultParam4Radmax[17:21]:
                 val = self.Textcontrol[i].GetValue()
                 P4Radmax.DefaultDict[k] = float(val)
+                self.Textcontrol[i].Clear()
+                self.Textcontrol[i].AppendText(str(a.DefaultDict[k]))
                 i += 1
         return dataFloat
 
@@ -395,7 +405,7 @@ class PseudoVoigtPanel(wx.Panel):
         mastersizer = wx.BoxSizer(wx.VERTICAL)
         mastersizer.Add(Fit_box_sizer, 0, wx.ALL, 5)
 
-        pub.subscribe(self.onReadField, pubsub_Read_field)
+        pub.subscribe(self.onReadField, pubsub_Read_field_PseudoV)
 
         self.Textcontrol = [self.Eta1_strain, self.Eta2_strain, self.Eta1_dw,
                             self.Eta2_dw, self.fwhm1_strain, self.fwhm2_strain,
@@ -427,6 +437,7 @@ class PseudoVoigtPanel(wx.Panel):
             return False
 
     def IsDataFloat(self):
+        a = P4Radmax()
         IsFloat = []
         dataFloat = True
         for i in range(len(self.Textcontrol)):
@@ -450,6 +461,8 @@ class PseudoVoigtPanel(wx.Panel):
             for k in DefaultParam4Radmax[5:17]:
                 val = self.Textcontrol[i].GetValue()
                 P4Radmax.DefaultDict[k] = float(val)
+                self.Textcontrol[i].Clear()
+                self.Textcontrol[i].AppendText(str(a.DefaultDict[k]))
                 i += 1
         return dataFloat
 
@@ -581,11 +594,23 @@ class FitParametersPanel(wx.Panel):
         self.apply_1.SetFont(font_update)
         self.apply_1.Bind(wx.EVT_BUTTON, self.on_apply_changes)
 
+        self.close_1_Id = wx.NewId()
+        self.close_1 = buttons.GenButton(self, id=self.close_1_Id,
+                                 label="Close")
+        self.close_1.SetFont(font_update)
+        self.close_1.Bind(wx.EVT_BUTTON, self.on_close)
+        self.close_1.SetFont(wx.Font(10, wx.SWISS, wx.NORMAL, wx.BOLD, False))
+        self.close_1.SetBezelWidth(5)
+#        b.SetMinSize(wx.DefaultSize)
+        self.close_1.SetBackgroundColour("red")
+        self.close_1.SetForegroundColour(wx.WHITE)
+
         mastersizer = wx.BoxSizer(wx.VERTICAL)
         horsizer = wx.GridBagSizer(hgap=15, vgap=0)
         
         horsizer.Add(self.default_1, pos=(0, 0), flag=flagSizer)
-        horsizer.Add(self.apply_1, pos=(0, 12), flag=flagSizer)
+        horsizer.Add(self.apply_1, pos=(0, 6), flag=flagSizer)
+        horsizer.Add(self.close_1, pos=(0, 10), flag=flagSizer)
         
         mastersizer.Add(Leastsq_box_sizer, 0, wx.ALL, 5)
         mastersizer.Add(AGSA_options_box_sizer, 0, wx.ALL, 5)
@@ -593,7 +618,7 @@ class FitParametersPanel(wx.Panel):
         mastersizer.Add(horsizer, 0, wx.ALL, 5)
         mastersizer.Add(txt_end, 0, wx.ALL, 5)
 
-        pub.subscribe(self.on_read_field, pubsub_Read_field)
+        pub.subscribe(self.on_read_field, pubsub_Read_field_Fit)
 
         self.TextcontrolGSA = [self.qa, self.qv, self.qt]
         self.TextcontrolLeastsq = [self.xtol, self.ftol, self.maxfev]
@@ -616,7 +641,13 @@ class FitParametersPanel(wx.Panel):
             i += 1
 
     def on_apply_changes(self, event):
-        pub.sendMessage(pubsub_Read_field)
+        pub.sendMessage(pubsub_Read_field_Bspline)
+        pub.sendMessage(pubsub_Read_field_PseudoV)
+        pub.sendMessage(pubsub_Read_field_Fit)
+        event.Skip()
+
+    def on_close(self, event):
+        pub.sendMessage(pubsub_Close_OptionWindow)
 
     def on_save_data(self, event):
         _msg = "Save data as default ?\n" + \
@@ -627,7 +658,9 @@ class FitParametersPanel(wx.Panel):
         result = dlg.ShowModal()
         dlg.Destroy()
         if result == wx.ID_OK:
-            pub.sendMessage(pubsub_Read_field)
+            pub.sendMessage(pubsub_Read_field_Bspline)
+            pub.sendMessage(pubsub_Read_field_PseudoV)
+            pub.sendMessage(pubsub_Read_field_Fit)
             success = self.IsDataFloat()
             if success:
                 a = P4Radmax()
@@ -653,6 +686,7 @@ class FitParametersPanel(wx.Panel):
             return False
 
     def IsDataFloat(self):
+        a = P4Radmax()
         IsFloat = []
         dataFloat = True
         for i in range(len(self.all_textControl)):
@@ -676,6 +710,8 @@ class FitParametersPanel(wx.Panel):
             for k in DefaultParam4Radmax[21:24]:
                 val = self.TextcontrolGSA[i].GetValue()
                 P4Radmax.DefaultDict[k] = float(val)
+                self.TextcontrolGSA[i].Clear()
+                self.TextcontrolGSA[i].AppendText(str(a.DefaultDict[k]))
                 i += 1
             i = 0
             for k in DefaultParam4Radmax[24:]:
@@ -684,5 +720,7 @@ class FitParametersPanel(wx.Panel):
                     P4Radmax.DefaultDict[k] = int(float(val))
                 else:
                     P4Radmax.DefaultDict[k] = float(val)
+                self.TextcontrolLeastsq[i].Clear()
+                self.TextcontrolLeastsq[i].AppendText(str(a.DefaultDict[k]))
                 i += 1
         return dataFloat

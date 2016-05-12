@@ -131,12 +131,10 @@ class MainFrame(wx.Frame):
                                             self.Load_Strain_ID,
                                             u"Import Strain", wx.EmptyString,
                                             wx.ITEM_NORMAL)
-        self.m_menuloadStrain.Enable(False)
 
         self.m_menuloadDW = wx.MenuItem(self.m_menufile, self.Load_DW_ID,
                                         u"Import DW", wx.EmptyString,
                                         wx.ITEM_NORMAL)
-        self.m_menuloadDW.Enable(False)
 
         self.m_menusave = wx.MenuItem(self.m_menufile, self.Save_ID, u"Save" +
                                       u"\t" + u"Ctrl+S", wx.EmptyString,
@@ -252,7 +250,9 @@ class MainFrame(wx.Frame):
         self.SetAcceleratorTable(self.accel_tbl)
 
         self.frame_Fit_Param_window = None
+        self.Fit_Param_window_launch = 0
         self.frame_GSA_window = None
+        self.GSA_window_launch = 0
 
         try:
             import lmfit
@@ -346,17 +346,25 @@ class MainFrame(wx.Frame):
     def on_display_option_window(self, test=None):
         """Open Parameters window"""
         if test is None:
-            self.frame_Fit_Param_window = ParametersWindow(self)
-            self.frame_Fit_Param_window.Show()
-        else:
+            if self.Fit_Param_window_launch == 0:
+                self.Fit_Param_window_launch = 1
+                self.frame_Fit_Param_window = ParametersWindow(self)
+                self.frame_Fit_Param_window.Show()
+            else:
+                self.frame_Fit_Param_window.Show()
+        elif test is 1:
             self.frame_Fit_Param_window.Hide()
             self.SetFocus()
 
     def on_display_GSA_window(self, test=None):
         """Open GSA Parameters window"""
         if test is None:
-            self.frame_GSA_window = GSAParametersWindow(self)
-            self.frame_GSA_window.Show()
+            if self.GSA_window_launch == 0:
+                self.GSA_window_launch = 1
+                self.frame_GSA_window = GSAParametersWindow(self)
+                self.frame_GSA_window.Show()
+            else:
+                self.frame_GSA_window.Show()
         else:
             self.frame_GSA_window.Hide()
             self.SetFocus()

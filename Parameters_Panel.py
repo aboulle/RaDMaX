@@ -1107,7 +1107,7 @@ class InitialDataPanel(wx.Panel):
         else:
             name_ = (a.PathDict['project_name'] + '_input_' +
                      name + '_coeff.txt')
-            path = os.path.join(self.folder_paths_dict['Save_as_file'], name_)
+            path = os.path.join(self.folder_paths_dict['project_file'], name_)
             if supp == 1:
                 name_ = 'temp_' + '_input_' + name + '_coeff.txt'
                 path2remove = os.path.join(self.folder_paths_dict[case], name_)

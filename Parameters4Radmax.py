@@ -55,7 +55,7 @@ LEVELS = [
 Application_name = "RaDMaX"
 filename = "Radmax"
 Application_version = "2.0.0.1"
-last_modification = "11/05/2016"
+last_modification = "12/05/2016"
 log_filename = "activity"
 ConfigDataFile = 'ConfigDataFile'
 ConfigFile = 'ConfigFile'
@@ -378,7 +378,7 @@ class TextValidator(wx.PyValidator):
     (letters, digits or punctuations)
     """
     def __init__(self, flag=None, pyVar=None):
-        wx.Validator.__init__(self)
+        wx.PyValidator.__init__(self)
         self.flag = flag
         self.Bind(wx.EVT_CHAR, self.OnChar)
 
