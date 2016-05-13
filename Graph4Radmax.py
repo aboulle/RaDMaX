@@ -721,9 +721,9 @@ class RightGraph(wx.Panel):
             a = P4Radmax()
             xx = 2*a.ParamDict['th']*180/np.pi
             self.ax.semilogy(xx, a.ParamDict['Iobs'], 'o-k')
-            self.ax.semilogy(xx, a.ParamDict['I_i'], 'c-')
+            self.ax.semilogy(xx, a.ParamDict['I_i'], 'r-')
             middle = int(len(a.ParamDict['th'])/2)
-            self.ly = self.ax.axvline(x=xx[middle], color='r', lw=0.0)
+            self.ly = self.ax.axvline(x=xx[middle], color='m', lw=0.0)
             self.lx = self.ax.axhline(color='r', lw=0.0)  # the horiz line
         self.ax.set_ylabel("Intensity (a.u.)", fontdict=font)
         self.ax.set_xlabel(r'2$\theta$ (deg.)', fontdict=font)
@@ -736,7 +736,7 @@ class RightGraph(wx.Panel):
             P4Radmax.ParamDict['I_fit'] = val
         self.ax.clear()
         self.ax.semilogy(a.ParamDict['th4live'], a.ParamDict['Iobs'], 'o-k')
-        self.ax.semilogy(a.ParamDict['th4live'], a.ParamDict['I_fit'], 'r-')
+        self.ax.semilogy(a.ParamDict['th4live'], a.ParamDict['I_fit'], color='#ff6700', linestyle='-')
         self.ax.set_ylabel("Intensity (a.u.)", fontdict=font)
         self.ax.set_xlabel(r'2$\theta$ (deg.)', fontdict=font)
         self.canvas.draw()
