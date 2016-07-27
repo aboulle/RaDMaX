@@ -4,6 +4,11 @@ RaDMaX is a program that allows to retrieve strain and damage profiles in ion-ir
 M. Souilah, A. Boulle, A. Debelle, "RaDMaX: a graphical program for the determination of strain and damage profiles in irradiated crystals", _J. Appl.Cryst._ **49**, 311-316 (2016). [Link to article.] (http://dx.doi.org/10.1107/S1600576715021019)
 
 #What's new
+## July 2016:
+- irradiated films are now supported. The option can be selected from the "Sample Geometry" tab. In case where the film thickness is larger than the film thickness, the latter should be provided by the user in the corresponding field. When relevant, the substrate characteristics should be provided (structure factor, lattice parameters and Miller indices).
+- for all strain/DW models, selected fitting parameters can now be held fixed during the fitting procedure.
+- all fitting results are stored in an internal database accessible thourgh the "Database" tab. Previous fitting results can be restored from this database.
+
 ## April 2016:
 - version 2.0. **IMPORTANT: if you encounter an error upon opening an former project or creating a new one, delete the Radmax.ini file in the Radmax folder.**
 - a new strain/DW model has been added to simulate high-velocity ion irradiation, where a narrow damage peak is formed deep below the surface. It is based on an asymmetric pseudo-Voigt function to model the damage peak + a constant on the left-side of the peak to simulate the region of constant damage. The control points allow to modify the magnitude and location of strain/DW peak, its width (left /right side independently), and the magnitude of the constant strain/DW region. The left/right shape factors of the pseudo-Voigt are accessible through the "eta" fields.
