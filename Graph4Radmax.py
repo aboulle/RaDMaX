@@ -3,9 +3,13 @@
 # Author: A_BOULLE & M_SOUILAH
 # Radmax project
 
-'''
-*Radmax Graph module*
-'''
+#==============================================================================
+# Radmax Graph module
+#==============================================================================
+
+
+import wx
+import wx.lib.scrolledpanel as scrolled
 
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_wxagg import \
@@ -15,7 +19,14 @@ from matplotlib.lines import Line2D
 from matplotlib.artist import Artist
 from matplotlib.patches import Polygon
 
-from Parameters4Radmax import *
+from copy import deepcopy
+from wx.lib.pubsub import pub
+
+import numpy as np
+from numpy import where
+from scipy import multiply
+
+from Parameters4Radmax import P4Rm
 
 """Pubsub message"""
 pubsub_draw_graph = "DrawGraph"
@@ -28,7 +39,8 @@ pubsub_Re_Read_field_paramters_panel = "ReReadParametersPanel"
 pubsub_OnFit_Graph = "OnFitGraph"
 pubsub_Update_Scale_Strain = "OnUpdateScaleStrain"
 pubsub_Update_Scale_DW = "OnUpdateScaleDW"
-pubsub_Permute_Graph = "PermuteGrpah"
+
+pubsub_Graph_change_color_style = "RGraphChangeColorStyle"
 
 colorBackgroundGraph = '#F0F0F0'
 
@@ -45,9 +57,9 @@ else:
 
 
 # ------------------------------------------------------------------------------
-class GraphPanel(wx.Panel):
+class GraphPanel(scrolled.ScrolledPanel):
     def __init__(self, parent, statusbar):
-        wx.Panel.__init__(self, parent)
+        scrolled.ScrolledPanel.__init__(self, parent)
         self.statusbar = statusbar
 
         mastersizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -63,7 +75,6 @@ class GraphPanel(wx.Panel):
         Graph_Strain_DW_box_sizer = wx.StaticBoxSizer(Graph_Strain_DW_box,
                                                       wx.VERTICAL)
         self.in_Graph_Strain_DW_box_sizer = wx.GridBagSizer(hgap=1, vgap=2)
-        self.in_Graph_Strain_DW_box_sizer_Pv = wx.GridBagSizer(hgap=1, vgap=2)
 
         Graph_XRD_box = wx.StaticBox(self, -1,
                                      " XRD profile ", size=size_XRD_Box)
@@ -86,19 +97,9 @@ class GraphPanel(wx.Panel):
         mastersizer.Add(Graph_Strain_DW_box_sizer, 0, wx.ALL, 5)
         mastersizer.Add(Graph_XRD_box_sizer, 0, wx.ALL, 5)
 
-        pub.subscribe(self.OnPermuteGraph, pubsub_Permute_Graph)
-
         self.SetSizer(mastersizer)
-        self.Fit()
         self.Layout()
-
-    def OnPermuteGraph(self, choice):
-        if choice == 0:
-            self.in_Graph_Strain_DW_box_sizer.Show(True)
-        elif choice == 1:
-            self.in_Graph_Strain_DW_box_sizer.Show(True)
-        self.Fit()
-        self.Layout()
+        self.SetupScrolling()
 
 
 # ------------------------------------------------------------------------------
@@ -133,7 +134,6 @@ class LeftGraphTop(wx.Panel):
         self.epsilon = 5   # max pixel distance to count as a vertex hit
         self.new_coord = {'indice': 0, 'x': 0, 'y': 0}
         self.modelpv = False
-        self.u_key_press = False
 
         xs = [-1]
         ys = [-1]
@@ -141,7 +141,8 @@ class LeftGraphTop(wx.Panel):
                        fill=False, closed=False, animated=True)
         self.ax.set_xlim([0, 1])
         self.ax.set_ylim([0, 1])
-        self.draw_c(poly, xs, ys)
+        self.c_strain = ""
+        self.l_strain = ""
 
         self.canvas.mpl_connect('draw_event',
                                 self.draw_callback)
@@ -155,19 +156,28 @@ class LeftGraphTop(wx.Panel):
                                 self.motion_notify_callback)
         self.canvas.mpl_connect('motion_notify_event',
                                 self.on_update_coordinate)
-        self.press = None
+
         mastersizer.Add(self.canvas, 1, wx.ALL)
         mastersizer.Add(self.toolbar, 1, wx.ALL)
         pub.subscribe(self.OnDrawGraph, pubsub_Draw_Strain)
         pub.subscribe(self.scale_manual, pubsub_Update_Scale_Strain)
+        pub.subscribe(self.on_color, pubsub_Graph_change_color_style)
+
+        self.on_color()
+        self.draw_c(poly, xs, ys)
 
         self.SetSizer(mastersizer)
         self.Raise()
         self.SetPosition((0, 0))
         self.Fit()
 
+    def on_color(self):
+        a = P4Rm()
+        self.c_strain = a.DefaultDict['c_strain']
+        self.l_strain = a.DefaultDict['l_strain']
+
     def OnDrawGraph(self, b=None):
-        a = P4Radmax()
+        a = P4Rm()
         self.modelpv = a.modelPv
         self.ax.clear()
         if b != 2:
@@ -175,8 +185,8 @@ class LeftGraphTop(wx.Panel):
             y_sp = a.ParamDict['strain_shifted']
             xs = deepcopy(a.ParamDict['depth'])
             ys = deepcopy(a.ParamDict['strain_i']*100)
-            P4Radmax.DragDrop_Strain_x = x_sp
-            P4Radmax.DragDrop_Strain_y = y_sp
+            P4Rm.DragDrop_Strain_x = x_sp
+            P4Rm.DragDrop_Strain_y = y_sp
             ymin = min(ys) - min(ys)*10/100
             ymax = max(ys) + max(ys)*10/100
             self.ax.set_ylim([ymin, ymax])
@@ -187,20 +197,23 @@ class LeftGraphTop(wx.Panel):
             ys = [-1]
             self.ax.set_xlim([0, 1])
             self.ax.set_ylim([-1, 1])
-        poly = Polygon(list(zip(x_sp, y_sp)), lw=0, ls='dashdot', color='g',
-                       fill=False, closed=False, animated=True)
+        poly = Polygon(list(zip(x_sp, y_sp)), lw=0, ls='dashdot',
+                       color=self.c_strain, fill=False, closed=False,
+                       animated=True)
         if self.modelpv is True:
-            P4Radmax.ParamDict['sp_pv_backup'] = a.ParamDict['sp']
+            P4Rm.ParamDict['sp_pv_backup'] = a.ParamDict['sp']
         self.draw_c(poly, xs, ys)
 
     def draw_c(self, data, x, y):
-        self.ax.plot(x[1:], y[1:], 'g', lw=2.)
+        self.ax.plot(x[1:], y[1:], color=self.c_strain, lw=2.,
+                     ls=self.l_strain)
         self.ax.set_ylabel("Strain", fontdict=font)
         self.ax.set_xticklabels([])
         self.poly = data
         xs, ys = zip(*self.poly.xy)
-        self.line = Line2D(xs, ys, lw=0, ls='-.', color='g', marker='.', ms=32,
-                           markerfacecolor='g', markeredgecolor='k', mew=1.0)
+        self.line = Line2D(xs, ys, lw=0, ls='-.', color=self.c_strain,
+                           marker='.', ms=32, markerfacecolor=self.c_strain,
+                           markeredgecolor='k', mew=1.0)
         self.ax.add_line(self.line)
         self.ax.add_patch(self.poly)
         self.canvas.draw()
@@ -211,13 +224,6 @@ class LeftGraphTop(wx.Panel):
         self.ax.draw_artist(self.poly)
         self.ax.draw_artist(self.line)
         self.canvas.blit(self.ax.bbox)
-
-    def poly_changed(self, poly):
-        'this method is called whenever the polygon object is called'
-        # only copy the artist props to the line (except visibility)
-        vis = self.line.get_visible()
-        Artist.update_from(self.line, poly)
-        self.line.set_visible(vis)  # don't use the poly visibility state
 
     def get_ind_under_point(self, event):
         'get the index of the vertex under point if within epsilon tolerance'
@@ -235,6 +241,8 @@ class LeftGraphTop(wx.Panel):
 
     def button_press_callback(self, event):
         'whenever a mouse button is pressed'
+        a = P4Rm()
+        val = a.xrd_graph_loaded
         if self.canvas.HasCapture():
             self.canvas.ReleaseMouse()
             if not self.showverts:
@@ -243,11 +251,14 @@ class LeftGraphTop(wx.Panel):
                 return
             if event.button != 1:
                 return
-            self._ind = self.get_ind_under_point(event)
-            self.new_coord['indice'] = self._ind
+            if val == 1:
+                self._ind = self.get_ind_under_point(event)
+                self.new_coord['indice'] = self._ind
 
     def button_release_callback(self, event):
         'whenever a mouse button is released'
+        a = P4Rm()
+        val = a.xrd_graph_loaded
         if self.canvas.HasCapture():
             self.canvas.ReleaseMouse()
         else:
@@ -255,12 +266,11 @@ class LeftGraphTop(wx.Panel):
                 return
             if event.button != 1:
                 return
-            if self.new_coord['indice'] is not None:
-                a = P4Radmax()
+            if self.new_coord['indice'] is not None and val == 1:
                 temp_1 = self.new_coord['y']
                 temp_2 = self.new_coord['x']
-                P4Radmax.DragDrop_Strain_y[self.new_coord['indice']] = temp_1
-                P4Radmax.DragDrop_Strain_x[self.new_coord['indice']] = temp_2
+                P4Rm.DragDrop_Strain_y[self.new_coord['indice']] = temp_1
+                P4Rm.DragDrop_Strain_x[self.new_coord['indice']] = temp_2
                 if self.modelpv is True:
                     t_temp = a.ParamDict['depth'] + a.ParamDict['z']
                     t = t_temp[0]
@@ -274,21 +284,21 @@ class LeftGraphTop(wx.Panel):
                     sp_temp[4] = a.ParamDict['sp'][4]
                     sp_temp[5] = a.ParamDict['sp'][5]
                     sp_temp[6] = a.DragDrop_Strain_y[3]
-                    P4Radmax.ParamDict['sp'] = deepcopy(sp_temp)
-                    P4Radmax.ParamDictbackup['sp'] = deepcopy(sp_temp)
-                    P4Radmax.ParamDict['sp_pv'] = deepcopy(sp_temp)
+                    P4Rm.ParamDict['sp'] = deepcopy(sp_temp)
+                    P4Rm.ParamDictbackup['sp'] = deepcopy(sp_temp)
+                    P4Rm.ParamDict['sp_pv'] = deepcopy(sp_temp)
                 else:
                     temp = self.new_coord['y']
-                    P4Radmax.DragDrop_Strain_y[self.new_coord['indice']] = temp
+                    P4Rm.DragDrop_Strain_y[self.new_coord['indice']] = temp
                     temp = [strain*scale/100 for strain, scale in
                             zip(a.DragDrop_Strain_y,
                                 a.ParamDict['scale_strain'])]
-                    temp = [float(format(val, '.8f')) for val in temp]
+                    temp = [float(format(value, '.8f')) for value in temp]
                     temp1 = temp[1:]
                     temp2 = [a.ParamDict['stain_out']]
                     temp3 = deepcopy(np.concatenate((temp1, temp2), axis=0))
-                    P4Radmax.ParamDict['sp'] = temp3
-                    P4Radmax.ParamDictbackup['sp'] = temp3
+                    P4Rm.ParamDict['sp'] = temp3
+                    P4Rm.ParamDictbackup['sp'] = temp3
 
                 pub.sendMessage(pubsub_Update_Fit_Live)
             self._ind = None
@@ -296,30 +306,30 @@ class LeftGraphTop(wx.Panel):
     def scroll_callback(self, event):
         if not event.inaxes:
             return
-        a = P4Radmax()
+        a = P4Rm()
         if event.key == 'u' and event.button == 'up':
             temp = a.ParamDict['strain_multiplication'] + 0.01
-            P4Radmax.ParamDict['strain_multiplication'] = temp
+            P4Rm.ParamDict['strain_multiplication'] = temp
         elif event.key == 'u' and event.button == 'down':
             temp = a.ParamDict['strain_multiplication'] - 0.01
-            P4Radmax.ParamDict['strain_multiplication'] = temp
+            P4Rm.ParamDict['strain_multiplication'] = temp
         temp_1 = a.ParamDictbackup['sp']
         temp_2 = a.ParamDict['strain_multiplication']
-        P4Radmax.ParamDict['sp'] = multiply(temp_1, temp_2)
+        P4Rm.ParamDict['sp'] = multiply(temp_1, temp_2)
         pub.sendMessage(pubsub_Re_Read_field_paramters_panel, event=event)
 
     def scale_manual(self, event, val=None):
-        a = P4Radmax()
+        a = P4Rm()
         if val is not None:
-            P4Radmax.ParamDict['strain_multiplication'] = val
+            P4Rm.ParamDict['strain_multiplication'] = val
         temp_1 = a.ParamDict['sp']
         temp_2 = a.ParamDict['strain_multiplication']
-        P4Radmax.ParamDict['sp'] = multiply(temp_1, temp_2)
+        P4Rm.ParamDict['sp'] = multiply(temp_1, temp_2)
         pub.sendMessage(pubsub_Re_Read_field_paramters_panel, event=event)
 
     def motion_notify_callback(self, event):
         'on mouse movement'
-        a = P4Radmax()
+        a = P4Rm()
         if not self.showverts:
             return
         if self._ind is None:
@@ -410,7 +420,6 @@ class LeftGraphBottom(wx.Panel):
         self.showverts = True
         self.epsilon = 5  # max pixel distance to count as a vertex hit
         self.new_coord = {'indice': 0, 'x': 0, 'y': 0}
-        self.u_key_press = True
         self.modelpv = False
 
         xs = [-1]
@@ -419,7 +428,8 @@ class LeftGraphBottom(wx.Panel):
                        fill=False, closed=False, animated=True)
         self.ax.set_xlim([0, 1])
         self.ax.set_ylim([0, 1])
-        self.draw_c(poly, xs, ys)
+        self.c_dw = ""
+        self.l_dw = ""
 
         self.canvas.mpl_connect('draw_event',
                                 self.draw_callback)
@@ -439,14 +449,23 @@ class LeftGraphBottom(wx.Panel):
         pub.subscribe(self.draw_c, pubsub_draw_graph)
         pub.subscribe(self.OnDrawGraph, pubsub_Draw_DW)
         pub.subscribe(self.scale_manual, pubsub_Update_Scale_DW)
+        pub.subscribe(self.on_color, pubsub_Graph_change_color_style)
+
+        self.on_color()
+        self.draw_c(poly, xs, ys)
 
         self.SetSizer(mastersizer)
         self.Raise()
         self.SetPosition((0, 0))
         self.Fit()
 
+    def on_color(self):
+        a = P4Rm()
+        self.c_dw = a.DefaultDict['c_dw']
+        self.l_dw = a.DefaultDict['l_dw']
+
     def OnDrawGraph(self, b=None):
-        a = P4Radmax()
+        a = P4Rm()
         self.modelpv = a.modelPv
         self.ax.clear()
         if b != 2:
@@ -454,8 +473,8 @@ class LeftGraphBottom(wx.Panel):
             y_dwp = a.ParamDict['DW_shifted']
             xs = deepcopy(a.ParamDict['depth'])
             ys = deepcopy(a.ParamDict['DW_i'])
-            P4Radmax.DragDrop_DW_x = x_dwp
-            P4Radmax.DragDrop_DW_y = y_dwp
+            P4Rm.DragDrop_DW_x = x_dwp
+            P4Rm.DragDrop_DW_y = y_dwp
             ymin = min(ys) - min(ys)*10/100
             ymax = max(ys) + max(ys)*10/100
             self.ax.set_ylim([ymin, ymax])
@@ -466,20 +485,22 @@ class LeftGraphBottom(wx.Panel):
             ys = [-1]
             self.ax.set_xlim([0, 1])
             self.ax.set_ylim([0, 1])
-        poly = Polygon(list(zip(x_dwp, y_dwp)), lw=0, ls='dashdot', color='r',
-                       fill=False, closed=False, animated=True)
+        poly = Polygon(list(zip(x_dwp, y_dwp)), lw=0, ls='dashdot',
+                       color=self.c_dw, fill=False,
+                       closed=False, animated=True)
         if self.modelpv is True:
-            P4Radmax.ParamDict['dwp_pv_backup'] = a.ParamDict['dwp']
+            P4Rm.ParamDict['dwp_pv_backup'] = a.ParamDict['dwp']
         self.draw_c(poly, xs, ys)
 
     def draw_c(self, data, x, y):
-        self.ax.plot(x, y, 'r', lw=2.)
+        self.ax.plot(x, y, color=self.c_dw, lw=2., ls=self.l_dw)
         self.ax.set_ylabel("DW", fontdict=font)
         self.ax.set_xlabel("Depth ($\AA$)", fontdict=font)
         self.poly = data
         xs, ys = zip(*self.poly.xy)
-        self.line = Line2D(xs, ys, lw=0, ls='-.', color='r', marker='.', ms=32,
-                           markerfacecolor='r', markeredgecolor='k', mew=1.0)
+        self.line = Line2D(xs, ys, lw=0, ls='-.', color=self.c_dw, marker='.',
+                           ms=32, markerfacecolor=self.c_dw,
+                           markeredgecolor='k', mew=1.0)
         self.ax.add_line(self.line)
         self.ax.add_patch(self.poly)
         self.canvas.SetCursor(Cursor(wx.CURSOR_HAND))
@@ -490,13 +511,6 @@ class LeftGraphBottom(wx.Panel):
         self.ax.draw_artist(self.poly)
         self.ax.draw_artist(self.line)
         self.canvas.blit(self.ax.bbox)
-
-    def poly_changed(self, poly):
-        'this method is called whenever the polygon object is called'
-        # only copy the artist props to the line (except visibility)
-        vis = self.line.get_visible()
-        Artist.update_from(self.line, poly)
-        self.line.set_visible(vis)  # don't use the poly visibility state
 
     def get_ind_under_point(self, event):
         'get the index of the vertex under point if within epsilon tolerance'
@@ -515,6 +529,8 @@ class LeftGraphBottom(wx.Panel):
 
     def button_press_callback(self, event):
         'whenever a mouse button is pressed'
+        a = P4Rm()
+        val = a.xrd_graph_loaded
         if self.canvas.HasCapture():
             self.canvas.ReleaseMouse()
             if not self.showverts:
@@ -523,11 +539,14 @@ class LeftGraphBottom(wx.Panel):
                 return
             if event.button != 1:
                 return
-            self._ind = self.get_ind_under_point(event)
-            self.new_coord['indice'] = self._ind
+            if val == 1:
+                self._ind = self.get_ind_under_point(event)
+                self.new_coord['indice'] = self._ind
 
     def button_release_callback(self, event):
         'whenever a mouse button is released'
+        a = P4Rm()
+        val = a.xrd_graph_loaded
         if self.canvas.HasCapture():
             self.canvas.ReleaseMouse()
         else:
@@ -535,12 +554,12 @@ class LeftGraphBottom(wx.Panel):
                 return
             if event.button != 1:
                 return
-            if self.new_coord['indice'] is not None:
-                a = P4Radmax()
+            if self.new_coord['indice'] is not None and val == 1:
+                a = P4Rm()
                 temp_1 = self.new_coord['y']
                 temp_2 = self.new_coord['x']
-                P4Radmax.DragDrop_DW_y[self.new_coord['indice']] = temp_1
-                P4Radmax.DragDrop_DW_x[self.new_coord['indice']] = temp_2
+                P4Rm.DragDrop_DW_y[self.new_coord['indice']] = temp_1
+                P4Rm.DragDrop_DW_x[self.new_coord['indice']] = temp_2
                 if self.modelpv is True:
                     t_temp = a.ParamDict['depth'] + a.ParamDict['z']
                     t = t_temp[0]
@@ -554,49 +573,49 @@ class LeftGraphBottom(wx.Panel):
                     dwp_temp[4] = a.ParamDict['dwp'][4]
                     dwp_temp[5] = a.ParamDict['dwp'][5]
                     dwp_temp[6] = a.DragDrop_DW_y[3]
-                    P4Radmax.ParamDict['dwp'] = deepcopy(dwp_temp)
-                    P4Radmax.ParamDictbackup['dwp'] = deepcopy(dwp_temp)
-                    P4Radmax.ParamDict['dwp_pv'] = deepcopy(dwp_temp)
+                    P4Rm.ParamDict['dwp'] = deepcopy(dwp_temp)
+                    P4Rm.ParamDictbackup['dwp'] = deepcopy(dwp_temp)
+                    P4Rm.ParamDict['dwp_pv'] = deepcopy(dwp_temp)
                 else:
                     temp = self.new_coord['y']
-                    P4Radmax.DragDrop_DW_y[self.new_coord['indice']] = temp
+                    P4Rm.DragDrop_DW_y[self.new_coord['indice']] = temp
                     temp = [dw*scale for dw,
                             scale in zip(a.DragDrop_DW_y,
                                          a.ParamDict['scale_dw'])]
-                    temp = [float(format(val, '.8f')) for val in temp]
+                    temp = [float(format(value, '.8f')) for value in temp]
                     temp1 = temp[1:]
                     temp2 = [a.ParamDict['dw_out']]
                     temp3 = deepcopy(np.concatenate((temp1, temp2), axis=0))
-                    P4Radmax.ParamDict['dwp'] = temp3
-                    P4Radmax.ParamDictbackup['dwp'] = temp3
+                    P4Rm.ParamDict['dwp'] = temp3
+                    P4Rm.ParamDictbackup['dwp'] = temp3
                 pub.sendMessage(pubsub_Update_Fit_Live)
             self._ind = None
 
     def scroll_callback(self, event):
         if not event.inaxes:
             return
-        a = P4Radmax()
+        a = P4Rm()
         if event.key == 'u' and event.button == 'up':
             temp = a.ParamDict['DW_multiplication'] + 0.01
-            P4Radmax.ParamDict['DW_multiplication'] = temp
+            P4Rm.ParamDict['DW_multiplication'] = temp
         elif event.key == 'u' and event.button == 'down':
             temp = a.ParamDict['DW_multiplication'] - 0.01
-            P4Radmax.ParamDict['DW_multiplication'] = temp
-        P4Radmax.ParamDict['dwp'] = multiply(a.ParamDictbackup['dwp'],
-                                             a.ParamDict['DW_multiplication'])
+            P4Rm.ParamDict['DW_multiplication'] = temp
+        P4Rm.ParamDict['dwp'] = multiply(a.ParamDictbackup['dwp'],
+                                         a.ParamDict['DW_multiplication'])
         pub.sendMessage(pubsub_Re_Read_field_paramters_panel, event=event)
 
     def scale_manual(self, event, val=None):
-        a = P4Radmax()
+        a = P4Rm()
         if val is not None:
-            P4Radmax.ParamDict['DW_multiplication'] = val
-        P4Radmax.ParamDict['dwp'] = multiply(a.ParamDict['dwp'],
-                                             a.ParamDict['DW_multiplication'])
+            P4Rm.ParamDict['DW_multiplication'] = val
+        P4Rm.ParamDict['dwp'] = multiply(a.ParamDict['dwp'],
+                                         a.ParamDict['DW_multiplication'])
         pub.sendMessage(pubsub_Re_Read_field_paramters_panel, event=event)
 
     def motion_notify_callback(self, event):
         'on mouse movement'
-        a = P4Radmax()
+        a = P4Rm()
         if not self.showverts:
             return
         if self._ind is None:
@@ -671,8 +690,7 @@ class RightGraph(wx.Panel):
         self.toolbar.Hide()
         self.canvas.toolbar.zoom()
         self.toolbar.Disable()
-        self.update_zoom = self.canvas.mpl_connect('motion_notify_event',
-                                                   self.MouseOnGraph)
+
         self.ly = self.ax.axvline(color='r', lw=0.0)  # the vert line
         self.lx = self.ax.axhline(color='r', lw=0.0)  # the horiz line
 
@@ -694,7 +712,24 @@ class RightGraph(wx.Panel):
         self.item_grid.Enable(False)
         self.item_cursor.Enable(False)
 
+        self.connect = self.canvas.mpl_connect
+        self.disconnect = self.canvas.mpl_disconnect
+
+        self.update_zoom = self.connect('motion_notify_event',
+                                        self.MouseOnGraph)
+        self.update_coord = self.connect('motion_notify_event',
+                                         self.on_update_coordinate)
+        self.disconnect(self.update_zoom)
+        self.disconnect(self.update_coord)
+
         self.canvas.Bind(wx.EVT_RIGHT_DOWN, self.OnRightDown)
+
+        self.c_data = ""
+        self.c_fit = ""
+        self.c_live = ""
+        self.l_data = ""
+        self.l_fit = ""
+        self.l_live = ""
 
         mastersizer.Add(self.canvas, 1, wx.ALL)
         mastersizer.Add(self.toolbar, 1, wx.ALL)
@@ -702,13 +737,26 @@ class RightGraph(wx.Panel):
         pub.subscribe(self.OnDrawGraph, pubsub_Draw_XRD)
         pub.subscribe(self.OnDrawGraphLive, pubsub_Draw_Fit_Live_XRD)
         pub.subscribe(self.onFit, pubsub_OnFit_Graph)
+        pub.subscribe(self.on_color, pubsub_Graph_change_color_style)
+
+        self.on_color()
+
         self.SetSizer(mastersizer)
         self.Raise()
         self.SetPosition((0, 0))
         self.Fit()
 
+    def on_color(self):
+        a = P4Rm()
+        self.c_data = a.DefaultDict['c_data']
+        self.c_fit = a.DefaultDict['c_fit']
+        self.c_live = a.DefaultDict['c_fit_live']
+        self.l_data = a.DefaultDict['l_data']
+        self.l_fit = a.DefaultDict['l_fit']
+        self.l_live = a.DefaultDict['l_fit_live']
+
     def OnDrawGraph(self, b=None):
-        a = P4Radmax()
+        a = P4Rm()
         self.ax.clear()
         if b == 1:
             self.ax.semilogy(2*a.ParamDict['th']*180/np.pi,
@@ -718,10 +766,12 @@ class RightGraph(wx.Panel):
             self.ax.set_ylim([0, 1])
             self.ax.clear()
         else:
-            a = P4Radmax()
+            a = P4Rm()
             xx = 2*a.ParamDict['th']*180/np.pi
-            self.ax.semilogy(xx, a.ParamDict['Iobs'], 'o-k')
-            self.ax.semilogy(xx, a.ParamDict['I_i'], 'c-')
+            self.ax.semilogy(xx, a.ParamDict['Iobs'], color=self.c_data,
+                             ls=self.l_data, marker='o')
+            self.ax.semilogy(xx, a.ParamDict['I_i'], color=self.c_fit,
+                             ls=self.l_fit)
             middle = int(len(a.ParamDict['th'])/2)
             self.ly = self.ax.axvline(x=xx[middle], color='r', lw=0.0)
             self.lx = self.ax.axhline(color='r', lw=0.0)  # the horiz line
@@ -731,39 +781,43 @@ class RightGraph(wx.Panel):
         self.CursorMove()
 
     def OnDrawGraphLive(self, val=None):
-        a = P4Radmax()
+        a = P4Rm()
         if val != []:
-            P4Radmax.ParamDict['I_fit'] = val
+            P4Rm.ParamDict['I_fit'] = val
         self.ax.clear()
-        self.ax.semilogy(a.ParamDict['th4live'], a.ParamDict['Iobs'], 'o-k')
-        self.ax.semilogy(a.ParamDict['th4live'], a.ParamDict['I_fit'], 'r-')
+        self.ax.semilogy(a.ParamDict['th4live'], a.ParamDict['Iobs'],
+                         color=self.c_data, ls=self.l_data, marker='o')
+        self.ax.semilogy(a.ParamDict['th4live'], a.ParamDict['I_fit'],
+                         color=self.c_live, ls=self.l_live)
         self.ax.set_ylabel("Intensity (a.u.)", fontdict=font)
         self.ax.set_xlabel(r'2$\theta$ (deg.)', fontdict=font)
         self.canvas.draw()
 
     def onFit(self, b=None):
         if b == 1:
-            t = self.canvas.mpl_connect('motion_notify_event',
-                                        self.on_update_coordinate)
-            t1 = self.canvas.mpl_connect('button_release_event',
-                                         self.MouseOnGraph)
-            self.update_coordinate = t
-            self.update_zoom = t1
+            self.update_zoom = self.connect('motion_notify_event',
+                                            self.MouseOnGraph)
+            self.update_coord = self.connect('motion_notify_event',
+                                             self.on_update_coordinate)
             self.item_unzoom.Enable(True)
             self.item_grid.Enable(True)
             self.item_cursor.Enable(True)
         else:
+            self.disconnect(self.update_zoom)
+            self.disconnect(self.update_coord)
+
             self.menu.Check(self.CursorId, check=False)
             self.item_unzoom.Enable(False)
             self.item_grid.Enable(False)
             self.item_cursor.Enable(False)
             self.ly.set_linewidth(0)
             self.lx.set_linewidth(0)
-            self.canvas.mpl_disconnect(self.update_coordinate)
-            self.canvas.mpl_disconnect(self.update_zoom)
+
+#            self.canvas.mpl_disconnect(self.update_coordinate)
+#            self.canvas.mpl_disconnect(self.update_zoom)
 
     def MouseOnGraph(self, event):
-        a = P4Radmax()
+        a = P4Rm()
         if a.fitlive == 1:
             return
         if event.inaxes is not None:
@@ -771,27 +825,28 @@ class RightGraph(wx.Panel):
                 xlim = self.ax.get_xlim()
                 xlim_min = xlim[0]*np.pi/(2*180)
                 xlim_max = xlim[1]*np.pi/(2*180)
-                itemindex = where((a.ParamDict['th'] > xlim_min) &
-                                  (a.ParamDict['th'] < xlim_max))
+                itemindex = where((a.ParamDictbackup['th'] > xlim_min) &
+                                  (a.ParamDictbackup['th'] < xlim_max))
                 t1 = itemindex[0][0]
                 t2 = itemindex[0][-1]
-                P4Radmax.ParamDict['th'] = a.ParamDict['th'][t1:t2]
-                P4Radmax.ParamDict['Iobs'] = a.ParamDict['Iobs'][t1:t2]
-                P4Radmax.ParamDict['th4live'] = 2*a.ParamDict['th']*180/np.pi
+                P4Rm.ParamDict['th'] = a.ParamDictbackup['th'][t1:t2]
+                P4Rm.ParamDict['Iobs'] = a.ParamDictbackup['Iobs'][t1:t2]
+                P4Rm.ParamDict['th4live'] = 2*a.ParamDict['th']*180/np.pi
 
     def OnRightDown(self, event):
-        a = P4Radmax()
+        a = P4Rm()
         if a.fitlive == 1:
             return
-        self.PopupMenu(self.menu)
+        else:
+            self.PopupMenu(self.menu)
 
     def OnUnzoom(self, event):
         self.canvas.toolbar.home()
-        P4Radmax.zoomOn = 0
-        a = P4Radmax()
-        P4Radmax.ParamDict['th'] = a.ParamDictbackup['th']
-        P4Radmax.ParamDict['Iobs'] = a.ParamDictbackup['Iobs']
-        P4Radmax.ParamDict['th4live'] = 2*a.ParamDict['th']*180/np.pi
+        P4Rm.zoomOn = 0
+        a = P4Rm()
+        P4Rm.ParamDict['th'] = a.ParamDictbackup['th']
+        P4Rm.ParamDict['Iobs'] = a.ParamDictbackup['Iobs']
+        P4Rm.ParamDict['th4live'] = 2*a.ParamDict['th']*180/np.pi
         pub.sendMessage(pubsub_Re_Read_field_paramters_panel, event=event)
         self.CheckedGrid(event)
         self.CursorMove(event)
@@ -802,6 +857,7 @@ class RightGraph(wx.Panel):
         elif self.menu.IsChecked(self.CheckedGridId) is False:
             self.ax.grid(False)
         self.canvas.draw()
+#        self.canvas.toolbar.zoom()
 
     def CursorMove(self, event=None):
         if self.menu.IsChecked(self.CursorId) is True:

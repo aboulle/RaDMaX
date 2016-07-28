@@ -3,12 +3,23 @@
 # Author: A_BOULLE & M_SOUILAH
 # Radmax project
 
-from Parameters4Radmax import *
+import wx
+import wx.lib.agw.aui as aui
+from wx.lib.pubsub import pub
+import wx.lib.agw.genericmessagedialog as GMD
+
+import Parameters4Radmax as p4R
+from Parameters4Radmax import P4Rm
+from Settings4Radmax import TextValidator
+
 from Icon4Radmax import prog_icon
 from Read4Radmax import SaveFile4Diff
+
+import os
 from sys import platform as _platform
 import wx.lib.buttons as buttons
 
+DIGIT_ONLY = 2
 
 """Pubsub message"""
 pubsub_Read_field_Bspline = "ReadFieldBspline"
@@ -18,6 +29,8 @@ pubsub_Read_field_Fit = "ReadFieldFit"
 pubsub_Save_Param_and_quit = "SaveParamAndQuit"
 pubsub_Hide_Show_Option = "HideShowOption"
 pubsub_Close_OptionWindow = "CloseOptionWindow"
+pubsub_Open_Option_Window = "OpenOptionWindow"
+
 
 # -----------------------------------------------------------------------------
 class ParametersWindow(wx.Frame):
@@ -27,9 +40,8 @@ class ParametersWindow(wx.Frame):
         style = (wx.SYSTEM_MENU | wx.CAPTION |
                  wx.CLIP_CHILDREN | wx.FRAME_FLOAT_ON_PARENT)
         wx.Frame.__init__(self, wx.GetApp().TopWindow, wx.ID_ANY,
-                          Application_name + " - Parameters", pos, size, style)
-        self.CenterOnParent()
-        self.GetParent().Disable()
+                          p4R.Application_name + " - Parameters", pos, size,
+                          style)
 
         self.SetIcon(prog_icon.GetIcon())
 
@@ -40,8 +52,7 @@ class ParametersWindow(wx.Frame):
 
         self.aui_mgr.AddPane(self.notebook, aui.AuiPaneInfo().Center().
                              Name("notebook_content").PaneBorder(False).
-                             Position(0).MaximizeButton(False).CenterPane().
-                             MinSize((525, 100)))
+                             Position(1).MaximizeButton(False).CenterPane())
 
         all_panes = self.aui_mgr.GetAllPanes()
         '''Theme for Notebook
@@ -52,24 +63,29 @@ class ParametersWindow(wx.Frame):
             nb = pane.window
             tabArt = aui.ChromeTabArt()
             nb.SetArtProvider(tabArt)
-            self._notebook_theme = 1
             nb.Refresh()
             nb.Update()
 
         self.aui_mgr.AddPane(FitParametersPanel(self),
-                             aui.AuiPaneInfo().Name("Fit Params").
-                             CenterPane().PaneBorder(False).Bottom().
-                             MaximizeButton(False).MinSize((525, 200)))
+                             aui.AuiPaneInfo().Name("Fit_Params").
+                             CenterPane().PaneBorder(False).Position(1).
+                             MaximizeButton(False))
 
+        self.aui_mgr.GetPane("notebook_content").dock_proportion = 85
+        self.aui_mgr.GetPane("Fit_Params").dock_proportion = 100
+        self.Layout()
         self.aui_mgr.Update()
 #        self.Bind(wx.EVT_SIZE, self.OnSize)
         pub.subscribe(self.on_close_after_saving, pubsub_Save_Param_and_quit)
         pub.subscribe(self.on_close, pubsub_Close_OptionWindow)
+        pub.subscribe(self.on_open_window, pubsub_Open_Option_Window)
         self.Layout()
 
+    def on_open_window(self):
+        self.CenterOnParent()
+        self.GetParent().Disable()
+
     def on_close(self):
-        a = P4Radmax()
-        P4Radmax.Option_window_status = False
         self.GetParent().Enable()
         pub.sendMessage(pubsub_Hide_Show_Option, test=1)
 
@@ -112,7 +128,7 @@ class BsplinePanel(wx.Panel):
         self.parent = parent
 
         if _platform == "linux" or _platform == "linux2":
-            size_StaticBox = (920, 140)
+            size_StaticBox = (500, 140)
             font_Statictext = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL,
                                       False, u'Arial')
             font_TextCtrl = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL,
@@ -121,7 +137,7 @@ class BsplinePanel(wx.Panel):
             font = wx.Font(10, wx.DEFAULT, wx.ITALIC, wx.BOLD)
             vStatictextsize = 16
         elif _platform == "win32":
-            size_StaticBox = (960, 140)
+            size_StaticBox = (500, 140)
             font_Statictext = wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL,
                                       False, u'Arial')
             font_TextCtrl = wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL,
@@ -130,7 +146,7 @@ class BsplinePanel(wx.Panel):
             font = wx.Font(9, wx.DEFAULT, wx.ITALIC, wx.BOLD)
             vStatictextsize = 16
         elif _platform == 'darwin':
-            size_StaticBox = (980, 140)
+            size_StaticBox = (500, 140)
             font_Statictext = wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.NORMAL,
                                       False, u'Arial')
             font_TextCtrl = wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.NORMAL,
@@ -146,7 +162,7 @@ class BsplinePanel(wx.Panel):
                                size=size_StaticBox)
         Fit_box.SetFont(font)
         Fit_box_sizer = wx.StaticBoxSizer(Fit_box, wx.VERTICAL)
-        in_Fit_box_sizer = wx.GridBagSizer(hgap=10, vgap=0)
+        in_Fit_box_sizer = wx.GridBagSizer(hgap=3, vgap=0)
 
         Strain_txt = wx.StaticText(self, -1, label=u'Strain',
                                    size=(45, vStatictextsize))
@@ -193,26 +209,41 @@ class BsplinePanel(wx.Panel):
 
         mastersizer = wx.BoxSizer(wx.VERTICAL)
         mastersizer.Add(Fit_box_sizer, 0, wx.ALL, 5)
+        self.open = 0
 
         pub.subscribe(self.onReadField, pubsub_Read_field_Bspline)
+        pub.subscribe(self.on_refill_field, pubsub_Open_Option_Window)
 
         self.Textcontrol = [self.Min_strain, self.Max_strain, self.Min_dw,
                             self.Max_dw]
+
         self.SetSizer(mastersizer)
         self.Layout()
         self.Fit()
-        self.onFillTextCtrl()
+        self.on_init()
 
-    def onFillTextCtrl(self):
-        a = P4Radmax()
+    def on_init(self):
+        a = P4Rm()
         i = 0
-        for k in DefaultParam4Radmax[17:21]:
-            self.Textcontrol[i].AppendText(str(a.DefaultDict[k]))
+        for k in p4R.s_bsplines:
+            self.Textcontrol[i].AppendText(str(a.AllDataDict[k]))
             i += 1
+
+    def on_refill_field(self):
+        if self.open == 0:
+            self.open = 1
+        else:
+            for ii in range(len(self.Textcontrol)):
+                self.Textcontrol[ii].Clear()
+            a = P4Rm()
+            i = 0
+            for k in p4R.s_bsplines:
+                self.Textcontrol[i].AppendText(str(a.AllDataDict[k]))
+                i += 1
 
     def onReadField(self):
         i = 0
-        for k in DefaultParam4Radmax[17:21]:
+        for k in p4R.s_bsplines:
             i += 1
         self.IsDataFloat()
 
@@ -224,7 +255,7 @@ class BsplinePanel(wx.Panel):
             return False
 
     def IsDataFloat(self):
-        a = P4Radmax()
+        a = P4Rm()
         IsFloat = []
         dataFloat = True
         for i in range(len(self.Textcontrol)):
@@ -245,11 +276,11 @@ class BsplinePanel(wx.Panel):
             self.Refresh()
         else:
             i = 0
-            for k in DefaultParam4Radmax[17:21]:
+            for k in p4R.s_bsplines:
                 val = self.Textcontrol[i].GetValue()
-                P4Radmax.DefaultDict[k] = float(val)
+                P4Rm.AllDataDict[k] = float(val)
                 self.Textcontrol[i].Clear()
-                self.Textcontrol[i].AppendText(str(a.DefaultDict[k]))
+                self.Textcontrol[i].AppendText(str(a.AllDataDict[k]))
                 i += 1
         return dataFloat
 
@@ -261,7 +292,7 @@ class PseudoVoigtPanel(wx.Panel):
         self.parent = parent
 
         if _platform == "linux" or _platform == "linux2":
-            size_StaticBox = (920, 140)
+            size_StaticBox = (500, 140)
             font_Statictext = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL,
                                       False, u'Arial')
             font_TextCtrl = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL,
@@ -271,7 +302,7 @@ class PseudoVoigtPanel(wx.Panel):
             vStatictextsize = 16
             hStatictextsize = 60
         elif _platform == "win32":
-            size_StaticBox = (960, 140)
+            size_StaticBox = (500, 140)
             font_Statictext = wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL,
                                       False, u'Arial')
             font_TextCtrl = wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL,
@@ -281,7 +312,7 @@ class PseudoVoigtPanel(wx.Panel):
             vStatictextsize = 16
             hStatictextsize = 60
         elif _platform == 'darwin':
-            size_StaticBox = (980, 140)
+            size_StaticBox = (500, 140)
             font_Statictext = wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.NORMAL,
                                       False, u'Arial')
             font_TextCtrl = wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.NORMAL,
@@ -298,7 +329,7 @@ class PseudoVoigtPanel(wx.Panel):
                                size=size_StaticBox)
         Fit_box.SetFont(font)
         Fit_box_sizer = wx.StaticBoxSizer(Fit_box, wx.VERTICAL)
-        in_Fit_box_sizer = wx.GridBagSizer(hgap=10, vgap=0)
+        in_Fit_box_sizer = wx.GridBagSizer(hgap=7, vgap=0)
 
         Strain_txt = wx.StaticText(self, -1, label=u'Strain',
                                    size=(45, vStatictextsize))
@@ -404,8 +435,10 @@ class PseudoVoigtPanel(wx.Panel):
 
         mastersizer = wx.BoxSizer(wx.VERTICAL)
         mastersizer.Add(Fit_box_sizer, 0, wx.ALL, 5)
+        self.open = 0
 
         pub.subscribe(self.onReadField, pubsub_Read_field_PseudoV)
+        pub.subscribe(self.on_refill_field, pubsub_Open_Option_Window)
 
         self.Textcontrol = [self.Eta1_strain, self.Eta2_strain, self.Eta1_dw,
                             self.Eta2_dw, self.fwhm1_strain, self.fwhm2_strain,
@@ -415,19 +448,31 @@ class PseudoVoigtPanel(wx.Panel):
         self.SetSizer(mastersizer)
         self.Layout()
         self.Fit()
-        self.onFillTextCtrl()
+        self.on_init()
 
-    def onFillTextCtrl(self):
-        a = P4Radmax()
+    def on_init(self):
+        a = P4Rm()
         i = 0
-        for k in DefaultParam4Radmax[5:17]:
-            self.Textcontrol[i].AppendText(str(a.DefaultDict[k]))
+        for k in p4R.s_pv:
+            self.Textcontrol[i].AppendText(str(a.AllDataDict[k]))
             i += 1
+
+    def on_refill_field(self):
+        if self.open == 0:
+            self.open = 1
+        else:
+            for ii in range(len(self.Textcontrol)):
+                self.Textcontrol[ii].Clear()
+            a = P4Rm()
+            i = 0
+            for k in p4R.s_pv:
+                self.Textcontrol[i].AppendText(str(a.AllDataDict[k]))
+                i += 1
 
     def onReadField(self):
         success = self.IsDataFloat()
         if success:
-            P4Radmax.Paramwindowtest['PseudoVoigtPanel'] = True
+            P4Rm.Paramwindowtest['PseudoVoigtPanel'] = True
 
     def Is_number(self, s):
         try:
@@ -437,7 +482,7 @@ class PseudoVoigtPanel(wx.Panel):
             return False
 
     def IsDataFloat(self):
-        a = P4Radmax()
+        a = P4Rm()
         IsFloat = []
         dataFloat = True
         for i in range(len(self.Textcontrol)):
@@ -458,11 +503,11 @@ class PseudoVoigtPanel(wx.Panel):
             self.Refresh()
         else:
             i = 0
-            for k in DefaultParam4Radmax[5:17]:
+            for k in p4R.s_pv:
                 val = self.Textcontrol[i].GetValue()
-                P4Radmax.DefaultDict[k] = float(val)
+                P4Rm.AllDataDict[k] = float(val)
                 self.Textcontrol[i].Clear()
-                self.Textcontrol[i].AppendText(str(a.DefaultDict[k]))
+                self.Textcontrol[i].AppendText(str(a.AllDataDict[k]))
                 i += 1
         return dataFloat
 
@@ -585,18 +630,18 @@ class FitParametersPanel(wx.Panel):
 
         txt_ = u'(only for newly created projects)'
         txt_end = wx.StaticText(self, -1, label=txt_,
-                                size=(200, vStatictextsize))
+                                size=(220, vStatictextsize))
         txt_end.SetFont(font_update)
 
         self.apply_1_Id = wx.NewId()
-        self.apply_1 = wx.Button(self, id=self.default_1_Id,
+        self.apply_1 = wx.Button(self, id=self.apply_1_Id,
                                  label="Apply changes")
         self.apply_1.SetFont(font_update)
         self.apply_1.Bind(wx.EVT_BUTTON, self.on_apply_changes)
 
         self.close_1_Id = wx.NewId()
         self.close_1 = buttons.GenButton(self, id=self.close_1_Id,
-                                 label="Close")
+                                         label="Close")
         self.close_1.SetFont(font_update)
         self.close_1.Bind(wx.EVT_BUTTON, self.on_close)
         self.close_1.SetFont(wx.Font(10, wx.SWISS, wx.NORMAL, wx.BOLD, False))
@@ -607,18 +652,21 @@ class FitParametersPanel(wx.Panel):
 
         mastersizer = wx.BoxSizer(wx.VERTICAL)
         horsizer = wx.GridBagSizer(hgap=15, vgap=0)
-        
+
         horsizer.Add(self.default_1, pos=(0, 0), flag=flagSizer)
         horsizer.Add(self.apply_1, pos=(0, 6), flag=flagSizer)
         horsizer.Add(self.close_1, pos=(0, 10), flag=flagSizer)
-        
+
         mastersizer.Add(Leastsq_box_sizer, 0, wx.ALL, 5)
         mastersizer.Add(AGSA_options_box_sizer, 0, wx.ALL, 5)
 #        mastersizer.Add(self.default_1, 0, wx.ALL, 5)
         mastersizer.Add(horsizer, 0, wx.ALL, 5)
         mastersizer.Add(txt_end, 0, wx.ALL, 5)
 
+        self.open = 0
+
         pub.subscribe(self.on_read_field, pubsub_Read_field_Fit)
+        pub.subscribe(self.on_refill_field, pubsub_Open_Option_Window)
 
         self.TextcontrolGSA = [self.qa, self.qv, self.qt]
         self.TextcontrolLeastsq = [self.xtol, self.ftol, self.maxfev]
@@ -627,18 +675,34 @@ class FitParametersPanel(wx.Panel):
         self.SetSizer(mastersizer)
         self.Layout()
         self.Fit()
-        self.on_fill_textCtrl()
+        self.on_init()
 
-    def on_fill_textCtrl(self):
-        a = P4Radmax()
+    def on_init(self):
+        a = P4Rm()
         i = 0
-        for k in DefaultParam4Radmax[21:24]:
-            self.TextcontrolGSA[i].AppendText(str(a.DefaultDict[k]))
+        for k in p4R.s_GSA_expert:
+            self.TextcontrolGSA[i].AppendText(str(a.AllDataDict[k]))
             i += 1
         i = 0
-        for k in DefaultParam4Radmax[24:]:
-            self.TextcontrolLeastsq[i].AppendText(str(a.DefaultDict[k]))
+        for k in p4R.s_leastsq:
+            self.TextcontrolLeastsq[i].AppendText(str(a.AllDataDict[k]))
             i += 1
+
+    def on_refill_field(self):
+        if self.open == 0:
+            self.open = 1
+        else:
+            for ii in range(len(self.all_textControl)):
+                self.all_textControl[ii].Clear()
+            a = P4Rm()
+            i = 0
+            for k in p4R.s_GSA_expert:
+                self.TextcontrolGSA[i].AppendText(str(a.AllDataDict[k]))
+                i += 1
+            i = 0
+            for k in p4R.s_leastsq:
+                self.TextcontrolLeastsq[i].AppendText(str(a.AllDataDict[k]))
+                i += 1
 
     def on_apply_changes(self, event):
         pub.sendMessage(pubsub_Read_field_Bspline)
@@ -663,20 +727,22 @@ class FitParametersPanel(wx.Panel):
             pub.sendMessage(pubsub_Read_field_Fit)
             success = self.IsDataFloat()
             if success:
-                a = P4Radmax()
-                P4Radmax.Paramwindowtest['FitParametersPanel'] = True
+                a = P4Rm()
+                P4Rm.Paramwindowtest['FitParametersPanel'] = True
                 if False not in a.Paramwindowtest:
-                    b = SaveFile4Diff(self)
-                    b.on_update_config_file_parameters(os.path.join(current_dir,
-                                                    filename + '.ini'))
-                    P4Radmax.Paramwindowtest['FitParametersPanel'] = True
+                    for k in p4R.Exp_read_only:
+                        P4Rm.DefaultDict[k] = a.AllDataDict[k]
+                    b = SaveFile4Diff()
+                    b.on_update_config_file_parameters(os.path.join(p4R.current_dir,
+                                                                    p4R.filename + '.ini'))
+                    P4Rm.Paramwindowtest['FitParametersPanel'] = True
                     pub.sendMessage(pubsub_Save_Param_and_quit)
             event.Skip()
 
     def on_read_field(self):
         success = self.IsDataFloat()
         if success:
-            P4Radmax.Paramwindowtest['FitParametersPanel'] = True
+            P4Rm.Paramwindowtest['FitParametersPanel'] = True
 
     def Is_number(self, s):
         try:
@@ -686,7 +752,7 @@ class FitParametersPanel(wx.Panel):
             return False
 
     def IsDataFloat(self):
-        a = P4Radmax()
+        a = P4Rm()
         IsFloat = []
         dataFloat = True
         for i in range(len(self.all_textControl)):
@@ -707,20 +773,20 @@ class FitParametersPanel(wx.Panel):
             self.Refresh()
         else:
             i = 0
-            for k in DefaultParam4Radmax[21:24]:
+            for k in p4R.s_GSA_expert:
                 val = self.TextcontrolGSA[i].GetValue()
-                P4Radmax.DefaultDict[k] = float(val)
+                P4Rm.AllDataDict[k] = float(val)
                 self.TextcontrolGSA[i].Clear()
-                self.TextcontrolGSA[i].AppendText(str(a.DefaultDict[k]))
+                self.TextcontrolGSA[i].AppendText(str(a.AllDataDict[k]))
                 i += 1
             i = 0
-            for k in DefaultParam4Radmax[24:]:
+            for k in p4R.s_leastsq:
                 val = self.TextcontrolLeastsq[i].GetValue()
                 if k == 'maxfev':
-                    P4Radmax.DefaultDict[k] = int(float(val))
+                    P4Rm.AllDataDict[k] = int(float(val))
                 else:
-                    P4Radmax.DefaultDict[k] = float(val)
+                    P4Rm.AllDataDict[k] = float(val)
                 self.TextcontrolLeastsq[i].Clear()
-                self.TextcontrolLeastsq[i].AppendText(str(a.DefaultDict[k]))
+                self.TextcontrolLeastsq[i].AppendText(str(a.AllDataDict[k]))
                 i += 1
         return dataFloat

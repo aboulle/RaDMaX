@@ -48,6 +48,18 @@ prog_icon = PyEmbeddedImage(
     "M59+/h7+X67/Apeo6KmDPt8FAAAAAElFTkSuQmCC")
 
 # -----------------------------------------------------------------------------
+prog_icon_curve = PyEmbeddedImage(
+    "iVBORw0KGgoAAAANSUhEUgAAABEAAAAQCAYAAADwMZRfAAAABHNCSVQICAgIfAhkiAAAAAlw"
+    "SFlzAAAAfgAAAH4BavEubQAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoA"
+    "AAE9SURBVDiNpdIxS1thFMbx373RqtikUMRCEanQoiFTuzrV1W/h4ObiIl1cMoilQ3G07RfI"
+    "mMG1U4eWQEfBpW7Sig6agLkl9zrcXDTXG0qaZ3o5cJ7zf855GVENSp9Yw2RWC0c1uWLpjO79"
+    "2sgm11Ti1CT5b5OYJCQYiyQzGsskKeiZyBe+UO7x5oTjD5x7ODX4Z5yI6iatRV6glBvwvJ27"
+    "TCFJJ50cRSQfedujM8WzLt3fdHb58Z7qUJMGpVN6/QjxBe1pHtf5ukz8PaWIIs73md/hLB/X"
+    "IbVVygj2eLnFAqbldoDwgNcZxADJNY++cYPkHb8yonxkxNG9fQ6Y9M+X4fUKmu9Q0qUH/Xeq"
+    "z6y3mS1AH6o6iwhD0l00aT1hTu6sw7TNzzJPN5idOKT2h5kml02OFPyDIfobUHnFyi2V8lPe"
+    "BhwXEgAAAABJRU5ErkJggg==")
+
+# -----------------------------------------------------------------------------
 NewP24 = PyEmbeddedImage(
     "iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAABHNCSVQICAgIfAhkiAAABCFJ"
     "REFUSImVlkFoFGcUx3/vm9lukmoTEjQJUqKLoSKFlpbao9bmUBFLoIcK0nop1UMttBiUtvai"
@@ -4120,3 +4132,14 @@ stop_thread_morpheus = PyEmbeddedImage(
     "N1nARKkPr8Xx+dSpHZKy97d8d/zp0S8s5j1szK+NQmVrXvl/hJBOykUfH0EdhSo/vGv8GlLQ"
     "6Vr5XsNAffR7O1keQ+A/ACBKbnpk7bVOAAAAAElFTkSuQmCC")
 
+# -----------------------------------------------------------------------------
+bspline_icon = PyEmbeddedImage(
+    "iVBORw0KGgoAAAANSUhEUgAAABQAAAAOCAYAAAAvxDzwAAAABHNCSVQICAgIfAhkiAAAAAlw"
+    "SFlzAAABTwAAAU8BxD+cVAAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoA"
+    "AAE5SURBVDiNpY+9SgNBFEbPjmuiDOvgbnBTaKOgwd7Cd7C1tI6FnZ1VKkF8CDsbC23srESR"
+    "FKIgiAQTxTRqqigJ+du9dmGVJZvEWw3znTnzXfjHbIEuwV1RqYJonRXHydjjygTsZ2Oy3Xr9"
+    "swM1Go2aBcHIon3wLpXaKRmzOG6ZX3MFeQE5gY24fOSV37Q+k1ZLzoPgIhY4hvUjyA0rFN/X"
+    "MqhIFcpliP8tTuh5a4Ny+xF2U+l0j3Y7WQYWnc5LMui6C3H32zD3h5sX151JFMZJb5QqfEHz"
+    "AFYizGqSR/VPYTjRfwi2ZdsPVaVOU/AR4b+HagcgmYwjvq8BxJglAQtAHGdZwBLPy4kxs0ML"
+    "N2H6Ce5vlToUmIxmRaXyZbjeAz/J01+5Ar0A3pth+GpBNwo1w7BtQ9aFqSThD1yxYepzVK+H"
+    "AAAAAElFTkSuQmCC")
