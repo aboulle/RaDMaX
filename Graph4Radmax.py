@@ -768,17 +768,12 @@ class RightGraph(wx.Panel):
         else:
             a = P4Rm()
             xx = 2*a.ParamDict['th']*180/np.pi
-<<<<<<< HEAD
             self.ax.semilogy(xx, a.ParamDict['Iobs'], color=self.c_data,
                              ls=self.l_data, marker='o')
             self.ax.semilogy(xx, a.ParamDict['I_i'], color=self.c_fit,
                              ls=self.l_fit)
-=======
-            self.ax.semilogy(xx, a.ParamDict['Iobs'], 'o-k')
-            self.ax.semilogy(xx, a.ParamDict['I_i'], 'r-')
->>>>>>> a4b2d92a925510e0f7875de0b15ec2681a1e1b62
             middle = int(len(a.ParamDict['th'])/2)
-            self.ly = self.ax.axvline(x=xx[middle], color='m', lw=0.0)
+            self.ly = self.ax.axvline(x=xx[middle], color='r', lw=0.0)
             self.lx = self.ax.axhline(color='r', lw=0.0)  # the horiz line
         self.ax.set_ylabel("Intensity (a.u.)", fontdict=font)
         self.ax.set_xlabel(r'2$\theta$ (deg.)', fontdict=font)
@@ -790,15 +785,10 @@ class RightGraph(wx.Panel):
         if val != []:
             P4Rm.ParamDict['I_fit'] = val
         self.ax.clear()
-<<<<<<< HEAD
         self.ax.semilogy(a.ParamDict['th4live'], a.ParamDict['Iobs'],
                          color=self.c_data, ls=self.l_data, marker='o')
         self.ax.semilogy(a.ParamDict['th4live'], a.ParamDict['I_fit'],
                          color=self.c_live, ls=self.l_live)
-=======
-        self.ax.semilogy(a.ParamDict['th4live'], a.ParamDict['Iobs'], 'o-k')
-        self.ax.semilogy(a.ParamDict['th4live'], a.ParamDict['I_fit'], color='#ff6700', linestyle='-')
->>>>>>> a4b2d92a925510e0f7875de0b15ec2681a1e1b62
         self.ax.set_ylabel("Intensity (a.u.)", fontdict=font)
         self.ax.set_xlabel(r'2$\theta$ (deg.)', fontdict=font)
         self.canvas.draw()
