@@ -18,7 +18,7 @@ from collections import OrderedDict
 Application_name = "RaDMaX"
 filename = "Radmax"
 Application_version = "2.3.0.0"
-last_modification = "28/07/2016"
+last_modification = "29/07/2016"
 log_filename = "activity"
 ExperimentFile = 'ExperimentFile'
 RadmaxFile = 'RadmaxFile'

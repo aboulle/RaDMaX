@@ -39,6 +39,7 @@ logger = logging.getLogger(__name__)
 
 pubsub_fill_list_DB = "FillListDB"
 pubsub_sup_data_DB = "DeleteDataFromDB"
+pubsub_refill_list_name_DB = "RefillListNameDB"
 
 Base = declarative_base()
 
@@ -53,6 +54,7 @@ if 'phoenix' in wx.PlatformInfo:
 else:
     from wx import DatePickerCtrl, EVT_DATE_CHANGED
     from wx import DP_DROPDOWN, DP_SHOWCENTURY, DP_ALLOWNONE
+
 
 # -----------------------------------------------------------------------------
 def wxdate2pydate(date):
@@ -169,7 +171,7 @@ class DataBasePanel(scrolled.ScrolledPanel):
             self.list.SetObjects(l)
         elif case == 1:
             self.list.AddObject(l)
-        self.list.SortBy(0, ascending=False)
+            pub.sendMessage(pubsub_refill_list_name_DB)
         objects = self.list.GetObjects()
         self.list.RefreshObjects(objects)
         self.Thaw()
@@ -318,13 +320,13 @@ class DataBaseManagement(scrolled.ScrolledPanel):
         cb_date.Bind(wx.EVT_CHECKBOX, self.un_check_choice)
         now = wx.DateTime().Today()
         self.dpc_1 = DatePickerCtrl(self, size=(120, -1),
-                                       style=DP_DROPDOWN |
-                                       DP_SHOWCENTURY |
-                                       DP_ALLOWNONE)
+                                    style=DP_DROPDOWN |
+                                    DP_SHOWCENTURY |
+                                    DP_ALLOWNONE)
         self.dpc_2 = DatePickerCtrl(self, size=(120, -1),
-                                       style=DP_DROPDOWN |
-                                       DP_SHOWCENTURY |
-                                       DP_ALLOWNONE)
+                                    style=DP_DROPDOWN |
+                                    DP_SHOWCENTURY |
+                                    DP_ALLOWNONE)
         self.Bind(EVT_DATE_CHANGED, self.on_select_combobox, self.dpc_1)
         self.Bind(EVT_DATE_CHANGED, self.on_select_combobox, self.dpc_2)
         self.dpc_1.SetValue(now)
@@ -375,6 +377,7 @@ class DataBaseManagement(scrolled.ScrolledPanel):
         mastersizer.Add(choice_sizer, 0, wx.ALL, 20)
 
         pub.subscribe(self.on_delete_data, pubsub_sup_data_DB)
+        pub.subscribe(self.on_add_new_name_to_combobox, pubsub_refill_list_name_DB)
 
         self.SetSizer(mastersizer)
         self.Layout()
@@ -410,6 +413,16 @@ class DataBaseManagement(scrolled.ScrolledPanel):
         self.dpc_1.Hide()
         self.dpc_2.Hide()
 
+    def on_add_new_name_to_combobox(self):
+        a = P4Rm()
+        if not a.PathDict['project_name'] in a.DBDict['name']:
+            c = DataBaseUse()
+            c.on_read_part_DB()
+            self.name.SetItems(a.DBDict['name'])
+            self.name.SetStringSelection(a.DBDict['name'][0])
+            self.Layout()
+            self.SetAutoLayout(1)
+
     def un_check_choice(self, event):
         widget = event.GetId()
         isChecked = event.GetEventObject().GetValue()
@@ -436,7 +449,7 @@ class DataBaseManagement(scrolled.ScrolledPanel):
             else:
                 self.dpc_2.Hide()
 
-    def on_search_in_DB(self, event):
+    def on_search_in_DB(self, event=None):
         list_temp = []
         P4Rm.DBDict['choice_state'] = self.rb1.GetValue()
         for i in range(len(self.cb_list)):
@@ -470,9 +483,11 @@ class DataBaseManagement(scrolled.ScrolledPanel):
                 self.cb_list[i].SetValue(False)
                 self.combo_list[i].Disable()
             empty = a.DBDict['session'].query(RadMaxData).first()
-            if empty:
+            if empty is None:
                 s = a.DBDict['session'].query(RadMaxData).order_by(RadMaxData.id)
                 c.on_read_database_and_fill_list(s)
+            else:
+                self.on_search_in_DB()
 
 
 # -----------------------------------------------------------------------------
@@ -487,13 +502,16 @@ class DataBaseUse():
         path = os.path.join(p4R.database_path,  p4R.Database_name + '.db')
         logger.log(logging.WARNING, 'test')
 
-
-        if _platform == "linux" or _platform == "linux2" or  _platform == 'darwin':
+        if _platform == "linux" or _platform == "linux2" or _platform == 'darwin':
             # Unix/Mac - 4 initial slashes in total
             P4Rm.DBDict['engine'] = create_engine('sqlite:////' + path)
         elif _platform == "win32":
             P4Rm.DBDict['engine'] = create_engine(r'sqlite:///' + path)
 
+        if not os.path.isdir(p4R.database_path):
+            msg = p4R.database_path + " is not present, creates one !"
+            logger.log(logging.WARNING, msg)
+            os.makedirs(p4R.database_path)
         if not os.path.isdir(path):
             msg = p4R.Database_name + " is not present, creates one !"
             logger.log(logging.WARNING, msg)
@@ -617,3 +635,4 @@ class DataBaseUse():
     def on_delete_data(self):
         a = P4Rm()
         a.DBDict['session'].commit()
+        a.DBDict['engine'].execute("VACUUM")
