@@ -40,6 +40,7 @@ logger = logging.getLogger(__name__)
 pubsub_fill_list_DB = "FillListDB"
 pubsub_sup_data_DB = "DeleteDataFromDB"
 pubsub_refill_list_name_DB = "RefillListNameDB"
+pubsub_search_combobox_DB = "SearchComboboxDB"
 
 Base = declarative_base()
 
@@ -172,13 +173,13 @@ class DataBasePanel(scrolled.ScrolledPanel):
         elif case == 1:
             self.list.AddObject(l)
             pub.sendMessage(pubsub_refill_list_name_DB)
+            pub.sendMessage(pubsub_search_combobox_DB)
         objects = self.list.GetObjects()
         self.list.RefreshObjects(objects)
         self.Thaw()
 
     def OnItemSelected(self, event):
         objects = self.list.GetObjects()
-        n_objects = len(objects)
         if 'phoenix' in wx.PlatformInfo:
             currentline = event.Index
         else:
@@ -186,7 +187,7 @@ class DataBasePanel(scrolled.ScrolledPanel):
         date = 0
         count = 0
         for obj in objects:
-            if count == n_objects - currentline - 1:
+            if count == currentline:
                 date = obj.date
                 break
             else:
@@ -378,6 +379,7 @@ class DataBaseManagement(scrolled.ScrolledPanel):
 
         pub.subscribe(self.on_delete_data, pubsub_sup_data_DB)
         pub.subscribe(self.on_add_new_name_to_combobox, pubsub_refill_list_name_DB)
+        pub.subscribe(self.on_search_in_DB, pubsub_search_combobox_DB)
 
         self.SetSizer(mastersizer)
         self.Layout()
@@ -553,11 +555,11 @@ class DataBaseUse():
         geometry = p4R.sample_geometry[int(a.AllDataDict['geometry'])]
         model = p4R.Strain_DW_choice[int(a.AllDataDict['model'])]
 
-        alldata = pickle.dumps(a.AllDataDict)
-        spdata = pickle.dumps(a.ParamDict['sp'])
-        dwpdata = pickle.dumps(a.ParamDict['dwp'])
-        pathDict = pickle.dumps(a.PathDict)
-        xrd_data = pickle.dumps(a.ParamDict['data_xrd'])
+        alldata = pickle.dumps(a.AllDataDict, protocol=2)
+        spdata = pickle.dumps(a.ParamDict['sp'], protocol=2)
+        dwpdata = pickle.dumps(a.ParamDict['dwp'], protocol=2)
+        pathDict = pickle.dumps(a.PathDict, protocol=2)
+        xrd_data = pickle.dumps(a.ParamDict['data_xrd'], protocol=2)
 
         data = RadMaxData(exp_name=exp_name, crys_name=crys_name,
                           fit_algo=fit_algo, fit_success=fit_success,

@@ -48,6 +48,8 @@ import wx.lib.agw.aui as aui
 from wx.lib.pubsub import pub
 import wx.lib.agw.genericmessagedialog as GMD
 
+from sys import platform as _platform
+
 from Icon4Radmax import NewP24, LoadP24, saveP24, saveasP24, shutdown24, logP32
 from Icon4Radmax import prog_icon, About_icon_24
 
@@ -776,30 +778,32 @@ class MainPanel(wx.Panel):
         b = Calcul4Radmax()
         b.on_new_project()
 
-#    def OnDisableEnable(self, case):
-#        if case == 0:
-#            self.notebook.EnableTab(3, True)
-#        elif case == 1:
-#            self.notebook.EnableTab(3, False)
-
     def OnAddDelete(self, case):
         if case == 0:
-            self.Freeze()
-            page4 = DataBasePanel(self.parent, self.statusbar)
-            page5 = DataBaseManagement(self.parent, self.statusbar)
-            self.notebook.AddPage(page4, "DataBase")
-            self.notebook.AddPage(page5, "DataBase Management")
-            self.notebook.SetCloseButton(3, False)
-            self.notebook.SetCloseButton(4, False)
-            self.Thaw()
-        elif case == 1:
-            if self.notebook.GetPageCount() > 3:
+            if not _platform == 'darwin':
                 self.Freeze()
                 page4 = DataBasePanel(self.parent, self.statusbar)
                 page5 = DataBaseManagement(self.parent, self.statusbar)
-                self.notebook.DeletePage(3)
-                self.notebook.DeletePage(3)
+                self.notebook.AddPage(page4, "DataBase")
+                self.notebook.AddPage(page5, "DataBase Management")
+                self.notebook.SetCloseButton(3, False)
+                self.notebook.SetCloseButton(4, False)
                 self.Thaw()
+            else:
+                self.notebook.EnableTab(3, True)
+                self.notebook.EnableTab(4, True)
+        elif case == 1:
+            if not _platform == 'darwin':
+                if self.notebook.GetPageCount() > 3:
+                    self.Freeze()
+                    page4 = DataBasePanel(self.parent, self.statusbar)
+                    page5 = DataBaseManagement(self.parent, self.statusbar)
+                    self.notebook.DeletePage(3)
+                    self.notebook.DeletePage(3)
+                    self.Thaw()
+            else:
+                self.notebook.EnableTab(3, False)
+                self.notebook.EnableTab(4, False)
 
 
 # -----------------------------------------------------------------------------
@@ -828,6 +832,14 @@ class AUINotebook(aui.AuiNotebook):
         self.SetCloseButton(0, False)
         self.SetCloseButton(1, False)
         self.SetCloseButton(2, False)
+
+        if _platform == 'darwin':
+            page4 = DataBasePanel(self.parent, self.statusbar)
+            page5 = DataBaseManagement(self.parent, self.statusbar)
+            self.AddPage(page4, "DataBase")
+            self.AddPage(page5, "DataBase Management")
+            self.SetCloseButton(3, False)
+            self.SetCloseButton(4, False)
 
 
 # -----------------------------------------------------------------------------
