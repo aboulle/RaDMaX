@@ -3,9 +3,9 @@
 # Author: A_BOULLE & M_SOUILAH
 # Radmax project
 
-#==============================================================================
+# =============================================================================
 # Settings module
-#==============================================================================
+# =============================================================================
 
 
 import os
@@ -43,8 +43,10 @@ DIGIT_ONLY = 2
 
 Live_COUNT = wx.NewEventType()
 LiveLimitExceeded_COUNT = wx.NewEventType()
+Live_count_NbCycle = wx.NewEventType()
 EVT_Live_COUNT = wx.PyEventBinder(Live_COUNT, 1)
 EVT_LiveLimitExceeded_COUNT = wx.PyEventBinder(LiveLimitExceeded_COUNT, 1)
+EVT_Live_count_NbCycle = wx.PyEventBinder(Live_count_NbCycle, 1)
 
 
 # -----------------------------------------------------------------------------

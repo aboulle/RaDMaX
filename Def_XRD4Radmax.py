@@ -15,16 +15,18 @@ from Tools4Radmax import signe
 
 
 def f_Refl(choice, Data=None):
-    if choice == 0:
-        res = f_Refl_Default()
-    elif choice == 1:
-        res = f_Refl_Thin_Film()
-    elif choice == 2:
-        res = f_Refl_Thick_Film()
-    elif choice == 3:
-        res = f_Refl_Thick_Film_and_Substrate()
-    elif choice == 4:
-        res = f_Refl_Substrate
+    a = P4Rm()
+    if a.AllDataDict['damaged_depth'] > 0:
+        if choice == 0:
+            res = f_Refl_Default()
+        elif choice == 1:
+            res = f_Refl_Thin_Film()
+        elif choice == 2:
+            res = f_Refl_Thick_Film()
+        elif choice == 3:
+            res = f_Refl_Thick_Film_and_Substrate()
+    else:
+        res = f_Refl_Substrate()
     return res
 
 
@@ -37,8 +39,6 @@ def f_Refl_fit(choice, Data=None):
         res = f_Refl_Thick_Film_fit(Data)
     elif choice == 3:
         res = f_Refl_Thick_Film_and_Substrate_fit(Data)
-    elif choice == 4:
-        res = f_Refl_Substrate_fit(Data)
     return res
 
 
@@ -489,7 +489,7 @@ def f_Refl_Thick_Film_and_Substrate():
 # =============================================================================
 # Only substrate for t=0 --> damaged depth
 # =============================================================================
-def f_Refl_Substrate(th, param):
+def f_Refl_Substrate():
     a = P4Rm()
 
     G = a.ParamDict['G']
@@ -500,7 +500,7 @@ def f_Refl_Substrate(th, param):
     FmH = a.ParamDict['FmH']
     F0 = a.ParamDict['F0']
     th = a.ParamDict['th']
-		
+
     eta = (-b_S*(th-thB_S)*sin(2*thB_S) - 0.5*G*F0[0]*(1-b_S)) / ((abs(b_S)**0.5) * G * (FH[0]*FmH[0])**0.5)
     res = (eta - signe(eta.real)*((eta*eta - 1)**0.5)) * (FH[0] / FmH[0])**0.5
     return convolve(abs(res)**2, resol, mode='same')

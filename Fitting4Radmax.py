@@ -19,13 +19,12 @@ from Calcul4Radmax import Calcul4Radmax
 
 from threading import Thread, Event
 from scipy.optimize import leastsq
-from scipy import convolve, linspace, in1d, log10
-from lmfit import fit_report
+from scipy import convolve, in1d, log10
 
 from time import sleep
 
 import numpy as np
-from numpy import append, around, array
+from numpy import around, array, arange, asarray
 
 from Def_XRD4Radmax import f_Refl, f_Refl_fit
 
@@ -35,6 +34,7 @@ from Def_Strain4Radmax import f_strain
 from Def_DW4Radmax import f_DW
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 """Pubsub message"""
@@ -47,11 +47,11 @@ pubsub_Hide_Show_GSA = "HideShowGSA"
 pubsub_on_launch_thread = "OnLaunchThread"
 
 pubsub_save_project_before_fit = "SaveProjectBeforeFit"
+pubsub_adjust_nb_cycle = "AdjustNbCycle"
 
 
 # -----------------------------------------------------------------------------
 class Fitting4Radmax():
-
     def on_launch_fit(self):
         a = P4Rm()
         b = Calcul4Radmax()
@@ -61,7 +61,7 @@ class Fitting4Radmax():
         if a.PathDict['namefromini'] != "":
             logger.log(logging.INFO, "Start Fit")
             if (a.checkInitialField is 1 and a.checkGeometryField is 1 and
-                a.checkFittingField is 1):
+                        a.checkFittingField is 1):
                 P4Rm.allparameters = (a.initial_parameters +
                                       a.fitting_parameters +
                                       a.sample_geometry)
@@ -69,6 +69,9 @@ class Fitting4Radmax():
                 for k in p4R.IP_p + p4R.F_p + p4R.SG_p:
                     P4Rm.AllDataDict[k] = a.allparameters[i]
                     i += 1
+                if a.AllDataDict['nb_cycle_max'] < a.AllDataDict['nb_palier']:
+                    P4Rm.AllDataDict['nb_cycle_max'] = a.AllDataDict['nb_palier']
+                    pub.sendMessage(pubsub_adjust_nb_cycle)
                 self.onLaunchtest()
             else:
                 return
@@ -92,7 +95,7 @@ class Fitting4Radmax():
             test_dw = (all(a.ParamDict['dwp'] > a.AllDataDict['dw_min']) and
                        all(a.ParamDict['dwp'][:-1] < a.AllDataDict['dw_max']))
             test_strain = (all(a.ParamDict['sp'][:-1] >
-                           a.AllDataDict['strain_min']) and
+                               a.AllDataDict['strain_min']) and
                            all(a.ParamDict['sp'] <
                                a.AllDataDict['strain_max']))
             if test_dw and test_strain:
@@ -100,45 +103,45 @@ class Fitting4Radmax():
             else:
                 return False
         elif a.AllDataDict['model'] == 2.:
-                i = 0
-                ls_ = [0, 4, 5, 6]
-                lse_ = [0, 2, 2, 4]
-                ld_ = [x+6 for x in ls_]
-                lde_ = [x+6 for x in lse_]
-                test_dw = [False]*len(a.ParamDict['dwp'])
-                test_strain = [False]*len(a.ParamDict['sp'])
-                for val_dwp, val_sp in zip(a.ParamDict['dwp'],
-                                           a.ParamDict['sp']):
-                    if i in ls_:
-                        v_ = ls_.index(i)
-                        ve_ = lse_[v_]
-                        if val_sp < a.AllDataDict[p4R.GSAp_[ve_]]:
-                            test_strain[i] = True
-                        elif val_sp > a.AllDataDict[p4R.GSAp_[ve_ + 1]]:
-                            test_strain[i] = True
-                    else:
-                        if val_sp < 0.:
-                            test_strain[i] = True
-                        elif val_sp > 1.:
-                            test_strain[i] = True
-                    j = i + 6
-                    if j in ld_:
-                        v_ = ld_.index(j)
-                        ve_ = lde_[v_]
-                        if val_dwp < a.AllDataDict[p4R.GSAp_[ve_]]:
-                            test_dw[i] = True
-                        elif val_dwp > a.AllDataDict[p4R.GSAp_[ve_ + 1]]:
-                            test_dw[i] = True
-                    else:
-                        if val_dwp < 0.:
-                            test_dw[i] = True
-                        elif val_dwp > 1.:
-                            test_dw[i] = True
-                    i += 1
-                if (True in test_dw) or (True in test_strain):
-                    return False
+            i = 0
+            ls_ = [0, 4, 5, 6]
+            lse_ = [0, 2, 2, 4]
+            ld_ = [x + 6 for x in ls_]
+            lde_ = [x + 6 for x in lse_]
+            test_dw = [False] * len(a.ParamDict['dwp'])
+            test_strain = [False] * len(a.ParamDict['sp'])
+            for val_dwp, val_sp in zip(a.ParamDict['dwp'],
+                                       a.ParamDict['sp']):
+                if i in ls_:
+                    v_ = ls_.index(i)
+                    ve_ = lse_[v_]
+                    if val_sp < a.AllDataDict[p4R.GSAp_[ve_]]:
+                        test_strain[i] = True
+                    elif val_sp > a.AllDataDict[p4R.GSAp_[ve_ + 1]]:
+                        test_strain[i] = True
                 else:
-                    return True
+                    if val_sp < 0.:
+                        test_strain[i] = True
+                    elif val_sp > 1.:
+                        test_strain[i] = True
+                j = i + 6
+                if j in ld_:
+                    v_ = ld_.index(j)
+                    ve_ = lde_[v_]
+                    if val_dwp < a.AllDataDict[p4R.GSAp_[ve_]]:
+                        test_dw[i] = True
+                    elif val_dwp > a.AllDataDict[p4R.GSAp_[ve_ + 1]]:
+                        test_dw[i] = True
+                else:
+                    if val_dwp < 0.:
+                        test_dw[i] = True
+                    elif val_dwp > 1.:
+                        test_dw[i] = True
+                i += 1
+            if (True in test_dw) or (True in test_strain):
+                return False
+            else:
+                return True
 
     def on_launch_thread(self):
         a = P4Rm()
@@ -150,26 +153,27 @@ class Fitting4Radmax():
         P4Rm.fitlive = 1
         P4Rm.ParamDictbackup['sp'] = a.ParamDict['sp']
         P4Rm.ParamDictbackup['dwp'] = a.ParamDict['dwp']
+        P4Rm.ParamDictbackup['I_i'] = a.ParamDict['I_i']
         pub.sendMessage(pubsub_OnFit_Graph)
         pub.sendMessage(pubsub_on_refresh_GUI, option=0, case=0)
         sleep(0.3)
         pub.sendMessage(pubsub_on_launch_thread)
 
-    def on_stop_fit(self, case):
+    def on_stop_fit(self):
         P4Rm.FitDict['worker_live'].stop()
 
     def on_fit_ending(self, case):
         a = P4Rm()
         P4Rm.ParamDict['I_i'] = a.ParamDict['I_fit']
         y_cal = f_Refl(a.AllDataDict['geometry'])
-        y_cal = y_cal/y_cal.max() + a.AllDataDict['background']
-        temp = ((log10(a.ParamDict['Iobs']) - log10(y_cal))**2).sum()
+        y_cal = y_cal / y_cal.max() + a.AllDataDict['background']
+        temp = ((log10(a.ParamDict['Iobs']) - log10(y_cal)) ** 2).sum()
         P4Rm.residual_error = temp / len(y_cal)
 
         if a.fit_type == 0:
             t_ = a.par_fit[:int(a.AllDataDict['strain_basis_func'])]
             P4Rm.ParamDict['sp'] = t_
-            t_ = a.par_fit[-1*int(a.AllDataDict['dw_basis_func']):]
+            t_ = a.par_fit[-1 * int(a.AllDataDict['dw_basis_func']):]
             P4Rm.ParamDict['dwp'] = t_
         else:
             if a.lmfit_install:
@@ -177,7 +181,7 @@ class Fitting4Radmax():
             else:
                 t_ = a.par_fit[:int(a.AllDataDict['strain_basis_func'])]
                 P4Rm.ParamDict['sp'] = t_
-                t_ = a.par_fit[-1*int(a.AllDataDict['dw_basis_func']):]
+                t_ = a.par_fit[-1 * int(a.AllDataDict['dw_basis_func']):]
                 P4Rm.ParamDict['dwp'] = t_
 
     def on_modify_deformation_limits(self, state):
@@ -207,10 +211,10 @@ class Fitting4Radmax():
             elif case is 1:
                 ''' Modify limits '''
                 roundval = 4
-                t_min_dw = [False]*len(a.ParamDict['dwp'])
-                t_max_dw = [False]*len(a.ParamDict['dwp'])
-                t_min_sp = [False]*len(a.ParamDict['sp'])
-                t_max_sp = [False]*len(a.ParamDict['sp'])
+                t_min_dw = [False] * len(a.ParamDict['dwp'])
+                t_max_dw = [False] * len(a.ParamDict['dwp'])
+                t_min_sp = [False] * len(a.ParamDict['sp'])
+                t_max_sp = [False] * len(a.ParamDict['sp'])
                 i = 0
                 for val_dwp, val_sp in zip(a.ParamDict['dwp'],
                                            a.ParamDict['sp']):
@@ -246,8 +250,8 @@ class Fitting4Radmax():
                 i = 0
                 ls_ = [0, 4, 5, 6]
                 lse_ = [0, 2, 2, 4]
-                ld_ = [x+6 for x in ls_]
-                lde_ = [x+6 for x in lse_]
+                ld_ = [x + 6 for x in ls_]
+                lde_ = [x + 6 for x in lse_]
                 for val_dwp, val_sp in zip(a.ParamDict['dwp'],
                                            a.ParamDict['sp']):
                     if i in ls_:
@@ -301,12 +305,12 @@ class Fitting4Radmax():
                 l = 0
                 ls_ = [0, 4, 5, 6]
                 lse_ = [0, 2, 2, 4]
-                ld_ = [x+6 for x in ls_]
-                lde_ = [x+6 for x in lse_]
-                test_dw_min = [False]*len(ls_)
-                test_dw_max = [False]*len(ls_)
-                test_strain_min = [False]*len(ls_)
-                test_strain_max = [False]*len(ls_)
+                ld_ = [x + 6 for x in ls_]
+                lde_ = [x + 6 for x in lse_]
+                test_dw_min = [False] * len(ls_)
+                test_dw_max = [False] * len(ls_)
+                test_strain_min = [False] * len(ls_)
+                test_strain_max = [False] * len(ls_)
                 for val_dwp, val_sp in zip(a.ParamDict['dwp'],
                                            a.ParamDict['sp']):
                     if i in ls_:
@@ -365,14 +369,11 @@ class Fitting4Radmax():
                 return 0
 
     def on_test_lmfit(self):
-        try:
-            from lmfit import Parameters
-        except (ImportError):
-            raise (ImportError, "Please install Lmfit module to have better" +
-                   "fit with constraint on eta value")
+        a = P4Rm()
+        if not a.lmfit_install:
             return False
         else:
-            a = P4Rm()
+            from lmfit import Parameters
             fit_params = Parameters()
             if a.AllDataDict['model'] == 2:
                 fit_params.add('heigt_strain', value=a.ParamDict['sp'][0],
@@ -457,6 +458,7 @@ class Fitting4Radmax():
 
     def on_read_data_from_lmfit(self):
         a = P4Rm()
+        from lmfit import fit_report
         result = P4Rm.resultFit
         data = []
         data.append(result.success)
@@ -483,9 +485,9 @@ class Fitting4Radmax():
                 P4Rm.ParamDict['sp'][jj] = result.params[name].value
 
 
-#==============================================================================
+# =============================================================================
 # Thread part
-#==============================================================================
+# =============================================================================
 class LiveEvent(wx.PyCommandEvent):
     def __init__(self, etype, eid, value=None, data=None,
                  deformation=None, stopfit=None):
@@ -514,6 +516,16 @@ class Liveon_limit_exceeded(wx.PyCommandEvent):
 
 
 # -----------------------------------------------------------------------------
+class Live_NbCycle(wx.PyCommandEvent):
+    def __init__(self, etype, eid, value=None):
+        wx.PyCommandEvent.__init__(self, etype, eid)
+        self._value = value
+
+    def GetValue(self):
+        return self._value
+
+
+# -----------------------------------------------------------------------------
 class Fit_launcher(Thread):
     def __init__(self, parent, choice=None):
         Thread.__init__(self)
@@ -530,6 +542,7 @@ class Fit_launcher(Thread):
         self.Data4f_Refl = []
         self._stop = Event()
         self.start()
+        self.ii = 1
 
     def init_array(self):
         a = P4Rm()
@@ -567,6 +580,10 @@ class Fit_launcher(Thread):
         if self.need_abort == 0:
             evt = Liveon_limit_exceeded(S4R.LiveLimitExceeded_COUNT, -1, val)
             wx.PostEvent(self.parent, evt)
+
+    def on_count_cycles(self, val):
+        evt = Live_NbCycle(S4R.Live_count_NbCycle, -1, val)
+        wx.PostEvent(self.parent, evt)
 
     def per_iteration(self, pars, iter, resid, *args, **kws):
         a = P4Rm()
@@ -606,8 +623,8 @@ class Fit_launcher(Thread):
                 spline_DW = 5
                 spline_strain = 5
             elif a.AllDataDict['model'] == 1:
-                spline_DW = 5
-                spline_strain = 5
+                spline_DW = 6
+                spline_strain = 6
             elif a.AllDataDict['model'] == 2:
                 spline_DW = 4
                 spline_strain = 4
@@ -625,28 +642,47 @@ class Fit_launcher(Thread):
     def residual_lmfit4iteration(self, pars):
         a = P4Rm()
         res = f_Refl_fit(a.AllDataDict['geometry'], self.Data4f_Refl)
-        y_cal = convolve(abs(res)**2, a.ParamDict['resol'], mode='same')
-        y_cal = y_cal/y_cal.max() + a.AllDataDict['background']
+        y_cal = convolve(abs(res) ** 2, a.ParamDict['resol'], mode='same')
+        y_cal = y_cal / y_cal.max() + a.AllDataDict['background']
         return y_cal
 
     def residual_lmfit(self, pars, x, y):
         a = P4Rm()
         self.strain_DW(pars)
         res = f_Refl_fit(a.AllDataDict['geometry'], self.Data4f_Refl)
-        y_cal = convolve(abs(res)**2, a.ParamDict['resol'], mode='same')
-        y_cal = y_cal/y_cal.max() + a.AllDataDict['background']
+        y_cal = convolve(abs(res) ** 2, a.ParamDict['resol'], mode='same')
+        y_cal = y_cal / y_cal.max() + a.AllDataDict['background']
         return (log10(y) - log10(y_cal))
+
+    def residual_leastsq(self, p, y, x):
+        a = P4Rm()
+        P4Rm.ParamDict['_fp_min'] = p
+        self.strain_DW()
+        res = f_Refl_fit(a.AllDataDict['geometry'], self.Data4f_Refl)
+        y_cal = convolve(abs(res) ** 2, a.ParamDict['resol'], mode='same')
+        y_cal = y_cal / y_cal.max() + a.AllDataDict['background']
+        self.count += 1
+        if self.count % 50 == 0:
+            self.f_strain_DW()
+            sleep(0.2)
+            deformation = [p]
+            evt = LiveEvent(S4R.Live_COUNT, -1, y_cal, None, deformation)
+            wx.PostEvent(self.parent, evt)
+        if self.need_abort == 1:
+            return (log10(y_cal) - log10(y_cal))
+        else:
+            return (log10(y) - log10(y_cal))
 
     def residual_square(self, p, E_min, nb_minima):
         a = P4Rm()
         P4Rm.ParamDict['_fp_min'] = p
         self.strain_DW()
         res = f_Refl_fit(a.AllDataDict['geometry'], self.Data4f_Refl)
-        y_cal = convolve(abs(res)**2, a.ParamDict['resol'], mode='same')
-        y_cal = y_cal/y_cal.max() + a.AllDataDict['background']
+        y_cal = convolve(abs(res) ** 2, a.ParamDict['resol'], mode='same')
+        y_cal = y_cal / y_cal.max() + a.AllDataDict['background']
         y_obs = a.ParamDict['Iobs']
         self.on_pass_data_to_thread(y_cal, p, E_min, nb_minima)
-        return ((log10(y_obs) - log10(y_cal))**2).sum() / len(y_cal)
+        return ((log10(y_obs) - log10(y_cal)) ** 2).sum() / len(y_cal)
 
     def pars4numba(self, pars):
         a = P4Rm()
@@ -669,11 +705,10 @@ class Fit_launcher(Thread):
         self.pars_value = np.asarray(const, dtype=np.float64, order={'C'})
 
     def on_pass_data_to_thread(self, y_cal, p, E_min, nb_minima):
-        self.count = self.count + 1
+        self.count += 1
         if self.count == 1:
             self.f_strain_DW()
             sleep(0.5)
-            data = [E_min, nb_minima, self.gauge_counter]
             evt = LiveEvent(S4R.Live_COUNT, -1, [])
             wx.PostEvent(self.parent, evt)
             sleep(0.2)
@@ -695,15 +730,17 @@ class Fit_launcher(Thread):
         self.init_array()
 
         if self.choice == 1 or self.choice == 2:
-            func = self.residual_lmfit
+            if a.lmfit_install:
+                func = self.residual_lmfit
+            else:
+                func = self.residual_leastsq
             if self.choice == 1:
-                res = leastsq(func, a.ParamDict['par'],
-                              args=(a.ParamDict['Iobs'], a.ParamDict['th']))
-                P4Rm.par_fit = res[0]
-                P4Rm.success = res[1]
+                P4Rm.par_fit, P4Rm.success = leastsq(func, a.ParamDict['par'],
+                                                     args=(a.ParamDict['Iobs'],
+                                                           a.ParamDict['th']))
             elif self.choice == 2:
                 from lmfit import minimize
-                maxfev_ = int(a.AllDataDict['maxfev'])*(len(a.FitDict['fit_params'])+1)
+                maxfev_ = int(a.AllDataDict['maxfev']) * (len(a.FitDict['fit_params']) + 1)
                 P4Rm.resultFit = minimize(func, a.FitDict['fit_params'],
                                           args=(a.ParamDict['th'],),
                                           iter_cb=self.per_iteration,
@@ -714,8 +751,8 @@ class Fit_launcher(Thread):
                                           xtol=a.AllDataDict['xtol'])
         elif self.choice == 0:
             func = self.residual_square
-            P4Rm.par_fit = gsa(func, self.on_limit_exceeded, a.AllDataDict)
-
+            P4Rm.par_fit = gsa(func, self.on_limit_exceeded,
+                               self.on_count_cycles, a.AllDataDict)
         if self.need_abort == 1:
             evt = LiveEvent(S4R.Live_COUNT, -1, [], None, None, 1)
             wx.PostEvent(self.parent, evt)
@@ -728,23 +765,20 @@ class Fit_launcher(Thread):
         self._stop.set()
         P4Rm.gsa_loop = 1
         self.need_abort = 1
-        if self.choice == 1:
-            evt = LiveEvent(S4R.Live_COUNT, -1, [], None, None, 1)
-            wx.PostEvent(self.parent, evt)
 
     def f_strain_DW(self):
         a = P4Rm()
         P4Rm.ParamDict['sp'] = a.ParamDict['_fp_min'][:int(a.AllDataDict['strain_basis_func'])]
-        P4Rm.ParamDict['dwp'] = a.ParamDict['_fp_min'][-1*int(a.AllDataDict['dw_basis_func']):]
+        P4Rm.ParamDict['dwp'] = a.ParamDict['_fp_min'][-1 * int(a.AllDataDict['dw_basis_func']):]
 
         P4Rm.ParamDict['DW_i'] = f_DW(
-                                     a.ParamDict['z'], a.ParamDict['dwp'],
-                                     a.AllDataDict['damaged_depth'],
-                                     a.AllDataDict['model'])
+            a.ParamDict['z'], a.ParamDict['dwp'],
+            a.AllDataDict['damaged_depth'],
+            a.AllDataDict['model'])
         P4Rm.ParamDict['strain_i'] = f_strain(
-                                         a.ParamDict['z'], a.ParamDict['sp'],
-                                         a.AllDataDict['damaged_depth'],
-                                         a.AllDataDict['model'])
+            a.ParamDict['z'], a.ParamDict['sp'],
+            a.AllDataDict['damaged_depth'],
+            a.AllDataDict['model'])
 
         t = a.AllDataDict['damaged_depth']
         self.on_shifted_sp_curves(t)
@@ -752,70 +786,96 @@ class Fit_launcher(Thread):
 
     def on_shifted_dwp_curves(self, t):
         a = P4Rm()
-        if a.AllDataDict['model'] == 2:
-            x_dw_temp = []
-            x_dw_temp.append(t*(1-a.ParamDict['dwp'][1]))
-            x_dw_temp.append(t*(1-a.ParamDict['dwp'][1] +
-                             a.ParamDict['dwp'][2]/2))
-            x_dw_temp.append(t*(1-a.ParamDict['dwp'][1] -
-                             a.ParamDict['dwp'][3]/2))
-            x_dw_temp.append(t*0.05)
-            P4Rm.ParamDict['x_dwp'] = x_dw_temp
-
-            y_dw_temp = []
-            y_dw_temp.append(a.ParamDict['dwp'][0])
-            y_dw_temp.append(1. - (1-a.ParamDict['dwp'][0])/2)
-            y_dw_temp.append(1. - (1-a.ParamDict['dwp'][0])/2 -
-                             (1-a.ParamDict['dwp'][6])/2)
-            y_dw_temp.append(a.ParamDict['dwp'][6])
-            P4Rm.ParamDict['DW_shifted'] = y_dw_temp
-        else:
-            temp_1 = linspace(1, len(a.ParamDict['dwp']),
-                              len(a.ParamDict['dwp']))
+        if a.AllDataDict['model'] == 0:
+            temp_1 = arange(2, len(a.ParamDict['dwp']) + 1)
             temp_2 = temp_1 * t / (len(a.ParamDict['dwp']))
             P4Rm.ParamDict['x_dwp'] = t - temp_2
-            shifted_dwp = append(array([1.]), a.ParamDict['dwp'][:-1:])
-
+            shifted_dwp = a.ParamDict['dwp'][:-1:]
             temp_3 = in1d(around(a.ParamDict['depth'], decimals=3),
                           around(a.ParamDict['x_dwp'], decimals=3))
             temp_4 = a.ParamDict['DW_i'][temp_3]
             P4Rm.ParamDict['scale_dw'] = shifted_dwp / temp_4
             P4Rm.ParamDict['scale_dw'][a.ParamDict['scale_dw'] == 0] = 1.
 
-            P4Rm.ParamDict['DW_shifted'] = shifted_dwp/a.ParamDict['scale_dw']
+            P4Rm.ParamDict['DW_shifted'] = shifted_dwp / a.ParamDict['scale_dw']
             P4Rm.ParamDict['dw_out'] = a.ParamDict['dwp'][-1]
+
+        elif a.AllDataDict['model'] == 1:
+            temp_1 = arange(0, len(a.ParamDict['dwp']) + 1 - 3)
+            temp_2 = temp_1 * t / (len(a.ParamDict['dwp']) - 3)
+            P4Rm.ParamDict['x_dwp'] = t - temp_2
+            shifted_dwp = a.ParamDict['dwp'][1:-1:]
+            temp_3 = in1d(around(a.ParamDict['depth'], decimals=3),
+                          around(a.ParamDict['x_dwp'], decimals=3))
+            temp_4 = a.ParamDict['DW_i'][temp_3]
+            P4Rm.ParamDict['scale_dw'] = shifted_dwp / temp_4
+            P4Rm.ParamDict['scale_dw'][a.ParamDict['scale_dw'] == 0] = 1.
+
+            P4Rm.ParamDict['DW_shifted'] = shifted_dwp / a.ParamDict['scale_dw']
+            temp_5 = array([a.ParamDict['dwp'][0], a.ParamDict['dwp'][-1]])
+            P4Rm.ParamDict['dw_out'] = temp_5
+
+        elif a.AllDataDict['model'] == 2:
+            x_dw_temp = []
+            x_dw_temp.append(t * (1 - a.ParamDict['dwp'][1]))
+            x_dw_temp.append(t * (1 - a.ParamDict['dwp'][1] +
+                                  a.ParamDict['dwp'][2] / 2))
+            x_dw_temp.append(t * (1 - a.ParamDict['dwp'][1] -
+                                  a.ParamDict['dwp'][3] / 2))
+            x_dw_temp.append(t * 0.05)
+            P4Rm.ParamDict['x_dwp'] = x_dw_temp
+
+            y_dw_temp = []
+            y_dw_temp.append(a.ParamDict['dwp'][0])
+            y_dw_temp.append(1. - (1 - a.ParamDict['dwp'][0]) / 2)
+            y_dw_temp.append(1. - (1 - a.ParamDict['dwp'][0]) / 2 -
+                             (1 - a.ParamDict['dwp'][6]) / 2)
+            y_dw_temp.append(a.ParamDict['dwp'][6])
+            P4Rm.ParamDict['DW_shifted'] = y_dw_temp
 
     def on_shifted_sp_curves(self, t):
         a = P4Rm()
-
-        if a.AllDataDict['model'] == 2:
-            x_sp_temp = []
-            x_sp_temp.append(t*(1-a.ParamDict['sp'][1]))
-            x_sp_temp.append(t*(1-a.ParamDict['sp'][1] +
-                             a.ParamDict['sp'][2]/2))
-            x_sp_temp.append(t*(1-a.ParamDict['sp'][1] -
-                             a.ParamDict['sp'][3]/2))
-            x_sp_temp.append(t*0.05)
-            P4Rm.ParamDict['x_sp'] = x_sp_temp
-
-            y_sp_temp = []
-            y_sp_temp.append(a.ParamDict['sp'][0])
-            y_sp_temp.append(a.ParamDict['sp'][0]/2)
-            y_sp_temp.append(a.ParamDict['sp'][0]/2 + a.ParamDict['sp'][6]/2)
-            y_sp_temp.append(a.ParamDict['sp'][6])
-            P4Rm.ParamDict['strain_shifted'] = y_sp_temp
-        else:
-            temp_1 = linspace(1, len(a.ParamDict['sp']),
-                              len(a.ParamDict['sp']))
+        if a.AllDataDict['model'] == 0:
+            temp_1 = arange(2, len(a.ParamDict['sp']) + 1)
             temp_2 = temp_1 * t / (len(a.ParamDict['sp']))
             P4Rm.ParamDict['x_sp'] = t - temp_2
-            shifted_sp = append(array([0.]), a.ParamDict['sp'][:-1:])
+            shifted_sp = a.ParamDict['sp'][:-1:]
+            temp_3 = in1d(around(a.ParamDict['depth'], decimals=3),
+                          around(a.ParamDict['x_sp'], decimals=3))
+            temp_4 = a.ParamDict['strain_i'][temp_3]
+            P4Rm.ParamDict['scale_strain'] = shifted_sp / temp_4
+            P4Rm.ParamDict['scale_strain'][a.ParamDict['scale_strain'] == 0] = 1.
+            P4Rm.ParamDict['strain_shifted'] = asarray(shifted_sp) * 100. / a.ParamDict['scale_strain']
+            P4Rm.ParamDict['stain_out'] = a.ParamDict['sp'][-1]
 
+        elif a.AllDataDict['model'] == 1:
+            temp_1 = arange(0, len(a.ParamDict['sp']) + 1 - 3)
+            temp_2 = temp_1 * t / (len(a.ParamDict['sp']) - 3)
+            P4Rm.ParamDict['x_sp'] = t - temp_2
+            shifted_sp = a.ParamDict['sp'][1:-1:]
             temp_3 = in1d(around(a.ParamDict['depth'], decimals=3),
                           around(a.ParamDict['x_sp'], decimals=3))
             temp_4 = a.ParamDict['strain_i'][temp_3]
             P4Rm.ParamDict['scale_strain'] = shifted_sp / temp_4
             P4Rm.ParamDict['scale_strain'][a.ParamDict['scale_strain'] == 0] = 1.
 
-            P4Rm.ParamDict['strain_shifted'] = shifted_sp*100./a.ParamDict['scale_strain']
-            P4Rm.ParamDict['stain_out'] = a.ParamDict['sp'][-1]
+            P4Rm.ParamDict['strain_shifted'] = asarray(shifted_sp) * 100. / a.ParamDict['scale_strain']
+            temp_5 = array([a.ParamDict['sp'][0], a.ParamDict['sp'][-1]])
+            P4Rm.ParamDict['stain_out'] = temp_5
+
+        elif a.AllDataDict['model'] == 2:
+            x_sp_temp = []
+            x_sp_temp.append(t * (1 - a.ParamDict['sp'][1]))
+            x_sp_temp.append(t * (1 - a.ParamDict['sp'][1] +
+                                  a.ParamDict['sp'][2] / 2))
+            x_sp_temp.append(t * (1 - a.ParamDict['sp'][1] -
+                                  a.ParamDict['sp'][3] / 2))
+            x_sp_temp.append(t * 0.05)
+            P4Rm.ParamDict['x_sp'] = x_sp_temp
+
+            y_sp_temp = []
+            y_sp_temp.append(a.ParamDict['sp'][0])
+            y_sp_temp.append(a.ParamDict['sp'][0] / 2)
+            y_sp_temp.append(a.ParamDict['sp'][0] / 2 + a.ParamDict['sp'][6] / 2)
+            y_sp_temp.append(a.ParamDict['sp'][6])
+            P4Rm.ParamDict['strain_shifted'] = y_sp_temp

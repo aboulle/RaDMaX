@@ -4,7 +4,7 @@
 # Radmax project
 
 import csv
-from scipy import exp, log, cos, sin, sqrt, pi
+from scipy import cos, sin, sqrt, pi
 from numpy import where, zeros, array, vstack
 
 
@@ -17,17 +17,6 @@ def find(x, Z):
 def signe(x):
     '''sign function'''
     return x.real / abs(x.real)
-
-
-def f_pVoigt(x, pv_p):
-    '''Pseudo-Voigt function'''
-    max_ = pv_p[0]
-    pos = pv_p[1]
-    FWHM = pv_p[2]
-    eta = pv_p[3]
-    gauss = max_ * exp(-log(2.) * ((x-pos)/(0.5*FWHM))**2)
-    lorentz = max_ / (1. + ((x - pos)/(0.5*FWHM))**2)
-    return eta*lorentz + (1-eta)*gauss
 
 
 def f_dhkl_V(h, k, l, a, b, c, alpha, beta, gamma):

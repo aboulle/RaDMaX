@@ -15,10 +15,13 @@ from sys import platform as _platform
 
 from collections import OrderedDict
 
+from Functions4Radmax import f_Gauss, f_Lorentz, f_pVoigt, f_gbell, f_splitpV
+
 Application_name = "RaDMaX"
 filename = "Radmax"
-Application_version = "2.3.0.0"
-last_modification = "29/07/2016"
+version = "2016.10"
+Application_version = " - " + version
+last_modification = "07/10/2016"
 log_filename = "activity"
 ExperimentFile = 'ExperimentFile'
 RadmaxFile = 'RadmaxFile'
@@ -29,14 +32,17 @@ description = ("RaDMaX: Radiation Damage in Materials analyzed with X-ray" +
 licence = ("RaDMaX is distributed freely under the CeCILL license" +
            "(see LICENSE.txt and COPYRIGHT.txt).")
 copyright_ = "(C) 2016 SPCTS"
-website_ = "http://www.unilim.fr/spcts/"
+website_ = "http://aboulle.github.io/RaDMaX/"
 
 output_name = {'out_strain': 'output_strain_coeff.txt',
                'out_dw': 'output_DW_coeff.txt',
                'out_strain_profile': 'output_strain.txt',
                'out_dw_profile': 'output_DW.txt',
                'in_strain': 'input_strain_coeff.txt',
-               'in_dw': 'input_DW_coeff.txt', 'out_XRD': 'out_XRD_fit.txt'}
+               'in_dw': 'input_DW_coeff.txt', 'out_XRD': 'out_XRD_fit.txt',
+               'export_strain': 'export_strain.txt',
+               'export_DW': 'export_DW.txt',
+               'export_Fit': 'export_XRD_Fit.txt'}
 
 # determine if application is a script file or frozen exe
 if getattr(sys, 'frozen', False):
@@ -63,7 +69,7 @@ database_path = os.path.join(current_dir, 'database')
 
 
 """
-Definition of the variable name used in the program
+Definition of the variables names used in the program
 They are called by all the modules
 """
 dlg_size = (700, 300)
@@ -73,6 +79,11 @@ database_dict = ['engine', 'session', 'Name', 'choice_state', 'choice_combo',
 
 FitAlgo_choice = ["GSA", "leastsq"]
 FitSuccess = ["Success", "Aborted"]
+FitFunction = ["Gaussian", "Lorentzian", "Pseudo-Voigt",
+               "Generalized bell", "Split-PV"]
+FitFunction_choice = {0: f_Gauss, 1: f_Lorentz,
+                      2: f_pVoigt, 3: f_gbell, 4: f_splitpV}
+FitFunction_value = {'b_func': 2., 'resolr': 0.01, 'shaper': 0.1}
 
 FitParamDefault = {'strain_eta_min': -0.5, 'strain_eta_max': 1.5,
                    'dw_eta_min': -0.5, 'dw_eta_max': 1.5, 'dw_height_min': 0.,
@@ -85,8 +96,8 @@ FitParamDefault = {'strain_eta_min': -0.5, 'strain_eta_max': 1.5,
                    'c_strain': '#00aa00', 'c_dw': '#ff0000',
                    'c_data': '#8080ff', 'c_fit': '#00e6e6',
                    'c_fit_live': '#ff0000', 'l_strain': 'dotted',
-                   'l_dw': 'dashed', 'l_data': 'solid',
-                   'l_fit': 'solid', 'l_fit_live': 'solid',
+                   'l_dw': 'dashed', 'l_data': 'solid', 'l_fit': 'solid',
+                   'l_fit_live': 'solid', 'c_graph_background': '#FFFFFF',
                    'use_database': 'False'}
 
 DefaultParam4Radmax = ['project_folder', 'DW_folder', 'Strain_folder',
@@ -99,7 +110,7 @@ DefaultParam4Radmax = ['project_folder', 'DW_folder', 'Strain_folder',
                        'dw_max', 'qa', 'qv', 'qt', 'xtol', 'ftol', 'maxfev',
                        'c_strain', 'c_dw', 'c_data', 'c_fit', 'c_fit_live',
                        'l_strain', 'l_dw', 'l_data', 'l_fit', 'l_fit_live',
-                       'use_database']
+                       'c_graph_background', 'use_database']
 
 
 value4rounddamaged = int(200)
@@ -126,7 +137,7 @@ Params4Radmax = ['sp', 'dwp', 'sp_pv', 'dwp_pv', 'sp_smooth', 'dwp_smooth',
                  'strain_shifted', 'DW_i', 'DW_shifted', 'par', 'resol',
                  'stain_out', 'dw_out', 'thB_S_s', 'g0_s', 'gH_s', 'b_S_s',
                  'd_s', 'G_s', 'FH_s', 'FmH_s', 'F0_s', 'Vol_s',
-                 'state_sp', 'state_dwp']
+                 'state_sp', 'state_dwp', 'func_profile', 'param_func_profile']
 
 Bsplinesave = ['smooth', 'abrupt', 'pv']
 Strain_DW_choice = ["B-splines smooth", "B-splines abrupt", "Asymmetric pv"]
@@ -135,7 +146,9 @@ sample_geometry = ["Default", "Thin film", "Thick film",
 
 
 # Initial Parameters panel
-IP_p = ['wavelength', 'resolution', 'shape', 'background', 'h', 'k', 'l',
+IP_p = ['wavelength', 'background',
+        'width_left', 'width_right', 'shape_left', 'shape_right', 'b_bell',
+        'h', 'k', 'l',
         'crystal_symmetry', 'a', 'b', 'c', 'alpha', 'beta', 'gamma', 'model',
         'strain_basis_func', 'dw_basis_func', 'damaged_depth', 'number_slices']
 
@@ -165,7 +178,10 @@ Exp_file_section = ['Crystal', 'Data files', 'Experiment', 'Material',
                     'Sample Geometry', 'Substrate']
 s_crystal = ['crystal_name', 'substrate_name']
 s_data_file = ['input_dw', 'input_strain', 'xrd_data']
-s_experiment = ['wavelength', 'resolution', 'shape', 'background']
+s_experiment = ['wavelength', 'background', 'function_profile',
+                'width_left', 'width_right',
+                'shape_left', 'shape_right',
+                'b_bell']
 s_material = ['h', 'k', 'l', 'crystal_symmetry', 'a', 'b', 'c',
               'alpha', 'beta', 'gamma']
 s_strain_DW = ['model', 'strain_basis_func', 'dw_basis_func',
@@ -208,7 +224,8 @@ s_radmax_4 = ['strain_min', 'strain_max', 'dw_min', 'dw_max']
 s_radmax_5 = ['qa', 'qv', 'qt']
 s_radmax_6 = ['xtol', 'ftol', 'maxfev']
 s_radmax_7 = ['c_strain', 'c_dw', 'c_data', 'c_fit', 'c_fit_live',
-              'l_strain', 'l_dw', 'l_data', 'l_fit', 'l_fit_live']
+              'l_strain', 'l_dw', 'l_data', 'l_fit', 'l_fit_live',
+              'c_graph_background']
 s_radmax_8 = ['use_database']
 
 Radmax_all_section = (s_radmax_1 + s_radmax_2 + s_radmax_3 + s_radmax_4 +
@@ -292,5 +309,7 @@ class P4Rm():
     success = []
     resultFit = ""
     success4Fit = 0
+    test_fit_aborted = 0
     modelPv = ""
     pathfromDB = 0
+    db_nb_line = 100

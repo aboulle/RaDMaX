@@ -129,7 +129,7 @@ def residual_square(p, data):
 
 
 # -----------------------------------------------------------------------------
-def gsa(energy, LimitExceeded, data, args=()):
+def gsa(energy, LimitExceeded, count_cycle, data, args=()):
     a = P4Rm()
     temp = concatenate((a.ParamDict['state_sp'], a.ParamDict['state_dwp']),
                        axis=0)
@@ -181,6 +181,8 @@ def gsa(energy, LimitExceeded, data, args=()):
     if type(args) != type(()):
         args = (args,)
 
+#isinstance(bytes, bytearray)
+
     P4Rm.ParamDict['_fp_min'] = fp
     fp_0 = zeros(len(fp))
     fp_min = zeros(len(fp))
@@ -217,6 +219,7 @@ def gsa(energy, LimitExceeded, data, args=()):
         if a.gsa_loop == 1:
             break
         elif a.gsa_loop == 0:
+            count_cycle(iteration)
             index = iteration - 1
 #            lecture de la tempétature
             T = temperature[index]

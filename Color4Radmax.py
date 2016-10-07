@@ -18,10 +18,14 @@ from sys import platform as _platform
 import wx.lib.colourselect as csel
 
 if 'phoenix' in wx.PlatformInfo:
-    from wx.adv import OwnerDrawnComboBox
+    from wx.adv import OwnerDrawnComboBox, ODCB_PAINTING_CONTROL
+    from wx.adv import ODCB_PAINTING_SELECTED
+    from wx.adv import OwnerDrawnComboBox as OD
     cbFlags = wx.adv
 else:
-    from wx.combo import OwnerDrawnComboBox
+    from wx.combo import OwnerDrawnComboBox, ODCB_PAINTING_CONTROL
+    from wx.combo import ODCB_PAINTING_SELECTED
+    from wx.combo import OwnerDrawnComboBox as OD
     cbFlags = wx.combo
 
 """Pubsub message"""
@@ -44,7 +48,7 @@ penStyles = [
 class ColorWindow(wx.Frame):
     def __init__(self, parent):
         pos = wx.DefaultPosition
-        size = (365, 304)
+        size = (380, 340)
         style = (wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX |
                  wx.CLIP_CHILDREN | wx.FRAME_FLOAT_ON_PARENT)
         wx.Frame.__init__(self, wx.GetApp().TopWindow, wx.ID_ANY,
@@ -62,7 +66,6 @@ class ColorWindow(wx.Frame):
 
         self.lines_names = ['solid', 'dashed', 'dashdot', 'dotted', 'None']
         pnl = wx.Panel(self)
-        mainSizer = wx.BoxSizer(wx.VERTICAL)
 
         self.buttonRefs = []
 
@@ -116,6 +119,15 @@ class ColorWindow(wx.Frame):
                 (pscb, 0, wx.ALL, 3),
                 ])
 
+#        'Graph background'
+        name = "Graph background color"
+        size_text = (160, vStatictextsize)
+        graph_bkg_txt = wx.StaticText(pnl, -1, name, size=size_text)
+        color = a.DefaultDict['c_graph_background']
+        lbkg = wx.StaticLine(pnl, size=(3, 20), style=wx.LI_VERTICAL)
+        self.graph_bkg = csel.ColourSelect(pnl, -1, "",
+                                           color, size=size_button)       
+
         self.b = wx.Button(pnl, -1, "Apply")
         self.b.SetFont(font_update)
         self.Bind(wx.EVT_BUTTON, self.on_apply_color, id=self.b.GetId())
@@ -130,7 +142,14 @@ class ColorWindow(wx.Frame):
         buttonSizer.Add(self.b, 0, wx.ALL, 3)
         buttonSizer.Add(self.default_1, 0, wx.ALL, 3)
 
+        bkg_sizer = wx.GridBagSizer(hgap=2, vgap=1)
+        bkg_sizer.Add(graph_bkg_txt, pos=(0, 0), flag=wx.ALL, border=3)
+        bkg_sizer.Add(lbkg, pos=(0, 1), flag=wx.ALL | wx.ALL)
+        bkg_sizer.Add(self.graph_bkg, pos=(0, 2), flag=wx.ALL , border=3)
+
+        mainSizer = wx.BoxSizer(wx.VERTICAL)
         mainSizer.Add(colorlinesizer, 0, wx.ALL, 3)
+        mainSizer.Add(bkg_sizer, 0, wx.ALL, 3)
         mainSizer.Add(buttonSizer, 0, wx.ALL, 3)
 
         pub.subscribe(self.on_open_window, pubsub_Open_Color_Window)
@@ -144,7 +163,7 @@ class ColorWindow(wx.Frame):
         self.GetParent().Disable()
 
     def rgb_to_hex(self, rgb):
-        return '#%02x%02x%02x' % rgb
+        return '#%02x%02x%02x' % (rgb[0], rgb[1], rgb[2])
 
     def on_apply_color(self, event):
         res_c = []
@@ -159,11 +178,18 @@ class ColorWindow(wx.Frame):
             except (AttributeError):
                 res_c.append(c1)
                 res_l.append(tmp)
+        color = self.graph_bkg
+        c1 = color.GetValue()
+        try:
+            bkg_c = self.rgb_to_hex(c1.Get())
+        except (AttributeError):
+            bkg_c = c1
         for i in range(len(self.list_)):
             key_c = p4R.s_radmax_7[i]
             key_l = p4R.s_radmax_7[i + len(self.list_)]
             P4Rm.DefaultDict[key_c] = res_c[i]
             P4Rm.DefaultDict[key_l] = res_l[i]
+        P4Rm.DefaultDict['c_graph_background'] = bkg_c            
         pub.sendMessage(pubsub_Graph_change_color_style)
         pub.sendMessage(pubsub_Re_Read_field_paramters_panel, event=event)
 #        pub.sendMessage(pubsub_redraw_Graph_change_color)
@@ -220,7 +246,7 @@ class PenStyleComboBox(OwnerDrawnComboBox):
         pen = wx.Pen(dc.GetTextForeground(), 3, penStyle)
         dc.SetPen(pen)
 
-        if flags & wx.combo.ODCB_PAINTING_CONTROL:
+        if flags & ODCB_PAINTING_CONTROL:
             # for painting the control itself
             dc.DrawLine(r.x+5, r.y+r.height/2, r.x+r.width - 5, r.y+r.height/2)
 
@@ -237,17 +263,19 @@ class PenStyleComboBox(OwnerDrawnComboBox):
     def OnDrawBackground(self, dc, rect, item, flags):
         # If the item is selected, or its item # iseven, or we are painting the
         # combo control itself, then use the default rendering.
-        if (item & 1 == 0 or flags & (wx.combo.ODCB_PAINTING_CONTROL |
-                                      wx.combo.ODCB_PAINTING_SELECTED)):
-            wx.combo.OwnerDrawnComboBox.OnDrawBackground(self, dc, rect,
-                                                         item, flags)
+        if (item & 1 == 0 or flags & (ODCB_PAINTING_CONTROL |
+                                      ODCB_PAINTING_SELECTED)):
+            OD.OnDrawBackground(self, dc, rect, item, flags)
             return
 
         # Otherwise, draw every other background with different colour.
         bgCol = wx.Colour(240, 240, 250)
         dc.SetBrush(wx.Brush(bgCol))
         dc.SetPen(wx.Pen(bgCol))
-        dc.DrawRectangleRect(rect)
+        if 'phoenix' in wx.PlatformInfo:
+            dc.DrawRectangle(rect)
+        else:
+            dc.DrawRectangleRect(rect)
 
     # Overridden from OwnerDrawnComboBox, should return the height
     # needed to display an item in the popup, or -1 for default

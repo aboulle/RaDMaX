@@ -14,9 +14,9 @@ import wx.lib.agw.genericmessagedialog as GMD
 
 from copy import deepcopy
 
-from scipy import arcsin, linspace, sin, in1d, around
+from scipy import arcsin, sin, in1d, around
 import numpy as np
-from numpy import arange, array, append
+from numpy import arange, array, asarray
 from collections import OrderedDict
 
 import os
@@ -28,7 +28,7 @@ from Def_Strain4Radmax import f_strain, old2new_strain, fit_input_strain
 from Def_DW4Radmax import f_DW, old2new_DW, fit_input_DW
 from Def_XRD4Radmax import f_Refl
 from Def_Fh4Radmax import f_FH
-from Tools4Radmax import f_dhkl_V, f_pVoigt
+from Tools4Radmax import f_dhkl_V
 
 import logging
 logger = logging.getLogger(__name__)
@@ -300,7 +300,6 @@ class Calcul4Radmax():
     def on_launch_calc(self):
         success = self.on_read_initial_file()
         if success:
-            self.empty_field = 0
             self.on_calcul_parameters()
 
     def on_read_initial_file(self):
@@ -354,6 +353,25 @@ class Calcul4Radmax():
         P4Rm.xrd_graph_loaded = 1
         pub.sendMessage(pubsub_change_update_btn_state)
 
+    def on_make_param_func(self):
+        a = P4Rm()
+        func = a.ParamDict['func_profile']
+        fwhml = a.AllDataDict['width_left']*np.pi/180
+        fwhmr = a.AllDataDict['width_right']*np.pi/180
+        etal = a.AllDataDict['shape_left']
+        etar = a.AllDataDict['shape_right']
+        b_bell = a.AllDataDict['b_bell']
+        pos = (a.ParamDict['th'].min() + a.ParamDict['th'].max())/2
+        if func.__name__ is "f_Gauss" or func.__name__ is "f_Lorentz":
+            param_func = [1, pos, fwhml]
+        elif func.__name__ is "f_pVoigt":
+            param_func = [1, pos, fwhml, etal]
+        elif func.__name__ is "f_gbell":
+            param_func = [1, pos, fwhml, b_bell]
+        elif func.__name__ is "f_splitpV":
+            param_func = [1, pos, fwhml, fwhmr, etal, etar]
+        P4Rm.ParamDict['param_func_profile'] = param_func
+
     def on_calcul_parameters(self):
         a = P4Rm()
         name = a.PathDict['Compound_name']
@@ -376,14 +394,14 @@ class Calcul4Radmax():
             a.AllDataDict['number_slices'] = nb_slice
 
         if name != []:
+            self.on_make_param_func()
             P4Rm.ParamDict['par'] = np.concatenate((a.ParamDict['sp'],
                                                     a.ParamDict['dwp']),
                                                    axis=0)
-            P4Rm.ParamDict['resol'] = f_pVoigt(a.ParamDict['th'],
-                                               [1, (a.ParamDict['th'].min() +
-                                                a.ParamDict['th'].max())/2,
-                                                a.AllDataDict['resolution']*np.pi/180,
-                                                a.AllDataDict['shape']])
+            x_ = a.ParamDict['th']
+            param = a.ParamDict['param_func_profile']
+            P4Rm.ParamDict['resol'] = a.ParamDict['func_profile'](x_, param)
+
             P4Rm.ParamDict['t_l'] = (a.AllDataDict['damaged_depth'] /
                                      a.AllDataDict['number_slices'])
             P4Rm.ParamDict['z'] = (arange(a.AllDataDict['number_slices']+1) *
@@ -468,8 +486,9 @@ class Calcul4Radmax():
                                              spline_strain)
             t = a.AllDataDict['damaged_depth']
 
-            self.on_shifted_sp_curves(t)
-            self.on_shifted_dwp_curves(t)
+            if a.AllDataDict['damaged_depth'] > 0:
+                self.on_shifted_sp_curves(t)
+                self.on_shifted_dwp_curves(t)
             self.draw_curves()
         else:
             msg_ = "check if the structure file really exists"
@@ -496,7 +515,36 @@ class Calcul4Radmax():
 
     def on_shifted_dwp_curves(self, t):
         a = P4Rm()
-        if a.AllDataDict['model'] == 2:
+        if a.AllDataDict['model'] == 0:
+            temp_1 = arange(2, len(a.ParamDict['dwp'])+1)
+            temp_2 = temp_1 * t / (len(a.ParamDict['dwp']))
+            P4Rm.ParamDict['x_dwp'] = t - temp_2
+            shifted_dwp = a.ParamDict['dwp'][:-1:]
+            temp_3 = in1d(around(a.ParamDict['depth'], decimals=3),
+                          around(a.ParamDict['x_dwp'], decimals=3))
+            temp_4 = a.ParamDict['DW_i'][temp_3]
+            P4Rm.ParamDict['scale_dw'] = shifted_dwp / temp_4
+            P4Rm.ParamDict['scale_dw'][a.ParamDict['scale_dw'] == 0] = 1.
+
+            P4Rm.ParamDict['DW_shifted'] = shifted_dwp/a.ParamDict['scale_dw']
+            P4Rm.ParamDict['dw_out'] = a.ParamDict['dwp'][-1]
+
+        elif a.AllDataDict['model'] == 1:
+            temp_1 = arange(0, len(a.ParamDict['dwp'])+1-3)
+            temp_2 = temp_1 * t / (len(a.ParamDict['dwp'])-3)
+            P4Rm.ParamDict['x_dwp'] = t - temp_2
+            shifted_dwp = a.ParamDict['dwp'][1:-1:]
+            temp_3 = in1d(around(a.ParamDict['depth'], decimals=3),
+                          around(a.ParamDict['x_dwp'], decimals=3))
+            temp_4 = a.ParamDict['DW_i'][temp_3]
+            P4Rm.ParamDict['scale_dw'] = shifted_dwp / temp_4
+            P4Rm.ParamDict['scale_dw'][a.ParamDict['scale_dw'] == 0] = 1.
+
+            P4Rm.ParamDict['DW_shifted'] = shifted_dwp/a.ParamDict['scale_dw']
+            temp_5 = array([a.ParamDict['dwp'][0], a.ParamDict['dwp'][-1]])
+            P4Rm.ParamDict['dw_out'] = temp_5
+
+        elif a.AllDataDict['model'] == 2:
             x_dw_temp = []
             x_dw_temp.append(t*(1-a.ParamDict['dwp'][1]))
             x_dw_temp.append(t*(1-a.ParamDict['dwp'][1] +
@@ -514,26 +562,37 @@ class Calcul4Radmax():
             y_dw_temp.append(a.ParamDict['dwp'][6])
             P4Rm.ParamDict['DW_shifted'] = y_dw_temp
 
-        else:
-            temp_1 = linspace(1, len(a.ParamDict['dwp']),
-                              len(a.ParamDict['dwp']))
-            temp_2 = temp_1 * t / (len(a.ParamDict['dwp']))
-            P4Rm.ParamDict['x_dwp'] = t - temp_2
-            shifted_dwp = append(array([1.]), a.ParamDict['dwp'][:-1:])
-
-            temp_3 = in1d(around(a.ParamDict['depth'], decimals=3),
-                          around(a.ParamDict['x_dwp'], decimals=3))
-            temp_4 = a.ParamDict['DW_i'][temp_3]
-            P4Rm.ParamDict['scale_dw'] = shifted_dwp / temp_4
-            P4Rm.ParamDict['scale_dw'][a.ParamDict['scale_dw'] == 0] = 1.
-
-            P4Rm.ParamDict['DW_shifted'] = shifted_dwp/a.ParamDict['scale_dw']
-            P4Rm.ParamDict['dw_out'] = a.ParamDict['dwp'][-1]
-
     def on_shifted_sp_curves(self, t):
         a = P4Rm()
+        if a.AllDataDict['model'] == 0:
+            temp_1 = arange(2, len(a.ParamDict['sp'])+1)
+            temp_2 = temp_1 * t / (len(a.ParamDict['sp']))
+            P4Rm.ParamDict['x_sp'] = t - temp_2
+            shifted_sp = a.ParamDict['sp'][:-1:]
+            temp_3 = in1d(around(a.ParamDict['depth'], decimals=3),
+                          around(a.ParamDict['x_sp'], decimals=3))
+            temp_4 = a.ParamDict['strain_i'][temp_3]
+            P4Rm.ParamDict['scale_strain'] = shifted_sp / temp_4
+            P4Rm.ParamDict['scale_strain'][a.ParamDict['scale_strain'] == 0] = 1.
+            P4Rm.ParamDict['strain_shifted'] = asarray(shifted_sp)*100./a.ParamDict['scale_strain']
+            P4Rm.ParamDict['stain_out'] = a.ParamDict['sp'][-1]
 
-        if a.AllDataDict['model'] == 2:
+        elif a.AllDataDict['model'] == 1:
+            temp_1 = arange(0, len(a.ParamDict['sp'])+1-3)
+            temp_2 = temp_1 * t / (len(a.ParamDict['sp'])-3)
+            P4Rm.ParamDict['x_sp'] = t - temp_2
+            shifted_sp = a.ParamDict['sp'][1:-1:]
+            temp_3 = in1d(around(a.ParamDict['depth'], decimals=3),
+                          around(a.ParamDict['x_sp'], decimals=3))
+            temp_4 = a.ParamDict['strain_i'][temp_3]
+            P4Rm.ParamDict['scale_strain'] = shifted_sp / temp_4
+            P4Rm.ParamDict['scale_strain'][a.ParamDict['scale_strain'] == 0] = 1.
+
+            P4Rm.ParamDict['strain_shifted'] = asarray(shifted_sp)*100./a.ParamDict['scale_strain']
+            temp_5 = array([a.ParamDict['sp'][0], a.ParamDict['sp'][-1]])
+            P4Rm.ParamDict['stain_out'] = temp_5
+
+        elif a.AllDataDict['model'] == 2:
             x_sp_temp = []
             x_sp_temp.append(t*(1-a.ParamDict['sp'][1]))
             x_sp_temp.append(t*(1-a.ParamDict['sp'][1] +
@@ -550,21 +609,6 @@ class Calcul4Radmax():
             y_sp_temp.append(a.ParamDict['sp'][6])
             P4Rm.ParamDict['strain_shifted'] = y_sp_temp
 
-        else:
-            temp_1 = linspace(1, len(a.ParamDict['sp']),
-                              len(a.ParamDict['sp']))
-            temp_2 = temp_1 * t / (len(a.ParamDict['sp']))
-            P4Rm.ParamDict['x_sp'] = t - temp_2
-            shifted_sp = append(array([0.]), a.ParamDict['sp'][:-1:])
-
-            temp_3 = in1d(around(a.ParamDict['depth'], decimals=3),
-                          around(a.ParamDict['x_sp'], decimals=3))
-            temp_4 = a.ParamDict['strain_i'][temp_3]
-            P4Rm.ParamDict['scale_strain'] = shifted_sp / temp_4
-            P4Rm.ParamDict['scale_strain'][a.ParamDict['scale_strain'] == 0] = 1.
-
-            P4Rm.ParamDict['strain_shifted'] = shifted_sp*100./a.ParamDict['scale_strain']
-            P4Rm.ParamDict['stain_out'] = a.ParamDict['sp'][-1]
 
     def draw_curves(self):
         a = P4Rm()
@@ -612,6 +656,7 @@ class Calcul4Radmax():
             self.on_update_config_file('Strain_folder')
         a = P4Rm()
         b = ReadFile()
+        c = SaveFile4Diff()
         spline_strain = a.spline_strain
         if choice == 0:
             data = b.read_strain_xy_file(paths[0])
@@ -638,7 +683,7 @@ class Calcul4Radmax():
         P4Rm.from_calc_strain = 1
         self.draw_curves()
         if choice == 0:
-            self.save_deformation('Strain_file', 'strain', a.ParamDict['sp'])
+            c.save_deformation('Strain_file', 'strain', a.ParamDict['sp'])
 
     def calc_DW(self, paths=None, choice=None):
         """
@@ -649,6 +694,7 @@ class Calcul4Radmax():
             self.on_update_config_file('DW_folder')
         a = P4Rm()
         b = ReadFile()
+        c = SaveFile4Diff()
         spline_DW = a.spline_DW
         if choice == 0:
             data = b.read_dw_xy_file(paths[0])
@@ -675,7 +721,7 @@ class Calcul4Radmax():
         P4Rm.from_calc_DW = 1
         self.draw_curves()
         if choice == 0:
-            self.save_deformation('DW_file', 'DW', a.ParamDict['dwp'])
+            c.save_deformation('DW_file', 'DW', a.ParamDict['dwp'])
 
     def OnChangeBasisFunction(self, strain, dw, spline_strain,
                               spline_DW, slice_):
@@ -735,35 +781,48 @@ class Calcul4Radmax():
             return slice_val, dw
 
     def find_nearest_damaged_depth(self, damaged, N, Nstrain):
-        if damaged % Nstrain != 0:
-            damaged = round(damaged/Nstrain)*Nstrain
-        if N/Nstrain != 0:
-            N = round(N/Nstrain)*Nstrain
+        a = P4Rm()
+        if a.AllDataDict['model'] == 0:
+            if damaged % Nstrain != 0:
+                damaged = round(damaged/Nstrain)*Nstrain
+            if N/Nstrain != 0:
+                N = round(N/Nstrain)*Nstrain
+        elif a.AllDataDict['model'] == 1:
+            Nstrain = Nstrain - 3
+            if damaged % Nstrain != 0:
+                damaged = round(damaged/Nstrain)*Nstrain
+            if N/Nstrain != 0:
+                N = round(N/Nstrain)*Nstrain
         return damaged, N
 
-    def find_nearest(self, array, value):
-        array = [int(a) for a in array]
-        array = np.array(array)
-        idx = (np.abs(array-value)).argmin()
+    def find_nearest(self, ar, value):
+        ar_ = [int(a) for a in ar]
+        ar_ = np.array(ar_)
+        idx = (np.abs(ar_-value)).argmin()
         return idx
 
     def find_nearest_dw(self, N, Ndw, Nstrain, strain_change, dw_change,
                         slice_change):
         a = P4Rm()
         temp = []
-        for i in range(5, int(float(Nstrain)) + 1):
-            if N % i == 0:
-                temp.append(str(i))
-        if strain_change == 1:
-            index = int(self.find_nearest(temp, int(Nstrain)))
-            P4Rm.AllDataDict['dw_basis_func'] = Nstrain
-            val = int(temp[index])
-        elif slice_change == 1:
-            index = int(self.find_nearest(temp, int(Ndw)))
-            val = int(temp[index])
-        elif dw_change == 1:
-            index = int(a.AllDataDict['dw_basis_func'])
-            val = int(float(index))
+        if a.AllDataDict['model'] == 0:
+            for i in range(5, int(float(Nstrain)) + 1):
+                if N % i == 0:
+                    temp.append(str(i))
+            if strain_change == 1:
+                index = int(self.find_nearest(temp, int(Nstrain)))
+                P4Rm.AllDataDict['dw_basis_func'] = Nstrain
+                val = int(temp[index])
+            elif slice_change == 1:
+                index = int(self.find_nearest(temp, int(Ndw)))
+                val = int(temp[index])
+            elif dw_change == 1:
+                index = int(a.AllDataDict['dw_basis_func'])
+                val = int(float(index))
+        elif a.AllDataDict['model'] == 1:
+            val = int(float(Nstrain))
+            temp.append(str(val))
+            index = 1
         return val, index, temp
 
     def on_reset_deformation_multiplication(self):

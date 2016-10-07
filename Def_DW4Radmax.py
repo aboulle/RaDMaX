@@ -3,45 +3,12 @@
 # Author: A_BOULLE & M_SOUILAH
 # Radmax project
 
-from numpy import array, append, ones, zeros, exp, log
+from numpy import array, append, ones, zeros
 from scipy.optimize import leastsq
-from BSplines4Radmax import constantSpline
+from BSplines4Radmax import constantSpline, cubicSpline
+from Functions4Radmax import f_pVoigt
 
 dwp_pv_initial = [0.5, 0.2, 0.1, 0.1, 0.1, 0.1, 0.85]
-
-
-def bSpline3(z):
-    if z <= 0:
-        return 0
-    elif z <= 1:
-        return (z**3)/6
-    elif z <= 2:
-        return (2./3) + z * (-2 + z*(2 - z/2))
-    elif z <= 3:
-        return (-22./3) + z * (10 + z*(-4 + z/2))
-    elif z <= 4:
-        return (32./3) + z * (-8 + z*(2 - z/6))
-    else:
-        return 0
-
-
-def cubicSpline(z, w):
-    somme = 0
-    index = 0
-    for poids in w:
-        somme = somme + poids * bSpline3(z-index+3)
-        index = index + 1
-    return somme
-
-
-def f_pVoigt(x, pv_p):
-    max_ = pv_p[0]
-    pos = pv_p[1]
-    FWHM = pv_p[2]
-    eta = pv_p[3]
-    gauss = max_ * exp(-log(2.) * ((x-pos)/(0.5*FWHM))**2)
-    lorentz = max_ / (1. + ((x - pos)/(0.5*FWHM))**2)
-    return eta*lorentz + (1-eta)*gauss
 
 
 def f_DW_spline3_smooth(alt, dwp, t):
@@ -74,6 +41,18 @@ def f_DW_spline3_smooth_lmfit(alt, pars, t):
 
 def f_DW_spline3_abrupt(alt, dwp, t):
     w_DW = dwp[:]
+    N_abscisses = len(w_DW) - 3.
+    z = alt * N_abscisses / t
+    index = 0
+    DW = ones(len(z))
+    for i in z:
+        DW[index] = cubicSpline(i, w_DW)
+        index = index + 1
+    return DW
+
+
+def f_DW_spline3_abrupt_lmfit(alt, pars, t):
+    w_DW = pars[-int(pars[1]):]
     N_abscisses = len(w_DW) - 3.
     z = alt * N_abscisses / t
     index = 0
@@ -145,6 +124,8 @@ def f_DW(alt, dwp, t, choice):
         DW = f_DW_pv_lmfit(alt, dwp, t)
     elif choice == 5:
         DW = f_DW_spline3_smooth_lmfit(alt, dwp, t)
+    elif choice == 6:
+        DW = f_DW_spline3_abrupt_lmfit(alt, dwp, t)
     return DW
 
 

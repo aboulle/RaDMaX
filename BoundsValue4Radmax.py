@@ -25,7 +25,7 @@ pubsub_Open_data_coef_Window = "OpenDataCoefWindow"
 pubsub_Fill_List_coef = "FillListCoef"
 pubsub_update_sp_dwp_eta = "UpdatespdwpEta"
 
-headercolumnname = ["name", "sp", "state1", "dwp", "state2"]
+headercolumnname = ["name", "Strain", "state1", "DW", "state2"]
 asym_pv = ['heigt', 'loc', 'fwhm_1', 'fwhm_2', 'eta_1', 'eta_2', 'bkg']
 
 
@@ -47,10 +47,13 @@ class DataCoefPanel(wx.Frame):
     def __init__(self, parent):
         pos = wx.DefaultPosition
         size = (377, 282)
-        style = (wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX |
-                 wx.CLIP_CHILDREN | wx.FRAME_FLOAT_ON_PARENT)
+        if _platform == 'darwin':
+            style = wx.DEFAULT_FRAME_STYLE
+        else:
+            style = (wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX |
+                     wx.CLIP_CHILDREN | wx.FRAME_FLOAT_ON_PARENT)
         wx.Frame.__init__(self, wx.GetApp().TopWindow, wx.ID_ANY,
-                          p4R.Application_name + " - sp - dwp values",
+                          p4R.Application_name + " - Strain and DW Values",
                           pos, size, style)
         self.Bind(wx.EVT_CLOSE, self.on_close)
         self.SetIcon(prog_icon.GetIcon())
@@ -71,7 +74,7 @@ class DataCoefPanel(wx.Frame):
         self.list = ObjectListView(pnl, sortable=False,
                                    style=wx.LC_REPORT | wx.SUNKEN_BORDER,
                                    size=(450, 500))
-        self.list.cellEditMode = ObjectListView.CELLEDIT_DOUBLECLICK
+        self.list.cellEditMode = ObjectListView.CELLEDIT_SINGLECLICK
         self.list.handleStandardKeys = False
         self.list.SetEmptyListMsg("This database has no rows")
         self.list.SetEmptyListMsgFont(wx.FFont(24, wx.DEFAULT,
@@ -83,7 +86,7 @@ class DataCoefPanel(wx.Frame):
             self.width_name = 80
         self.width = 70
         self.widthCheck = 25
-        self.col2checkstatus = {2: 0, 4: 0}
+        self.col2checkstatus = {1: 0, 2: 0}
 
         self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnItemSelected, self.list)
         self.Bind(wx.EVT_LIST_COL_CLICK, self.OnItemSelected, self.list)
@@ -119,21 +122,13 @@ class DataCoefPanel(wx.Frame):
                                imageGetter=ImageIndex,
                                maximumWidth=self.width_name))
         temp.append(ColumnDefn(headercolumnname[1], "center", self.width,
-                               valueGetter=headercolumnname[1],
-                               maximumWidth=self.width))
-        '''Check 1'''
-        temp.append(ColumnDefn("", "center", -1,
-                               valueGetter=headercolumnname[2],
-                               checkStateGetter=headercolumnname[2],
-                               maximumWidth=self.widthCheck))
+                               valueGetter="sp",
+                               maximumWidth=self.width,
+                               checkStateGetter="state1"))
         temp.append(ColumnDefn(headercolumnname[3], "center", self.width,
-                               valueGetter=headercolumnname[3],
-                               maximumWidth=self.width))
-        '''Check 2'''
-        temp.append(ColumnDefn("", "center", -1,
-                               valueGetter=headercolumnname[4],
-                               checkStateGetter=headercolumnname[4],
-                               maximumWidth=self.widthCheck))
+                               valueGetter="dwp",
+                               maximumWidth=self.width,
+                               checkStateGetter="state2"))
         self.list.SetColumns(temp)
 
     def on_fill_list(self):
@@ -176,47 +171,13 @@ class DataCoefPanel(wx.Frame):
         self.Thaw()
 
     def update_param_dict(self, currentline, currentCol, val):
-        objects = self.list.GetObjects()
         if currentCol is 1:
-            i = 0
-            for obj in objects:
-                if i == currentline:
-                    obj.sp = val
-                    break
-                else:
-                    i += 1
-        elif currentCol is 3:
-            i = 0
-            for obj in objects:
-                if i == currentline:
-                    obj.dwp = val
-                    break
-                else:
-                    i += 1
+            P4Rm.ParamDict['sp'][currentline] = float(val)
+        if currentCol is 2:
+            P4Rm.ParamDict['dwp'][currentline] = float(val)
         self.read_and_update()
 
     def read_and_update(self):
-        a = P4Rm()
-        objects = self.list.GetObjects()
-        len_sp = len(a.ParamDict['sp'])
-        len_dwp = len(a.ParamDict['dwp'])
-        read_sp = []
-        read_dwp = []
-        check_sp = []
-        check_dwp = []
-        i = 0
-        for obj in objects:
-            if i < len_sp:
-                read_sp.append(float(obj.sp))
-                check_sp.append(obj.state1)
-            if i < len_dwp:
-                read_dwp.append(float(obj.dwp))
-                check_dwp.append(obj.state2)
-            i += 1
-        P4Rm.ParamDict['sp'] = read_sp
-        P4Rm.ParamDict['dwp'] = read_dwp
-        P4Rm.ParamDict['state_sp'] = check_sp
-        P4Rm.ParamDict['state_dwp'] = check_dwp
         pub.sendMessage(pubsub_update_sp_dwp_eta)
         b = Calcul4Radmax()
         b.on_update()
@@ -229,7 +190,7 @@ class DataCoefPanel(wx.Frame):
         currentCol = self.GetOLVColClicked(event)
         if currentline == -1:
             self.Freeze()
-            if currentCol is 2 or currentCol is 4:
+            if currentCol is 1 or currentCol is 2:
                 if self.col2checkstatus[currentCol] == 0:
                     val = False
                     self.col2checkstatus[currentCol] = 1
@@ -237,17 +198,31 @@ class DataCoefPanel(wx.Frame):
                     val = True
                     self.col2checkstatus[currentCol] = 0
                 objects = self.list.GetObjects()
-                if currentCol == 2:
+                if currentCol == 1:
                     for obj in objects:
                         obj.state1 = val
-                elif currentCol == 4:
+                elif currentCol == 2:
                     for obj in objects:
                         obj.state2 = val
                 self.list.SetObjects(objects)
-                self.read_and_update()
+                self.list.RefreshObject(objects)
             self.Thaw()
-        else:
-            self.read_and_update()
+        if currentCol == 1 or currentCol == 2:
+            a = P4Rm()
+            objects = self.list.GetObjects()
+            len_sp = len(a.ParamDict['sp'])
+            len_dwp = len(a.ParamDict['dwp'])
+            check_sp = []
+            check_dwp = []
+            i = 0
+            for obj in objects:
+                if i < len_sp:
+                    check_sp.append(obj.state1)
+                if i < len_dwp:
+                    check_dwp.append(obj.state2)
+                i += 1
+            P4Rm.ParamDict['state_sp'] = check_sp
+            P4Rm.ParamDict['state_dwp'] = check_dwp
 
     def GetOLVColClicked(self, event):
         """

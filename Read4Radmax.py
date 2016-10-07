@@ -3,9 +3,9 @@
 # Author: A_BOULLE & M_SOUILAH
 # Radmax project
 
-#==============================================================================
+# =============================================================================
 # Radmax read module
-#==============================================================================
+# =============================================================================
 
 from wx.lib.pubsub import pub
 
@@ -160,7 +160,7 @@ class ReadFile():
 
     def test_data_file(self, name):
         with open(name, 'r') as f:
-            skip_line = 2
+            skip_line = 11
             [next(f) for x in range(skip_line)]
             header = next(f)
             mline = ""
@@ -170,7 +170,7 @@ class ReadFile():
             if ll == []:
                 self.convert_Data_File(name)
             else:
-                if ll[0] == 'substrate_name':
+                if ll[0] == 'background':
                     return 0
                 else:
                     self.convert_Data_File(name)
@@ -193,6 +193,7 @@ class ReadFile():
                     ll_1.append(ll[1])
         i = 0
         P4Rm.AllDataDict['model'] = 0.0
+        P4Rm.AllDataDict['function_profile'] = 2.0
         for k in ll_0:
             P4Rm.AllDataDict[k] = ll_1[i]
             i += 1
@@ -350,7 +351,7 @@ class SaveFile4Diff():
                                   len(p4R.s_radmax_7),
                                   len(p4R.s_radmax_8)]
         pathini = [os.path.split(filename)[0]]*5
-        data2ini = [p4R.Application_version, p4R.last_modification] + pathini
+        data2ini = [p4R.version, p4R.last_modification] + pathini
         parser = SafeConfigParser()
         new_section_name = p4R.Radmax_all_section
         Initial_data = dict(zip(p4R.Radmax_all_section, data2ini))
@@ -373,17 +374,23 @@ class SaveFile4Diff():
         parser = SafeConfigParser()
         parser.read(filename)
         for name in p4R.s_radmax_3:
-            parser.set(p4R.Radmax_File_section[2], name, str(a.DefaultDict[name]))
+            parser.set(p4R.Radmax_File_section[2], name,
+                       str(a.DefaultDict[name]))
         for name in p4R.s_radmax_4:
-            parser.set(p4R.Radmax_File_section[3], name, str(a.DefaultDict[name]))
+            parser.set(p4R.Radmax_File_section[3], name,
+                       str(a.DefaultDict[name]))
         for name in p4R.s_radmax_5:
-            parser.set(p4R.Radmax_File_section[4], name, str(a.DefaultDict[name]))
+            parser.set(p4R.Radmax_File_section[4], name,
+                       str(a.DefaultDict[name]))
         for name in p4R.s_radmax_6:
-            parser.set(p4R.Radmax_File_section[5], name, str(a.DefaultDict[name]))
+            parser.set(p4R.Radmax_File_section[5], name,
+                       str(a.DefaultDict[name]))
         for name in p4R.s_radmax_7:
-            parser.set(p4R.Radmax_File_section[6], name, str(a.DefaultDict[name]))
+            parser.set(p4R.Radmax_File_section[6], name,
+                       str(a.DefaultDict[name]))
         for name in p4R.s_radmax_8:
-            parser.set(p4R.Radmax_File_section[7], name, str(a.DefaultDict[name]))
+            parser.set(p4R.Radmax_File_section[7], name,
+                       str(a.DefaultDict[name]))
         parser.write(open(filename, 'w'))
 
     def save_deformation(self, case, name, data, supp=None):
@@ -394,7 +401,7 @@ class SaveFile4Diff():
         else:
             name_ = (a.PathDict['project_name'] + '_input_' +
                      name + '_coeff.txt')
-            path = os.path.join(a.DefaultDict['Save_as_folder'], name_)
+            path = os.path.join(a.DefaultDict['project_folder'], name_)
             if supp == 1:
                 name_ = 'temp_' + '_input_' + name + '_coeff.txt'
                 path2remove = os.path.join(a.PathDict[case], name_)
@@ -422,8 +429,8 @@ class SaveFile4Diff():
         if (a.checkInitialField is 1 and a.checkGeometryField is 1 and
             a.checkFittingField is 1):
             P4Rm.allparameters = (a.initial_parameters +
-                                      a.fitting_parameters +
-                                      a.sample_geometry)
+                                  a.fitting_parameters +
+                                  a.sample_geometry)
             i = 0
             for k in p4R.IP_p + p4R.F_p + p4R.SG_p:
                 P4Rm.AllDataDict[k] = a.allparameters[i]
@@ -431,7 +438,7 @@ class SaveFile4Diff():
             if (a.PathDict['DW_file'] is not "" or
                 a.PathDict['Strain_file'] is not "" or
                 a.PathDict['XRD_file'] is not ""):
-                
+
                 if case is 1:
                     P4Rm.DefaultDict['Save_as_folder'] = os.path.split(paths[0])[0]
                     
@@ -459,9 +466,9 @@ class SaveFile4Diff():
                 P4Rm.AllDataDict['input_strain'] = a.PathDict['Strain_file']
                 P4Rm.AllDataDict['xrd_data'] = a.PathDict['XRD_file']
                 self.save_project(case)
-                pub.sendMessage(pubsub_changeColor_field4Save, color='#CCE5FF')
+                pub.sendMessage(pubsub_changeColor_field4Save, color=(204, 229, 255))
                 sleep(0.8)
-                pub.sendMessage(pubsub_changeColor_field4Save, color='#white')
+                pub.sendMessage(pubsub_changeColor_field4Save, color=(255, 255, 255))
                 msg_ = ("Data have been saved to " +
                         a.PathDict['path2inicomplete'])
                 logger.log(logging.INFO, msg_)
@@ -516,13 +523,58 @@ class SaveFile4Diff():
                 data_ = a.par_fit[-1*int(a.AllDataDict['dw_basis_func']):]
                 savetxt(os.path.join(path, name_), data_, fmt='%10.8f')
             # -----------------------------------------------------------------
+            try:
+                name_ = (a.PathDict['namefromini'] + '_' + p4R.output_name['out_XRD'])
+                data_ = column_stack((a.ParamDict['th4live'], a.ParamDict['Iobs'],
+                                      a.ParamDict['I_fit']))
+                savetxt(os.path.join(path, name_), data_, header=line,
+                        fmt='{:^12}'.format('%3.8f'))
+                # -----------------------------------------------------------------
+                logger.log(logging.INFO, "Data have been saved successfully")
+            except (ValueError):
+                msg = ("Some problems occurs during fitting data, " +
+                       "please do not abort the fit to soon")
+                logger.log(logging.WARNING, msg)                
+                msg = "Data can not be saved to file, please relaunch fit "
+                logger.log(logging.WARNING, msg)                
+        except IOError:
+            msg = ("Some problems occurs during saving data, " +
+                   "please check your path !!")
+            logger.log(logging.WARNING, msg)
+
+    def on_export_data(self):
+        a = P4Rm()
+        if a.PathDict['path2ini'] != '':
+            path = a.PathDict['path2ini']
+        else:
+            path = a.PathDict['path2drx']
+        try:
+            header = ["2theta", "Iobs", "Icalc"]
+            line = u'{:^12} {:^24} {:^12}'.format(*header)
+            
+            # -----------------------------------------------------------------
+            name_ = (a.PathDict['namefromini'] + '_' +
+                     p4R.output_name['out_strain_profile'])
+            data_ = column_stack((a.ParamDict['depth'],
+                                  a.ParamDict['strain_i']))
+            savetxt(os.path.join(path, name_), data_, fmt='%10.8f')
+            
+            # -----------------------------------------------------------------
+            name_ = (a.PathDict['namefromini'] + '_' +
+                     p4R.output_name['out_dw_profile'])
+            data_ = column_stack((a.ParamDict['depth'],
+                                  a.ParamDict['DW_i']))
+            savetxt(os.path.join(path, name_), data_, fmt='%10.8f')
+
+            # -----------------------------------------------------------------
             name_ = (a.PathDict['namefromini'] + '_' + p4R.output_name['out_XRD'])
             data_ = column_stack((a.ParamDict['th4live'], a.ParamDict['Iobs'],
-                                  a.ParamDict['I_fit']))
+                                  a.ParamDict['I_i']))
             savetxt(os.path.join(path, name_), data_, header=line,
                     fmt='{:^12}'.format('%3.8f'))
             # -----------------------------------------------------------------
-            logger.log(logging.INFO, "Data have been saved successfully")
+            logger.log(logging.INFO, "Data have been exported successfully")
         except IOError:
-            msg = "Impossible to save data to file, please check your path !!"
+            msg = ("Some problems occurs during exporting data," + 
+                   "please check your path !!")
             logger.log(logging.WARNING, msg)

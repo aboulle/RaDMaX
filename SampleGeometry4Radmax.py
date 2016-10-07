@@ -37,7 +37,7 @@ pubsub_update_crystal_list = "UpdateCrystalList"
 New_project_initial = [1, 1, 1, 0, 0, 2, 5.4135, 5.4135, 5.4135, 90, 90, 90]
 
 
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 class SampleGeometry(scrolled.ScrolledPanel):
     """
     Initial Parameters main panel
@@ -161,6 +161,7 @@ class SampleGeometry(scrolled.ScrolledPanel):
                                     size=(100, vStatictextsize))
         film_th_txt.SetFont(font_Statictext)
         self.film_th = wx.TextCtrl(self, size=size_value_hkl,
+                                   style=wx.TE_PROCESS_ENTER,
                                    validator=TextValidator(DIGIT_ONLY))
         self.film_th.SetFont(font_TextCtrl)
 
@@ -168,6 +169,7 @@ class SampleGeometry(scrolled.ScrolledPanel):
                                        size=(100, vStatictextsize))
         self.dw_th_txt.SetFont(font_Statictext)
         self.dw_th = wx.TextCtrl(self, size=size_value_hkl,
+                                 style=wx.TE_PROCESS_ENTER,
                                  validator=TextValidator(DIGIT_ONLY))
         self.dw_th.SetFont(font_TextCtrl)
         self.dw_th.SetValue(str(1))
@@ -225,6 +227,7 @@ class SampleGeometry(scrolled.ScrolledPanel):
                                         size=(10, vStatictextsize))
         h_direction_txt.SetFont(font_Statictext)
         self.h_direction = wx.TextCtrl(self, size=size_value_hkl,
+                                       style=wx.TE_PROCESS_ENTER,
                                        validator=TextValidator(DIGIT_ONLY))
         self.h_direction.SetFont(font_TextCtrl)
 
@@ -232,6 +235,7 @@ class SampleGeometry(scrolled.ScrolledPanel):
                                         size=(10, vStatictextsize))
         k_direction_txt.SetFont(font_Statictext)
         self.k_direction = wx.TextCtrl(self, size=size_value_hkl,
+                                       style=wx.TE_PROCESS_ENTER,
                                        validator=TextValidator(DIGIT_ONLY))
         self.k_direction.SetFont(font_TextCtrl)
 
@@ -239,6 +243,7 @@ class SampleGeometry(scrolled.ScrolledPanel):
                                         size=(10, vStatictextsize))
         l_direction_txt.SetFont(font_Statictext)
         self.l_direction = wx.TextCtrl(self, size=size_value_hkl,
+                                       style=wx.TE_PROCESS_ENTER,
                                        validator=TextValidator(DIGIT_ONLY))
         self.l_direction.SetFont(font_TextCtrl)
 
@@ -254,6 +259,7 @@ class SampleGeometry(scrolled.ScrolledPanel):
                                     size=(10, vStatictextsize))
         a_param_txt.SetFont(font_Statictext)
         self.a_param = wx.TextCtrl(self, size=size_value_lattice,
+                                   style=wx.TE_PROCESS_ENTER,
                                    validator=TextValidator(DIGIT_ONLY))
         self.a_param.SetFont(font_TextCtrl)
 
@@ -261,6 +267,7 @@ class SampleGeometry(scrolled.ScrolledPanel):
                                     size=(10, vStatictextsize))
         b_param_txt.SetFont(font_Statictext)
         self.b_param = wx.TextCtrl(self, size=size_value_lattice,
+                                   style=wx.TE_PROCESS_ENTER,
                                    validator=TextValidator(DIGIT_ONLY))
         self.b_param.SetFont(font_TextCtrl)
 
@@ -268,6 +275,7 @@ class SampleGeometry(scrolled.ScrolledPanel):
                                     size=(10, vStatictextsize))
         c_param_txt.SetFont(font_Statictext)
         self.c_param = wx.TextCtrl(self, size=size_value_lattice,
+                                   style=wx.TE_PROCESS_ENTER,
                                    validator=TextValidator(DIGIT_ONLY))
         self.c_param.SetFont(font_TextCtrl)
 
@@ -276,6 +284,7 @@ class SampleGeometry(scrolled.ScrolledPanel):
                                         size=(10, vStatictextsize))
         alpha_param_txt.SetFont(font_Statictext)
         self.alpha_param = wx.TextCtrl(self, size=size_value_lattice,
+                                       style=wx.TE_PROCESS_ENTER,
                                        validator=TextValidator(DIGIT_ONLY))
         self.alpha_param.SetFont(font_TextCtrl)
 
@@ -284,6 +293,7 @@ class SampleGeometry(scrolled.ScrolledPanel):
                                        size=(10, vStatictextsize))
         beta_param_txt.SetFont(font_Statictext)
         self.beta_param = wx.TextCtrl(self, size=size_value_lattice,
+                                      style=wx.TE_PROCESS_ENTER,
                                       validator=TextValidator(DIGIT_ONLY))
         self.beta_param.SetFont(font_TextCtrl)
 
@@ -292,6 +302,7 @@ class SampleGeometry(scrolled.ScrolledPanel):
                                         size=(10, vStatictextsize))
         gamma_param_txt.SetFont(font_Statictext)
         self.gamma_param = wx.TextCtrl(self, size=size_value_lattice,
+                                       style=wx.TE_PROCESS_ENTER,
                                        validator=TextValidator(DIGIT_ONLY))
         self.gamma_param.SetFont(font_TextCtrl)
 
@@ -361,6 +372,10 @@ class SampleGeometry(scrolled.ScrolledPanel):
         Textcontrolen = range(len(self.Textcontrol))
         self.data_fields = dict(zip(Textcontrolen, self.Textcontrol))
 
+        for name in self.Textcontrol:
+            self.Bind(wx.EVT_TEXT_ENTER, self.on_press_enter, name)
+        self.Bind(wx.EVT_LEFT_DOWN, self.on_press_enter)
+
         self.mastersizer.Add(Geometry_box_sizer, pos=(0, 0),
                              flag=flagSizer, border=5)
         self.mastersizer.Add(Scheme_box_sizer, pos=(0, 1), span=(2, 1),
@@ -390,8 +405,12 @@ class SampleGeometry(scrolled.ScrolledPanel):
         self.cb_crystalname.SetItems(a.crystal_list)
         self.cb_crystalname.SetStringSelection(a.crystal_list[0])
 
+    def on_press_enter(self, event):
+        pub.sendMessage(pubsub_Re_Read_field_paramters_panel)
+
     def on_change_substrate(self, event):
         P4Rm.PathDict['substrate_name'] = event.GetString()
+        pub.sendMessage(pubsub_Re_Read_field_paramters_panel)
 
     def on_set_val(self, event):
         a = P4Rm()
@@ -561,6 +580,10 @@ class SampleGeometry(scrolled.ScrolledPanel):
                         self.data_fields[num+i].SetValue(temp)
 
     def on_read_data_field(self, case=None):
+        """
+        lecture des champs
+        test si float
+        """
         P4Rm.checkGeometryField = 0
         check_empty = self.on_search_empty_fields()
         if check_empty is True:
@@ -569,6 +592,12 @@ class SampleGeometry(scrolled.ScrolledPanel):
                 P4Rm.checkGeometryField = 1
 
     def on_apply_color_field(self, color):
+        """
+        permet de changer la couleur des champs lors du lancement du fit
+        vert: champ vide
+        rouge: pas un nombre (redondant avec le validator)
+        bleu: sauvegarde des données
+        """
         for ii in range(len(self.data_fields)):
             self.data_fields[ii].SetBackgroundColour(color)
         self.Refresh()
@@ -576,7 +605,7 @@ class SampleGeometry(scrolled.ScrolledPanel):
 
     def on_search_empty_fields(self):
         """
-        search for empty field
+        Verification des champs, recherche des champs vide
         """
         check_empty = True
         empty_fields = []
@@ -600,6 +629,9 @@ class SampleGeometry(scrolled.ScrolledPanel):
         return check_empty
 
     def is_number(self, s):
+        """
+        test si la valeur du champ est bien un float
+        """
         try:
             float(s)
             return True
@@ -607,6 +639,10 @@ class SampleGeometry(scrolled.ScrolledPanel):
             return False
 
     def is_data_float(self):
+        """
+        test si la valeur du champ est bien un float
+        ecrit les données dans P4Rm.sample_geometry
+        """
         IsFloat = []
         dataFloat = True
         ProjectFileData = []

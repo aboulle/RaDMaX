@@ -3,9 +3,9 @@
 # Author: A_BOULLE & M_SOUILAH
 # Radmax project
 
-#==============================================================================
+# =============================================================================
 # Radmax Graph module
-#==============================================================================
+# =============================================================================
 
 
 import wx
@@ -16,7 +16,6 @@ from matplotlib.backends.backend_wxagg import \
     FigureCanvasWxAgg as FigCanvas, \
     NavigationToolbar2WxAgg as NavigationToolbar
 from matplotlib.lines import Line2D
-from matplotlib.artist import Artist
 from matplotlib.patches import Polygon
 
 from copy import deepcopy
@@ -62,43 +61,32 @@ class GraphPanel(scrolled.ScrolledPanel):
         scrolled.ScrolledPanel.__init__(self, parent)
         self.statusbar = statusbar
 
-        mastersizer = wx.BoxSizer(wx.HORIZONTAL)
-
-        size_Strain_DW_Box = (500, 500)
-        size_XRD_Box = (300, 140)
         fontStaticBox = wx.Font(10, wx.DEFAULT, wx.ITALIC, wx.BOLD)
-
-        Graph_Strain_DW_box = wx.StaticBox(self, -1,
-                                           " Strain and DW profiles ",
-                                           size=size_Strain_DW_Box)
-        Graph_Strain_DW_box.SetFont(fontStaticBox)
-        Graph_Strain_DW_box_sizer = wx.StaticBoxSizer(Graph_Strain_DW_box,
-                                                      wx.VERTICAL)
-        self.in_Graph_Strain_DW_box_sizer = wx.GridBagSizer(hgap=1, vgap=2)
-
-        Graph_XRD_box = wx.StaticBox(self, -1,
-                                     " XRD profile ", size=size_XRD_Box)
-        Graph_XRD_box.SetFont(fontStaticBox)
-        Graph_XRD_box_sizer = wx.StaticBoxSizer(Graph_XRD_box, wx.VERTICAL)
-        in_Graph_XRD_box_sizer = wx.GridBagSizer(hgap=1, vgap=1)
 
         panelOne = LeftGraphTop(self, self.statusbar)
         panelTwo = LeftGraphBottom(self, self.statusbar)
         panelThree = RightGraph(self, self.statusbar)
 
-        in_Graph_XRD_box_sizer.Add(panelThree, pos=(0, 0))
-        Graph_XRD_box_sizer.Add(in_Graph_XRD_box_sizer, 0, wx.ALL, 5)
+        Graph_Strain_DW_box = wx.StaticBox(self, wx.ID_ANY,
+                                           " Strain and DW profiles ",
+                                           size=(0,1))
+        Graph_Strain_DW_box.SetFont(fontStaticBox)
+        Graph_Strain_DW_box_sizer = wx.StaticBoxSizer(Graph_Strain_DW_box,
+                                                      wx.VERTICAL)
+        Graph_Strain_DW_box_sizer.Add(panelOne, 1, wx.EXPAND)
+        Graph_Strain_DW_box_sizer.Add(panelTwo, 1, wx.EXPAND)
 
-        self.in_Graph_Strain_DW_box_sizer.Add(panelOne, pos=(0, 0))
-        self.in_Graph_Strain_DW_box_sizer.Add(panelTwo, pos=(1, 0))
-        Graph_Strain_DW_box_sizer.Add(self.in_Graph_Strain_DW_box_sizer,
-                                      0, wx.ALL, 5)
+        Graph_XRD_box = wx.StaticBox(self, wx.ID_ANY, " XRD profile ", size=(0,1))
+        Graph_XRD_box.SetFont(fontStaticBox)
+        Graph_XRD_box_sizer = wx.StaticBoxSizer(Graph_XRD_box, wx.VERTICAL)
+        Graph_XRD_box_sizer.Add(panelThree, 1, wx.EXPAND| wx.ALL)
 
-        mastersizer.Add(Graph_Strain_DW_box_sizer, 0, wx.ALL, 5)
-        mastersizer.Add(Graph_XRD_box_sizer, 0, wx.ALL, 5)
+        mastersizer = wx.BoxSizer(wx.HORIZONTAL)
+        mastersizer.Add(Graph_Strain_DW_box_sizer, 1, wx.ALL|wx.EXPAND, 5)
+        mastersizer.Add(Graph_XRD_box_sizer, 1, wx.ALL|wx.EXPAND, 5)
 
         self.SetSizer(mastersizer)
-        self.Layout()
+        self.Fit()
         self.SetupScrolling()
 
 
@@ -116,9 +104,7 @@ class LeftGraphTop(wx.Panel):
           'i' insert a vertex at point.  You must be within epsilon of the
               line connecting two existing vertices
         """
-        mastersizer = wx.BoxSizer(wx.VERTICAL)
-
-        self.fig = Figure((6.0, 3.0))
+        self.fig = Figure((4.0, 3.0))
         self.canvas = FigCanvas(self, -1, self.fig)
         self.ax = self.fig.add_subplot(111)
         self.ax.set_ylabel("Strain", fontdict=font)
@@ -157,8 +143,9 @@ class LeftGraphTop(wx.Panel):
         self.canvas.mpl_connect('motion_notify_event',
                                 self.on_update_coordinate)
 
-        mastersizer.Add(self.canvas, 1, wx.ALL)
-        mastersizer.Add(self.toolbar, 1, wx.ALL)
+        mastersizer = wx.BoxSizer(wx.VERTICAL)
+        mastersizer.Add(self.canvas, 1, wx.ALL|wx.EXPAND)
+        mastersizer.Add(self.toolbar, 0, wx.ALL)
         pub.subscribe(self.OnDrawGraph, pubsub_Draw_Strain)
         pub.subscribe(self.scale_manual, pubsub_Update_Scale_Strain)
         pub.subscribe(self.on_color, pubsub_Graph_change_color_style)
@@ -167,36 +154,53 @@ class LeftGraphTop(wx.Panel):
         self.draw_c(poly, xs, ys)
 
         self.SetSizer(mastersizer)
-        self.Raise()
-        self.SetPosition((0, 0))
         self.Fit()
 
     def on_color(self):
         a = P4Rm()
         self.c_strain = a.DefaultDict['c_strain']
         self.l_strain = a.DefaultDict['l_strain']
+        self.c_bkg = a.DefaultDict['c_graph_background']
 
     def OnDrawGraph(self, b=None):
         a = P4Rm()
         self.modelpv = a.modelPv
         self.ax.clear()
-        if b != 2:
-            x_sp = a.ParamDict['x_sp']
-            y_sp = a.ParamDict['strain_shifted']
-            xs = deepcopy(a.ParamDict['depth'])
-            ys = deepcopy(a.ParamDict['strain_i']*100)
-            P4Rm.DragDrop_Strain_x = x_sp
-            P4Rm.DragDrop_Strain_y = y_sp
-            ymin = min(ys) - min(ys)*10/100
-            ymax = max(ys) + max(ys)*10/100
-            self.ax.set_ylim([ymin, ymax])
-        elif b == 2:
-            x_sp = [-1]
-            y_sp = [-1]
+        if a.AllDataDict['damaged_depth'] == 0:
+            self.ax.text(0.5, 0.5, "No Damage", size=30, rotation=0.,
+                         ha="center", va="center",
+                         bbox=dict(boxstyle="round",
+                                   ec='red',
+                                   fc=self.c_strain,))
             xs = [-1]
             ys = [-1]
+            x_sp = [-1]
+            y_sp = [-1]
+            self.ax.set_xticklabels([])
+            self.ax.set_yticklabels([])
             self.ax.set_xlim([0, 1])
-            self.ax.set_ylim([-1, 1])
+            self.ax.set_ylim([0, 1])
+        else:
+            if b != 2:
+                x_sp = a.ParamDict['x_sp']
+                y_sp = a.ParamDict['strain_shifted']
+                xs = deepcopy(a.ParamDict['depth'])
+                ys = deepcopy(a.ParamDict['strain_i']*100)
+                P4Rm.DragDrop_Strain_x = x_sp
+                P4Rm.DragDrop_Strain_y = y_sp
+                ymin = min(ys) - min(ys)*10/100
+                ymax = max(ys) + max(ys)*10/100
+                self.ax.set_ylim([ymin, ymax])
+                if a.ParamDict['x_sp'] is not "":
+                    self.ax.set_xlim([a.ParamDict['depth'][-1],
+                                      a.ParamDict['depth'][0]])
+            elif b == 2:
+                x_sp = [-1]
+                y_sp = [-1]
+                xs = [-1]
+                ys = [-1]
+                self.ax.set_xlim([0, 1])
+                self.ax.set_ylim([-1, 1])
         poly = Polygon(list(zip(x_sp, y_sp)), lw=0, ls='dashdot',
                        color=self.c_strain, fill=False, closed=False,
                        animated=True)
@@ -209,6 +213,7 @@ class LeftGraphTop(wx.Panel):
                      ls=self.l_strain)
         self.ax.set_ylabel("Strain", fontdict=font)
         self.ax.set_xticklabels([])
+        self.ax.set_axis_bgcolor(self.c_bkg)
         self.poly = data
         xs, ys = zip(*self.poly.xy)
         self.line = Line2D(xs, ys, lw=0, ls='-.', color=self.c_strain,
@@ -271,7 +276,29 @@ class LeftGraphTop(wx.Panel):
                 temp_2 = self.new_coord['x']
                 P4Rm.DragDrop_Strain_y[self.new_coord['indice']] = temp_1
                 P4Rm.DragDrop_Strain_x[self.new_coord['indice']] = temp_2
-                if self.modelpv is True:
+                if a.AllDataDict['model'] == 0:
+                    temp = self.new_coord['y']
+                    P4Rm.DragDrop_Strain_y[self.new_coord['indice']] = temp
+                    temp = [strain*scale/100 for strain,
+                            scale in zip(a.DragDrop_Strain_y,
+                                         a.ParamDict['scale_strain'])]
+                    temp = [float(format(value, '.8f')) for value in temp]
+                    temp2 = np.concatenate([temp, [a.ParamDict['stain_out']]])
+                    P4Rm.ParamDict['sp'] = deepcopy(temp2)
+                    P4Rm.ParamDictbackup['sp'] = deepcopy(temp2)
+                elif a.AllDataDict['model'] == 1:
+                    temp = self.new_coord['y']
+                    P4Rm.DragDrop_Strain_y[self.new_coord['indice']] = temp
+                    temp = [strain*scale/100 for strain,
+                            scale in zip(a.DragDrop_Strain_y,
+                                         a.ParamDict['scale_strain'])]
+                    temp = [float(format(value, '.8f')) for value in temp]
+                    temp2 = np.concatenate([[a.ParamDict['stain_out'][0]],
+                                            temp,
+                                            [a.ParamDict['stain_out'][1]]])
+                    P4Rm.ParamDict['sp'] = deepcopy(temp2)
+                    P4Rm.ParamDictbackup['sp'] = deepcopy(temp2)
+                elif a.AllDataDict['model'] == 2:
                     t_temp = a.ParamDict['depth'] + a.ParamDict['z']
                     t = t_temp[0]
                     sp_temp = range(7)
@@ -287,19 +314,6 @@ class LeftGraphTop(wx.Panel):
                     P4Rm.ParamDict['sp'] = deepcopy(sp_temp)
                     P4Rm.ParamDictbackup['sp'] = deepcopy(sp_temp)
                     P4Rm.ParamDict['sp_pv'] = deepcopy(sp_temp)
-                else:
-                    temp = self.new_coord['y']
-                    P4Rm.DragDrop_Strain_y[self.new_coord['indice']] = temp
-                    temp = [strain*scale/100 for strain, scale in
-                            zip(a.DragDrop_Strain_y,
-                                a.ParamDict['scale_strain'])]
-                    temp = [float(format(value, '.8f')) for value in temp]
-                    temp1 = temp[1:]
-                    temp2 = [a.ParamDict['stain_out']]
-                    temp3 = deepcopy(np.concatenate((temp1, temp2), axis=0))
-                    P4Rm.ParamDict['sp'] = temp3
-                    P4Rm.ParamDictbackup['sp'] = temp3
-
                 pub.sendMessage(pubsub_Update_Fit_Live)
             self._ind = None
 
@@ -330,6 +344,8 @@ class LeftGraphTop(wx.Panel):
     def motion_notify_callback(self, event):
         'on mouse movement'
         a = P4Rm()
+        if a.AllDataDict['damaged_depth'] == 0:
+            return
         if not self.showverts:
             return
         if self._ind is None:
@@ -367,23 +383,25 @@ class LeftGraphTop(wx.Panel):
             self.statusbar.SetStatusText(u"", 1)
             self.statusbar.SetStatusText(u"", 2)
         else:
-            x, y = event.xdata, event.ydata
-            xfloat = round(float(x), 2)
-            yfloat = round(float(y), 2)
-            self.statusbar.SetStatusText(u"x = " + str(xfloat), 1)
-            self.statusbar.SetStatusText(u"y = " + str(yfloat), 2)
+            a = P4Rm()
+            if not a.AllDataDict['damaged_depth'] == 0:
+                x, y = event.xdata, event.ydata
+                xfloat = round(float(x), 2)
+                yfloat = round(float(y), 2)
+                self.statusbar.SetStatusText(u"x = " + str(xfloat), 1)
+                self.statusbar.SetStatusText(u"y = " + str(yfloat), 2)
 
-            xy = np.asarray(self.poly.xy)
-            xyt = self.poly.get_transform().transform(xy)
-            xt, yt = xyt[:, 0], xyt[:, 1]
-            d = np.sqrt((xt-event.x)**2 + (yt-event.y)**2)
-            indseq = np.nonzero(np.equal(d, np.amin(d)))[0]
-            ind = indseq[0]
+                xy = np.asarray(self.poly.xy)
+                xyt = self.poly.get_transform().transform(xy)
+                xt, yt = xyt[:, 0], xyt[:, 1]
+                d = np.sqrt((xt-event.x)**2 + (yt-event.y)**2)
+                indseq = np.nonzero(np.equal(d, np.amin(d)))[0]
+                ind = indseq[0]
 
-            if d[ind] >= self.epsilon:
-                self.canvas.SetCursor(Cursor(wx.CURSOR_ARROW))
-            elif d[ind] <= self.epsilon:
-                self.canvas.SetCursor(Cursor(wx.CURSOR_HAND))
+                if d[ind] >= self.epsilon:
+                    self.canvas.SetCursor(Cursor(wx.CURSOR_ARROW))
+                elif d[ind] <= self.epsilon:
+                    self.canvas.SetCursor(Cursor(wx.CURSOR_HAND))
 
 
 # ------------------------------------------------------------------------------
@@ -400,8 +418,7 @@ class LeftGraphBottom(wx.Panel):
           'i' insert a vertex at point.  You must be within epsilon of the
               line connecting two existing vertices
         """
-        mastersizer = wx.BoxSizer(wx.VERTICAL)
-        self.fig = Figure((6.0, 3.0))
+        self.fig = Figure((4.0, 3.0))
         self.canvas = FigCanvas(self, -1, self.fig)
         self.ax = self.fig.add_subplot(111)
         """ subplots_adjust(bottom=0.14): permet d'ajuster la taille du canevas
@@ -443,8 +460,10 @@ class LeftGraphBottom(wx.Panel):
                                 self.scroll_callback)
         self.canvas.mpl_connect('motion_notify_event',
                                 self.on_update_coordinate)
-        mastersizer.Add(self.canvas, 1, wx.ALL)
-        mastersizer.Add(self.toolbar, 1, wx.ALL)
+
+        mastersizer = wx.BoxSizer(wx.VERTICAL)
+        mastersizer.Add(self.canvas, 1, wx.ALL|wx.EXPAND)
+        mastersizer.Add(self.toolbar, 0, wx.ALL)
 
         pub.subscribe(self.draw_c, pubsub_draw_graph)
         pub.subscribe(self.OnDrawGraph, pubsub_Draw_DW)
@@ -455,36 +474,53 @@ class LeftGraphBottom(wx.Panel):
         self.draw_c(poly, xs, ys)
 
         self.SetSizer(mastersizer)
-        self.Raise()
-        self.SetPosition((0, 0))
         self.Fit()
 
     def on_color(self):
         a = P4Rm()
         self.c_dw = a.DefaultDict['c_dw']
         self.l_dw = a.DefaultDict['l_dw']
+        self.c_bkg = a.DefaultDict['c_graph_background']
 
     def OnDrawGraph(self, b=None):
         a = P4Rm()
         self.modelpv = a.modelPv
         self.ax.clear()
-        if b != 2:
-            x_dwp = a.ParamDict['x_dwp']
-            y_dwp = a.ParamDict['DW_shifted']
-            xs = deepcopy(a.ParamDict['depth'])
-            ys = deepcopy(a.ParamDict['DW_i'])
-            P4Rm.DragDrop_DW_x = x_dwp
-            P4Rm.DragDrop_DW_y = y_dwp
-            ymin = min(ys) - min(ys)*10/100
-            ymax = max(ys) + max(ys)*10/100
-            self.ax.set_ylim([ymin, ymax])
-        elif b == 2:
+        if a.AllDataDict['damaged_depth'] == 0:
+            self.ax.text(0.5, 0.5, "No Damage", size=30, rotation=0.,
+                         ha="center", va="center",
+                         bbox=dict(boxstyle="round",
+                                   ec='red',
+                                   fc=self.c_dw,))
             x_dwp = [-1]
             y_dwp = [-1]
             xs = [-1]
             ys = [-1]
+            self.ax.set_xticklabels([])
+            self.ax.set_yticklabels([])
             self.ax.set_xlim([0, 1])
             self.ax.set_ylim([0, 1])
+        else:
+            if b != 2:
+                x_dwp = a.ParamDict['x_dwp']
+                y_dwp = a.ParamDict['DW_shifted']
+                xs = deepcopy(a.ParamDict['depth'])
+                ys = deepcopy(a.ParamDict['DW_i'])
+                P4Rm.DragDrop_DW_x = x_dwp
+                P4Rm.DragDrop_DW_y = y_dwp
+                ymin = min(ys) - min(ys)*10/100
+                ymax = max(ys) + max(ys)*10/100
+                self.ax.set_ylim([ymin, ymax])
+                if a.ParamDict['x_dwp'] is not "":
+                    self.ax.set_xlim([a.ParamDict['depth'][-1],
+                                      a.ParamDict['depth'][0]])
+            elif b == 2:
+                x_dwp = [-1]
+                y_dwp = [-1]
+                xs = [-1]
+                ys = [-1]
+                self.ax.set_xlim([0, 1])
+                self.ax.set_ylim([0, 1])
         poly = Polygon(list(zip(x_dwp, y_dwp)), lw=0, ls='dashdot',
                        color=self.c_dw, fill=False,
                        closed=False, animated=True)
@@ -496,6 +532,7 @@ class LeftGraphBottom(wx.Panel):
         self.ax.plot(x, y, color=self.c_dw, lw=2., ls=self.l_dw)
         self.ax.set_ylabel("DW", fontdict=font)
         self.ax.set_xlabel("Depth ($\AA$)", fontdict=font)
+        self.ax.set_axis_bgcolor(self.c_bkg)
         self.poly = data
         xs, ys = zip(*self.poly.xy)
         self.line = Line2D(xs, ys, lw=0, ls='-.', color=self.c_dw, marker='.',
@@ -560,7 +597,28 @@ class LeftGraphBottom(wx.Panel):
                 temp_2 = self.new_coord['x']
                 P4Rm.DragDrop_DW_y[self.new_coord['indice']] = temp_1
                 P4Rm.DragDrop_DW_x[self.new_coord['indice']] = temp_2
-                if self.modelpv is True:
+                if a.AllDataDict['model'] == 0:
+                    temp = self.new_coord['y']
+                    P4Rm.DragDrop_DW_y[self.new_coord['indice']] = temp
+                    temp = [dw*scale for dw,
+                            scale in zip(a.DragDrop_DW_y,
+                                         a.ParamDict['scale_dw'])]
+                    temp = [float(format(value, '.8f')) for value in temp]
+                    temp2 = np.concatenate([temp, [a.ParamDict['dw_out']]])
+                    P4Rm.ParamDict['dwp'] = deepcopy(temp2)
+                    P4Rm.ParamDictbackup['dwp'] = deepcopy(temp2)
+                elif a.AllDataDict['model'] == 1:
+                    temp = self.new_coord['y']
+                    P4Rm.DragDrop_DW_y[self.new_coord['indice']] = temp
+                    temp = [dw*scale for dw,
+                            scale in zip(a.DragDrop_DW_y,
+                                         a.ParamDict['scale_dw'])]
+                    temp = [float(format(value, '.8f')) for value in temp]
+                    temp2 = np.concatenate([[a.ParamDict['dw_out'][0]],
+                                            temp, [a.ParamDict['dw_out'][1]]])
+                    P4Rm.ParamDict['dwp'] = deepcopy(temp2)
+                    P4Rm.ParamDictbackup['dwp'] = deepcopy(temp2)
+                elif a.AllDataDict['model'] == 2:
                     t_temp = a.ParamDict['depth'] + a.ParamDict['z']
                     t = t_temp[0]
                     dwp_temp = range(7)
@@ -576,18 +634,6 @@ class LeftGraphBottom(wx.Panel):
                     P4Rm.ParamDict['dwp'] = deepcopy(dwp_temp)
                     P4Rm.ParamDictbackup['dwp'] = deepcopy(dwp_temp)
                     P4Rm.ParamDict['dwp_pv'] = deepcopy(dwp_temp)
-                else:
-                    temp = self.new_coord['y']
-                    P4Rm.DragDrop_DW_y[self.new_coord['indice']] = temp
-                    temp = [dw*scale for dw,
-                            scale in zip(a.DragDrop_DW_y,
-                                         a.ParamDict['scale_dw'])]
-                    temp = [float(format(value, '.8f')) for value in temp]
-                    temp1 = temp[1:]
-                    temp2 = [a.ParamDict['dw_out']]
-                    temp3 = deepcopy(np.concatenate((temp1, temp2), axis=0))
-                    P4Rm.ParamDict['dwp'] = temp3
-                    P4Rm.ParamDictbackup['dwp'] = temp3
                 pub.sendMessage(pubsub_Update_Fit_Live)
             self._ind = None
 
@@ -616,6 +662,8 @@ class LeftGraphBottom(wx.Panel):
     def motion_notify_callback(self, event):
         'on mouse movement'
         a = P4Rm()
+        if a.AllDataDict['damaged_depth'] == 0:
+            return
         if not self.showverts:
             return
         if self._ind is None:
@@ -654,31 +702,32 @@ class LeftGraphBottom(wx.Panel):
             self.statusbar.SetStatusText(u"", 1)
             self.statusbar.SetStatusText(u"", 2)
         else:
-            x, y = event.xdata, event.ydata
-            xfloat = round(float(x), 2)
-            yfloat = round(float(y), 2)
-            self.statusbar.SetStatusText(u"x = " + str(xfloat), 1)
-            self.statusbar.SetStatusText(u"y = " + str(yfloat), 2)
-            xy = np.asarray(self.poly.xy)
-            xyt = self.poly.get_transform().transform(xy)
-            xt, yt = xyt[:, 0], xyt[:, 1]
-            d = np.sqrt((xt-event.x)**2 + (yt-event.y)**2)
-            indseq = np.nonzero(np.equal(d, np.amin(d)))[0]
-            ind = indseq[0]
+            a = P4Rm()
+            if not a.AllDataDict['damaged_depth'] == 0:
+                x, y = event.xdata, event.ydata
+                xfloat = round(float(x), 2)
+                yfloat = round(float(y), 2)
+                self.statusbar.SetStatusText(u"x = " + str(xfloat), 1)
+                self.statusbar.SetStatusText(u"y = " + str(yfloat), 2)
+                xy = np.asarray(self.poly.xy)
+                xyt = self.poly.get_transform().transform(xy)
+                xt, yt = xyt[:, 0], xyt[:, 1]
+                d = np.sqrt((xt-event.x)**2 + (yt-event.y)**2)
+                indseq = np.nonzero(np.equal(d, np.amin(d)))[0]
+                ind = indseq[0]
 
-            if d[ind] >= self.epsilon:
-                self.canvas.SetCursor(Cursor(wx.CURSOR_ARROW))
-            elif d[ind] <= self.epsilon:
-                self.canvas.SetCursor(Cursor(wx.CURSOR_HAND))
+                if d[ind] >= self.epsilon:
+                    self.canvas.SetCursor(Cursor(wx.CURSOR_ARROW))
+                elif d[ind] <= self.epsilon:
+                    self.canvas.SetCursor(Cursor(wx.CURSOR_HAND))
 
 
 # ------------------------------------------------------------------------------
 class RightGraph(wx.Panel):
     def __init__(self, parent, statusbar):
-        wx.Panel.__init__(self, parent)
+        wx.Panel.__init__(self, parent, wx.ID_ANY)
         self.statusbar = statusbar
 
-        mastersizer = wx.BoxSizer(wx.VERTICAL)
         self.fig = Figure((7.0, 6.0))
         self.canvas = FigCanvas(self, -1, self.fig)
         self.fig.patch.set_facecolor(colorBackgroundGraph)
@@ -731,8 +780,9 @@ class RightGraph(wx.Panel):
         self.l_fit = ""
         self.l_live = ""
 
-        mastersizer.Add(self.canvas, 1, wx.ALL)
-        mastersizer.Add(self.toolbar, 1, wx.ALL)
+        mastersizer = wx.BoxSizer(wx.VERTICAL)
+        mastersizer.Add(self.canvas, 1, wx.EXPAND)
+        mastersizer.Add(self.toolbar, 0, wx.EXPAND)
 
         pub.subscribe(self.OnDrawGraph, pubsub_Draw_XRD)
         pub.subscribe(self.OnDrawGraphLive, pubsub_Draw_Fit_Live_XRD)
@@ -742,8 +792,7 @@ class RightGraph(wx.Panel):
         self.on_color()
 
         self.SetSizer(mastersizer)
-        self.Raise()
-        self.SetPosition((0, 0))
+        self.Layout()
         self.Fit()
 
     def on_color(self):
@@ -754,6 +803,7 @@ class RightGraph(wx.Panel):
         self.l_data = a.DefaultDict['l_data']
         self.l_fit = a.DefaultDict['l_fit']
         self.l_live = a.DefaultDict['l_fit_live']
+        self.c_bkg = a.DefaultDict['c_graph_background']
 
     def OnDrawGraph(self, b=None):
         a = P4Rm()
@@ -768,15 +818,22 @@ class RightGraph(wx.Panel):
         else:
             a = P4Rm()
             xx = 2*a.ParamDict['th']*180/np.pi
+            Iobs_len = len(a.ParamDict['Iobs'])
+            I_i_len = len(a.ParamDict['I_i'])
+            if Iobs_len == I_i_len:
+                I_val = a.ParamDict['I_i']
+            else:
+                I_val = a.ParamDictbackup['I_i']
             self.ax.semilogy(xx, a.ParamDict['Iobs'], color=self.c_data,
                              ls=self.l_data, marker='o')
-            self.ax.semilogy(xx, a.ParamDict['I_i'], color=self.c_fit,
+            self.ax.semilogy(xx, I_val, color=self.c_fit,
                              ls=self.l_fit)
             middle = int(len(a.ParamDict['th'])/2)
             self.ly = self.ax.axvline(x=xx[middle], color='r', lw=0.0)
             self.lx = self.ax.axhline(color='r', lw=0.0)  # the horiz line
         self.ax.set_ylabel("Intensity (a.u.)", fontdict=font)
         self.ax.set_xlabel(r'2$\theta$ (deg.)', fontdict=font)
+        self.ax.set_axis_bgcolor(self.c_bkg)
         self.CheckedGrid()
         self.CursorMove()
 
@@ -813,9 +870,6 @@ class RightGraph(wx.Panel):
             self.ly.set_linewidth(0)
             self.lx.set_linewidth(0)
 
-#            self.canvas.mpl_disconnect(self.update_coordinate)
-#            self.canvas.mpl_disconnect(self.update_zoom)
-
     def MouseOnGraph(self, event):
         a = P4Rm()
         if a.fitlive == 1:
@@ -840,16 +894,16 @@ class RightGraph(wx.Panel):
         else:
             self.PopupMenu(self.menu)
 
-    def OnUnzoom(self, event):
+    def OnUnzoom(self, event=None):
         self.canvas.toolbar.home()
         P4Rm.zoomOn = 0
         a = P4Rm()
         P4Rm.ParamDict['th'] = a.ParamDictbackup['th']
         P4Rm.ParamDict['Iobs'] = a.ParamDictbackup['Iobs']
         P4Rm.ParamDict['th4live'] = 2*a.ParamDict['th']*180/np.pi
-        pub.sendMessage(pubsub_Re_Read_field_paramters_panel, event=event)
-        self.CheckedGrid(event)
-        self.CursorMove(event)
+        pub.sendMessage(pubsub_Re_Read_field_paramters_panel)
+        self.CheckedGrid()
+        self.CursorMove()
 
     def CheckedGrid(self, event=None):
         if self.menu.IsChecked(self.CheckedGridId) is True:
@@ -857,7 +911,6 @@ class RightGraph(wx.Panel):
         elif self.menu.IsChecked(self.CheckedGridId) is False:
             self.ax.grid(False)
         self.canvas.draw()
-#        self.canvas.toolbar.zoom()
 
     def CursorMove(self, event=None):
         if self.menu.IsChecked(self.CursorId) is True:

@@ -26,6 +26,7 @@ from DB4Radmax import DataBaseUse
 
 from sys import platform as _platform
 from random import randint
+from numpy import column_stack
 
 from Icon4Radmax import error_icon, ok_icon, stop_thread, stop_thread_morpheus
 
@@ -40,10 +41,11 @@ pubsub_Load_project = "LoadProject"
 pubsub_Read_field4Save = "ReadField4Save"
 pubsub_Re_Read_field_paramters_panel = "ReReadParametersPanel"
 pubsub_Draw_Fit_Live_XRD = "DrawFitLiveXRD"
+pubsub_Update_Fit_Live = "UpdateFitLive"
 pubsub_OnFit_Graph = "OnFitGraph"
 pubsub_on_update_limit = "UpdateLimit"
 pubsub_on_update_gauge = "UpdateGauge"
-pubsub_changeColor_field4Save = "on_change_color_field4Save"
+pubsub_changeColor_field4Save = "ChangeColorField4Save"
 pubsub_Update_deformation_multiplicator_coef = "UpdateDefMultiplicatorCoef"
 pubsub_gauge_to_zero = "Gauge2zero"
 pubsub_update_sp_dwp_eta = "UpdatespdwpEta"
@@ -53,6 +55,8 @@ pubsub_on_launch_thread = "OnLaunchThread"
 pubsub_Draw_XRD = "DrawXRD"
 
 pubsub_save_from_DB = "SaveFromDB"
+pubsub_add_damaged_before_fit = "AddDamagedBeforeFit"
+pubsub_adjust_nb_cycle = "AdjustNbCycle"
 
 
 # ------------------------------------------------------------------------------
@@ -67,7 +71,7 @@ class FittingPanel(scrolled.ScrolledPanel):
         font = wx.Font(10, wx.DEFAULT, wx.ITALIC, wx.BOLD)
         if _platform == "linux" or _platform == "linux2":
             size_nocool = 160
-            size_limitexceed = 210
+            size_limitexceed = 110
             font_Statictext = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL,
                                       False, u'Arial')
             font_TextCtrl = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL,
@@ -78,7 +82,7 @@ class FittingPanel(scrolled.ScrolledPanel):
             vStatictextsize = 16
         elif _platform == "win32":
             size_nocool = 140
-            size_limitexceed = 190
+            size_limitexceed = 110
             font_Statictext = wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL,
                                       False, u'Arial')
             font_TextCtrl = wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL,
@@ -89,7 +93,7 @@ class FittingPanel(scrolled.ScrolledPanel):
             vStatictextsize = 16
         elif _platform == 'darwin':
             size_nocool = 160
-            size_limitexceed = 210
+            size_limitexceed = 110
             font_Statictext = wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.NORMAL,
                                       False, u'Arial')
             font_TextCtrl = wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.NORMAL,
@@ -202,17 +206,21 @@ class FittingPanel(scrolled.ScrolledPanel):
                                               size=(50, vStatictextsize))
         self.param_change_txt.SetFont(font_TextCtrl)
 
-        name_limit = u'Limit Exceeded On Parameter: '
+        name_limit = u'Limit Exceeded: '
         self.on_limit_exceeded_txt = wx.StaticText(self, -1,
                                                    label=name_limit,
                                                    size=(size_limitexceed,
                                                          vStatictextsize))
         self.on_limit_exceeded_txt.SetFont(font_Statictext)
-        self.on_limit_exceeded = wx.StaticText(self, -1, label=u'',
-                                               size=(50, vStatictextsize))
-        self.on_limit_exceeded.SetFont(font_TextCtrl)
 
         self.led = LED(self)
+
+        live_Nb_cycle_txt = wx.StaticText(self, -1, label=u'Current cycle: ',
+                                          size=(95, vStatictextsize))
+        live_Nb_cycle_txt.SetFont(font_Statictext)
+        self.live_Nb_cycle = wx.StaticText(self, -1, label=u'',
+                                           size=(50, vStatictextsize))
+        self.live_Nb_cycle.SetFont(font_TextCtrl)
 
         self.fit_Btn = wx.Button(self, id=self.FitId, label="Fit!")
         self.fit_Btn.SetFont(font_update)
@@ -252,7 +260,9 @@ class FittingPanel(scrolled.ScrolledPanel):
                                  flag=flagSizer)
         in_GSA_results_sizer.Add(self.led, pos=(0, 5),
                                  flag=flagSizer)
-        in_GSA_results_sizer.Add(self.on_limit_exceeded, pos=(0, 6),
+        in_GSA_results_sizer.Add(live_Nb_cycle_txt, pos=(0, 8),
+                                 flag=flagSizer)
+        in_GSA_results_sizer.Add(self.live_Nb_cycle, pos=(0, 9),
                                  flag=flagSizer)
 #        'Emin = %4.3f' %E_min, '(',int(nb_minima), ')'
 
@@ -318,6 +328,7 @@ class FittingPanel(scrolled.ScrolledPanel):
 
         self.Bind(S4R.EVT_Live_COUNT, self.on_live)
         self.Bind(S4R.EVT_LiveLimitExceeded_COUNT, self.on_update_limit)
+        self.Bind(S4R.EVT_Live_count_NbCycle, self.on_update_nb_cycle)
 
         pub.subscribe(self.on_load_project, pubsub_Load_project)
         pub.subscribe(self.on_refresh_GUI, pubsub_on_refresh_GUI)
@@ -326,12 +337,16 @@ class FittingPanel(scrolled.ScrolledPanel):
         pub.subscribe(self.on_read_data_field, pubsub_Read_field4Save)
         pub.subscribe(self.on_apply_color_field, pubsub_changeColor_field4Save)
         pub.subscribe(self.gauge2zero, pubsub_gauge_to_zero)
+        pub.subscribe(self.on_adjust_nb_cycle, pubsub_adjust_nb_cycle)
 
         self.SetupScrolling()
         self.SetAutoLayout(1)
         self.SetSizer(mainsizer)
 
     def on_change_fit(self, event):
+        """
+        Fit selection GSA ou Leastsq
+        """
         fitname = event.GetString()
         if fitname == 'GSA':
             self.centersizer.Show(self.GSA_results_sizer)
@@ -342,6 +357,9 @@ class FittingPanel(scrolled.ScrolledPanel):
         self.Refresh()
 
     def on_load_project(self, b=None):
+        """
+        chargement des données provenant du fichier .ini
+        """
         for ii in self.data_fields:
             self.data_fields[ii].Clear()
         if b == 1:
@@ -357,6 +375,10 @@ class FittingPanel(scrolled.ScrolledPanel):
         self.Refresh()
 
     def on_read_data_field(self, case=None):
+        """
+        lecture des champs
+        test si float
+        """
         P4Rm.checkFittingField = 0
         check_empty = self.on_search_empty_fields()
         if check_empty is True:
@@ -365,21 +387,51 @@ class FittingPanel(scrolled.ScrolledPanel):
                 P4Rm.checkFittingField = 1
 
     def on_apply_color_field(self, color):
+        """
+        permet de changer la couleur des champs lors du lancement du fit
+        vert: champ vide
+        rouge: pas un nombre (redondant avec le validator)
+        bleu: sauvegarde des données
+        """
         for ii in range(len(self.data_fields)):
             self.data_fields[ii].SetBackgroundColour(color)
         self.Refresh()
         wx.Yield()
 
     def on_launch_fit(self, event):
+        """
+        lancement du fit.
+        test de la valeur damaged_depth, si celle-ci est nulle alors
+        un pop up s'ouvre pour demander à l'utilisateur de mettre une
+        valeur non nulle.
+        """
         a = P4Rm()
-        if not a.ParamDict['th'].any():
-            return
+        if a.AllDataDict['damaged_depth'] == 0:
+            pub.sendMessage(pubsub_add_damaged_before_fit)
         else:
-            b = Fitting4Radmax()
-            P4Rm.fit_type = self.cb_FitAlgo.GetSelection()
-            b.on_launch_fit()
+            if not a.ParamDict['th'].any():
+                return
+            else:
+                b = Fitting4Radmax()
+                P4Rm.fit_type = self.cb_FitAlgo.GetSelection()
+                b.on_launch_fit()
+
+    def on_adjust_nb_cycle(self):
+        """
+        mise à jour du champ nb_cycle_max.
+        la valeur doit etre égale ou superieur
+        à la valeur de nb_palier.
+        Si inferieur la valeur est égale à celle contenu dans nb_palier
+        """
+        a = P4Rm()
+        self.cycle_number.Clear()
+        self.cycle_number.AppendText(str(a.AllDataDict['nb_cycle_max']))
+        self.Refresh()
 
     def on_launch_thread(self):
+        """
+        lancement du thread du fit
+        """
         a = P4Rm()
         b = Fitting4Radmax()
         if a.fit_type == 1:
@@ -392,6 +444,9 @@ class FittingPanel(scrolled.ScrolledPanel):
             P4Rm.FitDict['worker_live'] = Fit_launcher(self, 0)
 
     def on_refresh_GUI(self, option, case=None):
+        """
+        rafraichissement de l'IU avant et après le fit
+        """
         label = ""
         a = P4Rm()
         c = Fitting4Radmax()
@@ -428,24 +483,30 @@ class FittingPanel(scrolled.ScrolledPanel):
             if case == 0:
                 png = ok_icon.GetBitmap()
                 label = u"Fit ended normally"
-                self.on_finish_fit(png, error, label)
             elif case == 1:
                 png = error_icon.GetBitmap()
                 label = u"Fit aborted by user"
-                self.on_finish_fit(png, error, label)
-            if a.par_fit is not [] or a.lmfit_install is True:
-                self.information_text.SetLabel(label)
-                pub.sendMessage(pubsub_Draw_XRD)
-                pub.sendMessage(pubsub_OnFit_Graph, b=1)
-                pub.sendMessage(pubsub_Update_deformation_multiplicator_coef)
-                pub.sendMessage(pubsub_update_sp_dwp_eta)
-                pub.sendMessage(pubsub_Read_sp_dwp)
-                Sound_Launcher(self, case, self.random_music)
-                self.on_save_data()
-                if a.DefaultDict['use_database'] is True:
-                    d.on_fill_database_and_list(case)
+            self.on_finish_fit(png, error, label)
+            self.information_text.SetLabel(label)
+            self.on_save_data()
+            pub.sendMessage(pubsub_Draw_XRD)
+            pub.sendMessage(pubsub_OnFit_Graph, b=1)
+            pub.sendMessage(pubsub_Update_deformation_multiplicator_coef)
+            pub.sendMessage(pubsub_update_sp_dwp_eta)
+            pub.sendMessage(pubsub_Read_sp_dwp)
+            Sound_Launcher(self, case, self.random_music)
+            if a.DefaultDict['use_database'] is True:
+                d.on_fill_database_and_list(case)
+            if not a.lmfit_install:
+                pub.sendMessage(pubsub_Update_Fit_Live)
 
     def on_finish_fit(self, png, error, label):
+        """
+        Affichage de l'image et du texte de fin de fit
+        Fit ended normally
+        Fit aborted by user
+        ecriture dans le fichier log
+        """
         self.information_icon.SetBitmap(png)
         self.information_icon.Show()
         self.residual_error_txt.Show()
@@ -457,6 +518,10 @@ class FittingPanel(scrolled.ScrolledPanel):
         self.Layout()
 
     def on_save_data(self):
+        """
+        sauvegarde des données des champs
+        lecture des champs
+        """
         a = P4Rm()
         b = SaveFile4Diff()
         if a.pathfromDB == 1:
@@ -465,6 +530,9 @@ class FittingPanel(scrolled.ScrolledPanel):
         b.on_save_from_fit()
 
     def on_disenable_notebook(self, case):
+        """
+        Active et deactive les onglets en fonction des besoins du fit
+        """
         a = P4Rm()
         self.parent.notebook.EnableTab(0, case)
         self.parent.notebook.EnableTab(1, case)
@@ -477,6 +545,10 @@ class FittingPanel(scrolled.ScrolledPanel):
                 self.parent.notebook.EnableTab(4, False)
 
     def on_live(self, event):
+        """
+        recupere les données provenant du thread du fit et
+        mise à jour des champs et des graphs
+        """
         list4live = event.GetValue()
         stopFit = event.StopFit()
         if list4live[0] != []:
@@ -492,6 +564,10 @@ class FittingPanel(scrolled.ScrolledPanel):
             pub.sendMessage(pubsub_OnFit_Graph, b=1)
 
     def on_stop_fit(self, event):
+        """
+        A la fin du fit permet d'afficher le pop image soit l'icone du prog
+        soit morpheus_matrix de manière aléatoire
+        """
         b = Fitting4Radmax()
         l_numb = [2, 24, 56, 89]
         if self.random_thread_image in l_numb:
@@ -502,9 +578,12 @@ class FittingPanel(scrolled.ScrolledPanel):
         AS.AdvancedSplash(None, bitmap=bmp, timeout=2000,
                           agwStyle=AS.AS_TIMEOUT | AS.AS_CENTER_ON_PARENT,
                           shadowcolour=shadow)
-        b.on_stop_fit(1)
+        b.on_stop_fit()
 
     def on_restore(self, event):
+        """
+        Permet de recuperer les valeurs d'avant le fit avec les boutons restore
+        """
         a = P4Rm()
         widget = event.GetId()
         if widget == self.Restore_strain_Id:
@@ -520,6 +599,10 @@ class FittingPanel(scrolled.ScrolledPanel):
         self.param_change_txt.SetLabel(str(param))
 
     def on_update_limit(self, event):
+        """
+        controle du bouton led qui change de couleur en rouge lorsqu'un
+        parametre depasse la limite
+        """
         val = event.GetValue()
         if val != -1:
             led_work = self.led
@@ -529,7 +612,17 @@ class FittingPanel(scrolled.ScrolledPanel):
             led_work.SetState(0)
         pub.sendMessage(pubsub_on_update_limit, val=val)
 
+    def on_update_nb_cycle(self, event):
+        """
+        Mise à jour du nombre de cycle effectué
+        """
+        val = event.GetValue()
+        self.live_Nb_cycle.SetLabel(str(val))
+
     def gauge2zero(self):
+        """
+        remise à zero des objets de suivi du fit
+        """
         self.information_icon.Hide()
         self.information_text.SetLabel("")
         self.residual_error_txt.Hide()
@@ -537,7 +630,9 @@ class FittingPanel(scrolled.ScrolledPanel):
         self.Refresh()
 
     def on_search_empty_fields(self):
-        """search for empty field"""
+        """
+        Verification des champs, recherche des champs vide
+        """
         check_empty = True
         empty_fields = []
         for ii in range(len(self.data_fields)):
@@ -560,6 +655,9 @@ class FittingPanel(scrolled.ScrolledPanel):
         return check_empty
 
     def is_number(self, s):
+        """
+        test si la valeur du champ est bien un float
+        """
         try:
             float(s)
             return True
@@ -567,6 +665,10 @@ class FittingPanel(scrolled.ScrolledPanel):
             return False
 
     def is_data_float(self):
+        """
+        test si la valeur du champ est bien un float
+        ecrit les données dans P4Rm.fitting_parameters
+        """
         IsFloat = []
         dataFloat = True
         for i in range(len(self.data_fields)):

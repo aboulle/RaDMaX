@@ -28,7 +28,7 @@ pubsub_Read_field_Fit = "ReadFieldFit"
 
 pubsub_Save_Param_and_quit = "SaveParamAndQuit"
 pubsub_Hide_Show_Option = "HideShowOption"
-pubsub_Close_OptionWindow = "CloseOptionWindow"
+#pubsub_Close_OptionWindow = "CloseOptionWindow"
 pubsub_Open_Option_Window = "OpenOptionWindow"
 
 
@@ -37,11 +37,13 @@ class ParametersWindow(wx.Frame):
     def __init__(self, parent):
         pos = wx.DefaultPosition
         size = (580, 522)
-        style = (wx.SYSTEM_MENU | wx.CAPTION |
+        style = (wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX |
                  wx.CLIP_CHILDREN | wx.FRAME_FLOAT_ON_PARENT)
         wx.Frame.__init__(self, wx.GetApp().TopWindow, wx.ID_ANY,
-                          p4R.Application_name + " - Parameters", pos, size,
-                          style)
+                          p4R.Application_name + " - Fitting options", pos,
+                          size, style)
+
+        self.Bind(wx.EVT_CLOSE, self.on_close)
 
         self.SetIcon(prog_icon.GetIcon())
 
@@ -76,8 +78,7 @@ class ParametersWindow(wx.Frame):
         self.Layout()
         self.aui_mgr.Update()
 #        self.Bind(wx.EVT_SIZE, self.OnSize)
-        pub.subscribe(self.on_close_after_saving, pubsub_Save_Param_and_quit)
-        pub.subscribe(self.on_close, pubsub_Close_OptionWindow)
+        pub.subscribe(self.on_close, pubsub_Save_Param_and_quit)
         pub.subscribe(self.on_open_window, pubsub_Open_Option_Window)
         self.Layout()
 
@@ -85,11 +86,7 @@ class ParametersWindow(wx.Frame):
         self.CenterOnParent()
         self.GetParent().Disable()
 
-    def on_close(self):
-        self.GetParent().Enable()
-        pub.sendMessage(pubsub_Hide_Show_Option, test=1)
-
-    def on_close_after_saving(self):
+    def on_close(self, event):
         self.GetParent().Enable()
         pub.sendMessage(pubsub_Hide_Show_Option, test=1)
 
@@ -630,7 +627,7 @@ class FitParametersPanel(wx.Panel):
 
         txt_ = u'(only for newly created projects)'
         txt_end = wx.StaticText(self, -1, label=txt_,
-                                size=(220, vStatictextsize))
+                                size=(300, vStatictextsize))
         txt_end.SetFont(font_update)
 
         self.apply_1_Id = wx.NewId()
@@ -639,23 +636,11 @@ class FitParametersPanel(wx.Panel):
         self.apply_1.SetFont(font_update)
         self.apply_1.Bind(wx.EVT_BUTTON, self.on_apply_changes)
 
-        self.close_1_Id = wx.NewId()
-        self.close_1 = buttons.GenButton(self, id=self.close_1_Id,
-                                         label="Close")
-        self.close_1.SetFont(font_update)
-        self.close_1.Bind(wx.EVT_BUTTON, self.on_close)
-        self.close_1.SetFont(wx.Font(10, wx.SWISS, wx.NORMAL, wx.BOLD, False))
-        self.close_1.SetBezelWidth(5)
-#        b.SetMinSize(wx.DefaultSize)
-        self.close_1.SetBackgroundColour("red")
-        self.close_1.SetForegroundColour(wx.WHITE)
-
         mastersizer = wx.BoxSizer(wx.VERTICAL)
         horsizer = wx.GridBagSizer(hgap=15, vgap=0)
 
         horsizer.Add(self.default_1, pos=(0, 0), flag=flagSizer)
         horsizer.Add(self.apply_1, pos=(0, 6), flag=flagSizer)
-        horsizer.Add(self.close_1, pos=(0, 10), flag=flagSizer)
 
         mastersizer.Add(Leastsq_box_sizer, 0, wx.ALL, 5)
         mastersizer.Add(AGSA_options_box_sizer, 0, wx.ALL, 5)
@@ -710,9 +695,6 @@ class FitParametersPanel(wx.Panel):
         pub.sendMessage(pubsub_Read_field_Fit)
         event.Skip()
 
-    def on_close(self, event):
-        pub.sendMessage(pubsub_Close_OptionWindow)
-
     def on_save_data(self, event):
         _msg = "Save data as default ?\n" + \
                "This change will be applied for all fit !!\n\n"
@@ -736,7 +718,7 @@ class FitParametersPanel(wx.Panel):
                     b.on_update_config_file_parameters(os.path.join(p4R.current_dir,
                                                                     p4R.filename + '.ini'))
                     P4Rm.Paramwindowtest['FitParametersPanel'] = True
-                    pub.sendMessage(pubsub_Save_Param_and_quit)
+                    pub.sendMessage(pubsub_Save_Param_and_quit, event=event)
             event.Skip()
 
     def on_read_field(self):

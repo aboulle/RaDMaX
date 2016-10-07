@@ -26,7 +26,7 @@ class FitReportWindow(wx.Frame):
         style = (wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX |
                  wx.CLIP_CHILDREN | wx.FRAME_FLOAT_ON_PARENT)
         wx.Frame.__init__(self, wx.GetApp().TopWindow, wx.ID_ANY,
-                          p4R.Application_name + " - Lmfit Leastsq Fit Report",
+                          p4R.Application_name + " - Fitting report",
                           pos, size, style)
         self.Bind(wx.EVT_CLOSE, self.on_close)
 

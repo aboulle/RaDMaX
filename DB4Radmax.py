@@ -17,30 +17,37 @@ import Parameters4Radmax as p4R
 from Parameters4Radmax import P4Rm
 from Calcul4Radmax import Calcul4Radmax
 
-from ObjectListView import ObjectListView, ColumnDefn
+from ObjectListView import FastObjectListView, ColumnDefn
+from ObjectListView import Filter
 
 from datetime import datetime, timedelta
-from time import strftime, gmtime
+from time import strftime, localtime
 
 import os
 from sys import platform as _platform
 import pickle
+from math import floor, log
 
-from Icon4Radmax import prog_icon_curve
+from Icon4Radmax import prog_icon_curve, _bp_btn2
+from Settings4Radmax import TextValidator
 
-from sqlalchemy import Column, DateTime, Integer, String, Float, BLOB
+from sqlalchemy import Column, Integer, String, Float, BLOB
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 pubsub_fill_list_DB = "FillListDB"
 pubsub_sup_data_DB = "DeleteDataFromDB"
 pubsub_refill_list_name_DB = "RefillListNameDB"
 pubsub_search_combobox_DB = "SearchComboboxDB"
+pubsub_update_db_nb_line = "UpdateDBNbLine"
+
+DIGIT_ONLY = 2
 
 Base = declarative_base()
 
@@ -68,13 +75,23 @@ def wxdate2pydate(date):
         return None
 
 
+def convertSize(size):
+    if (size == 0):
+        return '0B'
+    size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+    i = int(floor(log(size, 1024)))
+    p = pow(1024, i)
+    s = round(size / p, 2)
+    return s, size_name[i]
+
+
 # -----------------------------------------------------------------------------
 class RadMaxData(Base):
     __tablename__ = 'RadMaxData'
 
     id = Column(Integer, primary_key=True)
 
-    date = Column(DateTime(timezone=True), server_default=func.now())
+    date = Column(String)
     exp_name = Column(String)
     crys_name = Column(String)
     fit_algo = Column(String)
@@ -115,9 +132,9 @@ class DataBasePanel(scrolled.ScrolledPanel):
         self.statusbar = statusbar
         self.parent = parent
 
-        self.list = ObjectListView(self, sortable=False,
-                                   style=wx.LC_REPORT | wx.SUNKEN_BORDER,
-                                   size=(920, 380))
+        self.list = FastObjectListView(self, sortable=True,
+                                       style=wx.LC_REPORT | wx.SUNKEN_BORDER,
+                                       size=(950, 350))
         self.list.handleStandardKeys = False
         self.list.SetEmptyListMsg("This database has no rows")
         self.list.SetEmptyListMsgFont(wx.FFont(24, wx.DEFAULT,
@@ -126,14 +143,16 @@ class DataBasePanel(scrolled.ScrolledPanel):
         self.width_date = 170
         self.width = 100
         self.width_model = 130
+        self.check_date = 0
 
         self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnItemSelected, self.list)
         self.Bind(wx.EVT_LIST_COL_CLICK, self.OnItemSelected, self.list)
 
         mastersizer = wx.BoxSizer(wx.HORIZONTAL)
-        mastersizer.Add(self.list, 0,  wx.ALL, 5)
+        mastersizer.Add(self.list, 0, wx.ALL, 5)
 
         pub.subscribe(self.fill_list, pubsub_fill_list_DB)
+        pub.subscribe(self.re_fill_list, pubsub_update_db_nb_line)
 
         self.SetSizer(mastersizer)
         self.Layout()
@@ -148,7 +167,7 @@ class DataBasePanel(scrolled.ScrolledPanel):
         ic_ = prog_icon_curve.GetBitmap()
         ImageIndex = self.list.AddImages(ic_)
         self.list.AddNamedImages("date", ic_)
-        for i in range(len(headercolumnname)-1):
+        for i in range(len(headercolumnname) - 1):
             if i == 0:
                 temp.append(ColumnDefn(headercolumnname[i], "center",
                                        self.width_date,
@@ -167,6 +186,7 @@ class DataBasePanel(scrolled.ScrolledPanel):
         self.list.SetColumns(temp)
 
     def fill_list(self, case, l):
+        a = P4Rm()
         self.Freeze()
         if case == 0:
             self.list.SetObjects(l)
@@ -175,26 +195,38 @@ class DataBasePanel(scrolled.ScrolledPanel):
             pub.sendMessage(pubsub_refill_list_name_DB)
             pub.sendMessage(pubsub_search_combobox_DB)
         objects = self.list.GetObjects()
+        self.list.SortBy(0, ascending=False)
+        if a.db_nb_line is not -1:
+            self.list.SetFilter(Filter.Head(a.db_nb_line))
+            self.list.RepopulateList()
+        else:
+            self.list.SetFilter(None)
         self.list.RefreshObjects(objects)
         self.Thaw()
 
+    def re_fill_list(self):
+        a = P4Rm()
+        self.Freeze()
+        if a.db_nb_line is not -1:
+            self.list.SortBy(0, ascending=False)
+            self.list.SetFilter(Filter.Head(a.db_nb_line))
+        else:
+            self.list.SetFilter(None)
+        self.list.RepopulateList()
+        self.Thaw()
+
     def OnItemSelected(self, event):
-        objects = self.list.GetObjects()
         if 'phoenix' in wx.PlatformInfo:
             currentline = event.Index
         else:
             currentline = event.m_itemIndex
-        date = 0
-        count = 0
-        for obj in objects:
-            if count == currentline:
-                date = obj.date
-                break
-            else:
-                count += 1
-        if not currentline == -1:
-            c = DataBaseUse()
-            c.on_item_selected(date)
+        if currentline is not -1:
+            obj = self.list.GetSelectedObject()
+            try:
+                c = DataBaseUse()
+                c.on_item_selected(obj.date)
+            except (AttributeError):
+                pass
 
 
 # -----------------------------------------------------------------------------
@@ -210,18 +242,30 @@ class DataBaseManagement(scrolled.ScrolledPanel):
             font = wx.Font(10, wx.DEFAULT, wx.ITALIC, wx.BOLD)
             font_combobox = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL,
                                     False, u'Arial')
+            font_TextCtrl = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL,
+                                    False, u'Arial')
+            vStatictextsize = 16
+            size_text = (85, 22)
         elif _platform == "win32":
             size_StaticBox = (960, 140)
             size_combobox = (130, -1)
             font = wx.Font(9, wx.DEFAULT, wx.ITALIC, wx.BOLD)
             font_combobox = wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL,
                                     False, u'Arial')
+            font_TextCtrl = wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL,
+                                    False, u'Arial')
+            vStatictextsize = 16
+            size_text = (85, 22)
         elif _platform == 'darwin':
             size_StaticBox = (980, 140)
             size_combobox = (130, -1)
             font = wx.Font(12, wx.DEFAULT, wx.ITALIC, wx.BOLD)
             font_combobox = wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.NORMAL,
                                     False, u'Arial')
+            font_TextCtrl = wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.NORMAL,
+                                    False, u'Arial')
+            vStatictextsize = 18
+            size_text = (85, 22)
 
         flagSizer = wx.ALL | wx.ALIGN_CENTER_VERTICAL
         """Action box"""
@@ -240,6 +284,7 @@ class DataBaseManagement(scrolled.ScrolledPanel):
         self.rb1.Bind(wx.EVT_RADIOBUTTON, self.on_set_val)
         self.rb2.Bind(wx.EVT_RADIOBUTTON, self.on_set_val)
         self.state = [True, False]
+        self.rb1.SetValue(True)
 
         in_action_box_sizer.Add(self.rb1, pos=(0, 0), flag=flagSizer)
         in_action_box_sizer.Add(self.rb2, pos=(2, 0), flag=flagSizer)
@@ -322,12 +367,12 @@ class DataBaseManagement(scrolled.ScrolledPanel):
         now = wx.DateTime().Today()
         self.dpc_1 = DatePickerCtrl(self, size=(120, -1),
                                     style=DP_DROPDOWN |
-                                    DP_SHOWCENTURY |
-                                    DP_ALLOWNONE)
+                                          DP_SHOWCENTURY |
+                                          DP_ALLOWNONE)
         self.dpc_2 = DatePickerCtrl(self, size=(120, -1),
                                     style=DP_DROPDOWN |
-                                    DP_SHOWCENTURY |
-                                    DP_ALLOWNONE)
+                                          DP_SHOWCENTURY |
+                                          DP_ALLOWNONE)
         self.Bind(EVT_DATE_CHANGED, self.on_select_combobox, self.dpc_1)
         self.Bind(EVT_DATE_CHANGED, self.on_select_combobox, self.dpc_2)
         self.dpc_1.SetValue(now)
@@ -345,6 +390,22 @@ class DataBaseManagement(scrolled.ScrolledPanel):
         self.search_btn = wx.Button(self, id=self.search_Id, label=" Search")
         self.search_btn.Bind(wx.EVT_BUTTON, self.on_search_in_DB)
 
+        txt_db = u'DataBase number of lines:'
+        db_nb_lines_txt = wx.StaticText(self, -1, label=txt_db,
+                                        size=(180, vStatictextsize))
+        self.db_nb_lines = wx.TextCtrl(self, style=wx.TE_PROCESS_ENTER,
+                                       size=size_text,
+                                       validator=TextValidator(DIGIT_ONLY))
+        self.db_nb_lines.SetFont(font_TextCtrl)
+        self.db_nb_lines.SetValue(str(100))
+        P4Rm.db_nb_line = 100
+
+        bmp = _bp_btn2.GetBitmap()
+        self.nb_lines_btn = wx.BitmapButton(self, -1, bmp)
+        self.nb_lines_btn.SetToolTipString("Update database list")
+        self.Bind(wx.EVT_BUTTON, self.nb_lines_DB, id=self.nb_lines_btn.GetId())
+        self.Bind(wx.EVT_TEXT_ENTER, self.nb_lines_DB, self.db_nb_lines)
+
         self.cb_list = [cb_name, cb_crystal, cb_geom, cb_model, cb_date]
 
         self.combo_list = [self.name, self.crystal,
@@ -353,7 +414,12 @@ class DataBaseManagement(scrolled.ScrolledPanel):
             self.combo_list[i].Disable()
 
         mastersizer = wx.BoxSizer(wx.VERTICAL)
+        DBLine = wx.BoxSizer(wx.HORIZONTAL)
         choice_sizer = wx.GridBagSizer(hgap=8, vgap=4)
+
+        DBLine.Add(db_nb_lines_txt, 0, flag=flagSizer)
+        DBLine.Add(self.db_nb_lines, 0, flag=flagSizer)
+        DBLine.Add(self.nb_lines_btn, 0, wx.LEFT | wx.ALIGN_CENTER_VERTICAL, 5)
 
         choice_sizer.Add(cb_name, pos=(0, 0), flag=flagSizer)
         choice_sizer.Add(self.name, pos=(0, 1), flag=flagSizer)
@@ -375,11 +441,15 @@ class DataBaseManagement(scrolled.ScrolledPanel):
         choice_sizer.Add(self.search_btn, pos=(6, 0), flag=flagSizer)
 
         mastersizer.Add(action_box_sizer, 0, wx.ALL, 5)
-        mastersizer.Add(choice_sizer, 0, wx.ALL, 20)
+        mastersizer.Add(DBLine, 0, wx.ALL, 10)
+        mastersizer.Add(choice_sizer, 0, wx.ALL, 10)
 
-        pub.subscribe(self.on_delete_data, pubsub_sup_data_DB)
-        pub.subscribe(self.on_add_new_name_to_combobox, pubsub_refill_list_name_DB)
-        pub.subscribe(self.on_search_in_DB, pubsub_search_combobox_DB)
+        pub.subscribe(self.on_delete_data,
+                      pubsub_sup_data_DB)
+        pub.subscribe(self.on_add_new_name_to_combobox,
+                      pubsub_refill_list_name_DB)
+        pub.subscribe(self.on_search_in_DB,
+                      pubsub_search_combobox_DB)
 
         self.SetSizer(mastersizer)
         self.Layout()
@@ -451,6 +521,11 @@ class DataBaseManagement(scrolled.ScrolledPanel):
             else:
                 self.dpc_2.Hide()
 
+    def nb_lines_DB(self, event):
+        obj = self.db_nb_lines.GetValue()
+        P4Rm.db_nb_line = int(obj)
+        pub.sendMessage(pubsub_update_db_nb_line)
+
     def on_search_in_DB(self, event=None):
         list_temp = []
         P4Rm.DBDict['choice_state'] = self.rb1.GetValue()
@@ -471,7 +546,7 @@ class DataBaseManagement(scrolled.ScrolledPanel):
         _msg = "Do you really want to delete these datas?"
         dlg = GMD.GenericMessageDialog(None, _msg, "Confirm Suppression",
                                        agwStyle=wx.OK | wx.CANCEL |
-                                       wx.ICON_QUESTION)
+                                                wx.ICON_QUESTION)
         result = dlg.ShowModal()
         dlg.Destroy()
         if result == wx.ID_OK:
@@ -493,7 +568,15 @@ class DataBaseManagement(scrolled.ScrolledPanel):
 
 
 # -----------------------------------------------------------------------------
+# noinspection PyRedundantParentheses
 class DataBaseUse():
+    @staticmethod
+    def create_engine(path):
+        if _platform == "linux" or _platform == "linux2" or _platform == 'darwin':
+            # Unix/Mac - 4 initial slashes in total
+            P4Rm.DBDict['engine'] = create_engine('sqlite:////' + path)
+        elif _platform == "win32":
+            P4Rm.DBDict['engine'] = create_engine(r'sqlite:///' + path)
 
     def initialize_database(self):
         """
@@ -501,23 +584,39 @@ class DataBaseUse():
         sqlalchemy_example.db file.
         """
         a = P4Rm()
-        path = os.path.join(p4R.database_path,  p4R.Database_name + '.db')
-        logger.log(logging.WARNING, 'test')
-
-        if _platform == "linux" or _platform == "linux2" or _platform == 'darwin':
-            # Unix/Mac - 4 initial slashes in total
-            P4Rm.DBDict['engine'] = create_engine('sqlite:////' + path)
-        elif _platform == "win32":
-            P4Rm.DBDict['engine'] = create_engine(r'sqlite:///' + path)
+        logger.log(logging.WARNING, 'Loading or creates database')
 
         if not os.path.isdir(p4R.database_path):
             msg = p4R.database_path + " is not present, creates one !"
             logger.log(logging.WARNING, msg)
             os.makedirs(p4R.database_path)
-        if not os.path.isdir(path):
+        path = os.path.join(p4R.database_path, p4R.Database_name + '.db')
+        if not os.path.isfile(path):
             msg = p4R.Database_name + " is not present, creates one !"
             logger.log(logging.WARNING, msg)
-            Base.metadata.create_all(a.DBDict['engine'])
+
+        self.create_engine(path)
+        Base.metadata.create_all(a.DBDict['engine'])
+
+        """ test size of the DB """
+        statinfo = os.stat(path)
+        size, size_name = convertSize(statinfo.st_size)
+        if size_name in ["MB"]:
+            if size > 500:
+                print ("Size of the Database file is too high: ",
+                       '%s %s' % (size, size_name))
+                print ("Making of backup file")
+                old_name = os.path.join(p4R.database_path,
+                                        p4R.Database_name + '.db')
+                new_name = os.path.join(p4R.database_path,
+                                        p4R.Database_name + '_backup.db')
+                msg = ("Size of the Database file is too high, " +
+                       "create a backup file")
+                logger.log(logging.WARNING, msg)
+                os.rename(old_name, new_name)
+                self.create_engine(path)
+                Base.metadata.create_all(a.DBDict['engine'])
+
         Base.metadata.bind = a.DBDict['engine']
         DBSession = sessionmaker(bind=a.DBDict['engine'])
         P4Rm.DBDict['session'] = DBSession()
@@ -527,10 +626,11 @@ class DataBaseUse():
             s = a.DBDict['session'].query(RadMaxData).order_by(RadMaxData.id)
             self.on_read_database_and_fill_list(s)
 
-    def on_read_database_and_fill_list(self, search):
+    @staticmethod
+    def on_read_database_and_fill_list(search):
         list_temp = []
         for instance in search:
-            date = datetime.strftime(instance.date, '%Y-%m-%d %H:%M:%S')
+            date = instance.date
             exp_name = instance.exp_name
             crys_name = instance.crys_name
             fit_algo = instance.fit_algo
@@ -544,9 +644,11 @@ class DataBaseUse():
                                           str(geometry), str(model)))
         pub.sendMessage(pubsub_fill_list_DB, case=0, l=list_temp)
 
-    def on_fill_database_and_list(self, success):
+    @staticmethod
+    def on_fill_database_and_list(success):
         a = P4Rm()
-        date = strftime("%Y-%m-%d %H:%M:%S", gmtime())
+        current_time = localtime()
+        date = strftime('%Y-%m-%d %H:%M:%S', current_time)
         exp_name = a.PathDict['project_name']
         crys_name = a.AllDataDict['crystal_name']
         fit_algo = p4R.FitAlgo_choice[a.fit_type]
@@ -561,7 +663,7 @@ class DataBaseUse():
         pathDict = pickle.dumps(a.PathDict, protocol=2)
         xrd_data = pickle.dumps(a.ParamDict['data_xrd'], protocol=2)
 
-        data = RadMaxData(exp_name=exp_name, crys_name=crys_name,
+        data = RadMaxData(date=date, exp_name=exp_name, crys_name=crys_name,
                           fit_algo=fit_algo, fit_success=fit_success,
                           residual=residual, geometry=geometry, model=model,
                           alldata=alldata, spdata=spdata, dwpdata=dwpdata,
@@ -574,7 +676,8 @@ class DataBaseUse():
                          str(geometry), str(model))
         pub.sendMessage(pubsub_fill_list_DB, case=1, l=t)
 
-    def on_item_selected(self, date):
+    @staticmethod
+    def on_item_selected(date):
         a = P4Rm()
         b = Calcul4Radmax()
 
@@ -582,8 +685,12 @@ class DataBaseUse():
         P4Rm.AllDataDict = pickle.loads(read_exp.alldata)
         P4Rm.ParamDict['sp'] = pickle.loads(read_exp.spdata)
         P4Rm.ParamDict['dwp'] = pickle.loads(read_exp.dwpdata)
-        P4Rm.ParamDict['data_xrd'] = pickle.loads(read_exp.xrd_data)
         P4Rm.PathDict = pickle.loads(read_exp.pathDict)
+        try:
+            P4Rm.ParamDict['data_xrd'] = pickle.loads(read_exp.xrd_data, encoding='latin1')
+        #            encoding pour python 3 afin de lire les données enregistrees en python 2
+        except (TypeError):
+            P4Rm.ParamDict['data_xrd'] = pickle.loads(read_exp.xrd_data)
 
         b.on_load_from_Database()
         path_ini = a.PathDict['path2inicomplete']
@@ -592,24 +699,22 @@ class DataBaseUse():
         else:
             P4Rm.pathfromDB = 0
 
-    def on_read_part_DB(self):
+    @staticmethod
+    def on_read_part_DB():
         a = P4Rm()
         read_name = a.DBDict['session'].query(func.count(RadMaxData.exp_name),
-                                       RadMaxData.exp_name).group_by(RadMaxData.exp_name).all()
+                                              RadMaxData.exp_name).group_by(RadMaxData.exp_name).all()
         P4Rm.DBDict['name'] = [name for (num, name) in read_name]
 
     def on_search_in_DB(self):
         a = P4Rm()
         temp = []
         test = []
-        test.append(RadMaxData.exp_name)
-        test.append(RadMaxData.crys_name)
-        test.append(RadMaxData.geometry)
-        test.append(RadMaxData.model)
-        test.append(RadMaxData.date)
+        test = [RadMaxData.exp_name, RadMaxData.crys_name, RadMaxData.geometry,
+                RadMaxData.model, RadMaxData.date]
 
         for i in range(len(a.DBDict['choice_combo'])):
-            if not a.DBDict['choice_combo'][i] == None:
+            if not a.DBDict['choice_combo'][i] is None:
                 if a.DBDict['choice_combo'][i] == 'equal':
                     the_day = datetime.strptime(a.DBDict['date_1'],
                                                 "%Y-%m-%d %H:%M:%S")
@@ -634,7 +739,8 @@ class DataBaseUse():
             [a.DBDict['session'].delete(x) for x in s]
             pub.sendMessage(pubsub_sup_data_DB)
 
-    def on_delete_data(self):
+    @staticmethod
+    def on_delete_data():
         a = P4Rm()
         a.DBDict['session'].commit()
         a.DBDict['engine'].execute("VACUUM")

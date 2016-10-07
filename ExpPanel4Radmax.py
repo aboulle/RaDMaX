@@ -3,9 +3,9 @@
 # Author: A_BOULLE & M_SOUILAH
 # Radmax project
 
-#==============================================================================
+# =============================================================================
 # Radmax Cell Parameters module
-#==============================================================================
+# =============================================================================
 
 
 import wx
@@ -27,13 +27,12 @@ from Calcul4Radmax import Calcul4Radmax
 import logging
 logger = logging.getLogger(__name__)
 
-
 DIGIT_ONLY = 2
 
 """New Project initial data"""
-New_project_initial = [1.48806, 0.013, 0.00001, 5e-6, 1, 1, 0, 0, 5.4135,
-                       5.4135, 5.4135, 90, 90, 90, 0, 10, 10, 3500, 70]
-
+New_project_initial = [1.5406, 5e-6, 0.013, 0.013, 0.00001, 0.00001, 2,
+                       1, 1, 0, 0, 5.4135, 5.4135, 5.4135, 90, 90, 90,
+                       0, 10, 10, 3500, 70]
 """Pubsub message"""
 
 pubsub_Load_project = "LoadProject"
@@ -61,9 +60,11 @@ pubsub_update_crystal_list = "UpdateCrystalList"
 pubsub_test_some_field = "TestSomeField"
 pubsub_change_update_btn_state = "ChangeUpdateButtonState"
 pubsub_update_sp_dwp_eta = "UpdatespdwpEta"
+pubsub_change_damaged_depth_color = "ChangeDamagedDepthColor"
+pubsub_update_from_damaged = "UpdateFromDamaged"
 
 
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 class InitialDataPanel(scrolled.ScrolledPanel):
     """
     Initial Parameters main panel
@@ -85,6 +86,7 @@ class InitialDataPanel(scrolled.ScrolledPanel):
         if _platform == "linux" or _platform == "linux2":
             size_StaticBox = (950, 140)
             crystal_combobox = (110, -1)
+            function_combobox = (130, -1)
             symmetry_combobox = (90, -1)
             size_lattp = 150
             size_damdept = 130
@@ -102,6 +104,7 @@ class InitialDataPanel(scrolled.ScrolledPanel):
         elif _platform == "win32":
             size_StaticBox = (960, 140)
             crystal_combobox = (80, -1)
+            function_combobox = (100, -1)
             symmetry_combobox = (80, -1)
             size_lattp = 135
             size_damdept = 115
@@ -119,6 +122,7 @@ class InitialDataPanel(scrolled.ScrolledPanel):
         elif _platform == 'darwin':
             size_StaticBox = (980, 140)
             crystal_combobox = (80, -1)
+            function_combobox = (130, -1)
             symmetry_combobox = (80, -1)
             size_lattp = 150
             size_damdept = 130
@@ -149,49 +153,132 @@ class InitialDataPanel(scrolled.ScrolledPanel):
         wavelength_txt = wx.StaticText(self, -1, label=u'Wavelength (\u212B)',
                                        size=(100, vStatictextsize))
         wavelength_txt.SetFont(font_Statictext)
-        self.wavelength = wx.TextCtrl(self, size=size_text,
+        self.wavelength = wx.TextCtrl(self, style=wx.TE_PROCESS_ENTER,
+                                      size=size_text,
                                       validator=TextValidator(DIGIT_ONLY))
         self.wavelength.SetFont(font_TextCtrl)
-
-        resolution_txt = wx.StaticText(self, -1, label=u'Resolution (°)',
-                                       size=(90, vStatictextsize))
-        resolution_txt.SetFont(font_Statictext)
-        self.resolution = wx.TextCtrl(self, size=size_text,
-                                      validator=TextValidator(DIGIT_ONLY))
-        self.resolution.SetFont(font_TextCtrl)
-
-        shape_txt = wx.StaticText(self, -1, label=u'Shape',
-                                  size=(45, vStatictextsize))
-        shape_txt.SetFont(font_Statictext)
-        self.shape = wx.TextCtrl(self, size=size_text,
-                                 validator=TextValidator(DIGIT_ONLY))
-        self.shape.SetFont(font_TextCtrl)
 
         bckground_txt = wx.StaticText(self, -1, label=u'Background',
                                       size=(75, vStatictextsize))
         bckground_txt.SetFont(font_Statictext)
-        self.bckground = wx.TextCtrl(self, size=size_text,
+        self.bckground = wx.TextCtrl(self, style=wx.TE_PROCESS_ENTER,
+                                     size=size_text,
                                      validator=TextValidator(DIGIT_ONLY))
         self.bckground.SetFont(font_TextCtrl)
+
+        fitfunction_txt = wx.StaticText(self, -1, label=u'Resolution function',
+                                        size=(110, vStatictextsize))
+        fitfunction_txt.SetFont(font_Statictext)
+        self.cb_fitfunction = wx.ComboBox(self, pos=(50, 30),
+                                          choices=p4R.FitFunction,
+                                          style=wx.CB_READONLY,
+                                          size=function_combobox)
+        self.cb_fitfunction.SetStringSelection(p4R.FitFunction[2])
+        self.cb_fitfunction.SetFont(font_combobox)
+        self.Bind(wx.EVT_COMBOBOX, self.on_change_function,
+                  self.cb_fitfunction)
+
+        """parametre FWHM=Resolution"""
+        self.fwhml_txt = wx.StaticText(self, -1, label=u'Width (°)',
+                                       size=(80, vStatictextsize))
+        self.fwhml_txt.SetFont(font_Statictext)
+        self.fwhml = wx.TextCtrl(self, style=wx.TE_PROCESS_ENTER,
+                                 size=size_text,
+                                 validator=TextValidator(DIGIT_ONLY))
+        self.fwhml.SetFont(font_TextCtrl)
+
+        self.fwhmr_txt = wx.StaticText(self, -1, label=u'Width right (°)',
+                                       size=(80, vStatictextsize))
+        self.fwhmr_txt.SetFont(font_Statictext)
+        self.fwhmr = wx.TextCtrl(self, style=wx.TE_PROCESS_ENTER,
+                                 size=size_text,
+                                 validator=TextValidator(DIGIT_ONLY))
+        self.fwhmr.SetFont(font_TextCtrl)
+
+        """parametre eta=shape"""
+        self.shapel_txt = wx.StaticText(self, -1, label=u'Shape',
+                                        size=(80, vStatictextsize))
+        self.shapel_txt.SetFont(font_Statictext)
+        self.shapel = wx.TextCtrl(self, style=wx.TE_PROCESS_ENTER,
+                                  size=size_text,
+                                  validator=TextValidator(DIGIT_ONLY))
+        self.shapel.SetFont(font_TextCtrl)
+
+        self.shaper_txt = wx.StaticText(self, -1, label=u'Shape right',
+                                        size=(80, vStatictextsize))
+        self.shaper_txt.SetFont(font_Statictext)
+        self.shaper = wx.TextCtrl(self, style=wx.TE_PROCESS_ENTER,
+                                  size=size_text,
+                                  validator=TextValidator(DIGIT_ONLY))
+        self.shaper.SetFont(font_TextCtrl)
+
+        self.b_bell_txt = wx.StaticText(self, -1, label=u'b',
+                                        size=(45, vStatictextsize))
+        self.b_bell_txt.SetFont(font_Statictext)
+        self.b_bell = wx.TextCtrl(self, style=wx.TE_PROCESS_ENTER,
+                                  size=size_text,
+                                  validator=TextValidator(DIGIT_ONLY))
+        self.b_bell.SetFont(font_TextCtrl)
 
         in_Experiment_box_sizer.Add(wavelength_txt, pos=(0, 0),
                                     flag=flagSizer)
         in_Experiment_box_sizer.Add(self.wavelength, pos=(0, 1),
                                     flag=flagSizer)
-        in_Experiment_box_sizer.Add(resolution_txt, pos=(0, 2),
+        in_Experiment_box_sizer.Add(bckground_txt, pos=(1, 0),
                                     flag=flagSizer)
-        in_Experiment_box_sizer.Add(self.resolution, pos=(0, 3),
+        in_Experiment_box_sizer.Add(self.bckground, pos=(1, 1),
                                     flag=flagSizer)
-        in_Experiment_box_sizer.Add(shape_txt, pos=(0, 4),
+        in_Experiment_box_sizer.Add(fitfunction_txt, pos=(0, 2),
                                     flag=flagSizer)
-        in_Experiment_box_sizer.Add(self.shape, pos=(0, 5),
+        in_Experiment_box_sizer.Add(self.cb_fitfunction, pos=(0, 3),
                                     flag=flagSizer)
-        in_Experiment_box_sizer.Add(bckground_txt, pos=(0, 6),
+        """resolution = FWHM droit et gauche"""
+        in_Experiment_box_sizer.Add(self.fwhml_txt, pos=(0, 4),
                                     flag=flagSizer)
-        in_Experiment_box_sizer.Add(self.bckground, pos=(0, 7),
+        in_Experiment_box_sizer.Add(self.fwhml, pos=(0, 5),
+                                    flag=flagSizer)
+        in_Experiment_box_sizer.Add(self.fwhmr_txt, pos=(1, 4),
+                                    flag=flagSizer)
+        in_Experiment_box_sizer.Add(self.fwhmr, pos=(1, 5),
+                                    flag=flagSizer)
+        """shape = eta droit et gauche"""
+        in_Experiment_box_sizer.Add(self.shapel_txt, pos=(0, 6),
+                                    flag=flagSizer)
+        in_Experiment_box_sizer.Add(self.shapel, pos=(0, 7),
+                                    flag=flagSizer)
+        in_Experiment_box_sizer.Add(self.shaper_txt, pos=(1, 6),
+                                    flag=flagSizer)
+        in_Experiment_box_sizer.Add(self.shaper, pos=(1, 7),
+                                    flag=flagSizer)
+        """b = b fonction gBell"""
+        in_Experiment_box_sizer.Add(self.b_bell_txt, pos=(0, 8),
+                                    flag=flagSizer)
+        in_Experiment_box_sizer.Add(self.b_bell, pos=(0, 9),
                                     flag=flagSizer)
 
         Experiment_box_sizer.Add(in_Experiment_box_sizer, 0, wx.ALL, 5)
+
+        self.func_list = [self.fwhml_txt, self.fwhml,
+                          self.fwhmr_txt, self.fwhmr,
+                          self.shapel_txt, self.shapel,
+                          self.shaper_txt, self.shaper,
+                          self.b_bell_txt, self.b_bell
+                          ]
+        self.b_bell.AppendText(str(p4R.FitFunction_value['b_func']))
+        self.fwhmr.AppendText(str(p4R.FitFunction_value['resolr']))
+        self.shaper.AppendText(str(p4R.FitFunction_value['shaper']))
+        P4Rm.ParamDict['b_func'] = p4R.FitFunction_value['b_func']
+        P4Rm.ParamDict['resolr'] = p4R.FitFunction_value['resolr']
+        P4Rm.ParamDict['shaper'] = p4R.FitFunction_value['shaper']
+
+        l = ["S", "S", "H", "H", "S", "S", "H", "H", "H", "H"]
+        for i in range(len(self.func_list)):
+            if l[i] is "S":
+                self.func_list[i].Show()
+            elif l[i] is "H":
+                self.func_list[i].Hide()
+        funky = p4R.FitFunction.index("Pseudo-Voigt")
+        P4Rm.ParamDict['func_profile'] = p4R.FitFunction_choice[funky]
 
         """Material part"""
         Material_box = wx.StaticBox(self, -1, " Material ",
@@ -232,21 +319,24 @@ class InitialDataPanel(scrolled.ScrolledPanel):
         h_direction_txt = wx.StaticText(self, -1, label=u'h',
                                         size=(10, vStatictextsize))
         h_direction_txt.SetFont(font_Statictext)
-        self.h_direction = wx.TextCtrl(self, size=size_value_hkl,
+        self.h_direction = wx.TextCtrl(self, style=wx.TE_PROCESS_ENTER,
+                                       size=size_value_hkl,
                                        validator=TextValidator(DIGIT_ONLY))
         self.h_direction.SetFont(font_TextCtrl)
 
         k_direction_txt = wx.StaticText(self, -1, label=u'k',
                                         size=(10, vStatictextsize))
         k_direction_txt.SetFont(font_Statictext)
-        self.k_direction = wx.TextCtrl(self, size=size_value_hkl,
+        self.k_direction = wx.TextCtrl(self, style=wx.TE_PROCESS_ENTER,
+                                       size=size_value_hkl,
                                        validator=TextValidator(DIGIT_ONLY))
         self.k_direction.SetFont(font_TextCtrl)
 
         l_direction_txt = wx.StaticText(self, -1, label=u'l',
                                         size=(10, vStatictextsize))
         l_direction_txt.SetFont(font_Statictext)
-        self.l_direction = wx.TextCtrl(self, size=size_value_hkl,
+        self.l_direction = wx.TextCtrl(self, style=wx.TE_PROCESS_ENTER,
+                                       size=size_value_hkl,
                                        validator=TextValidator(DIGIT_ONLY))
         self.l_direction.SetFont(font_TextCtrl)
 
@@ -261,21 +351,24 @@ class InitialDataPanel(scrolled.ScrolledPanel):
         a_param_txt = wx.StaticText(self, -1, label=u'a',
                                     size=(10, vStatictextsize))
         a_param_txt.SetFont(font_Statictext)
-        self.a_param = wx.TextCtrl(self, size=size_value_lattice,
+        self.a_param = wx.TextCtrl(self, style=wx.TE_PROCESS_ENTER,
+                                   size=size_value_lattice,
                                    validator=TextValidator(DIGIT_ONLY))
         self.a_param.SetFont(font_TextCtrl)
 
         b_param_txt = wx.StaticText(self, -1, label=u'b',
                                     size=(10, vStatictextsize))
         b_param_txt.SetFont(font_Statictext)
-        self.b_param = wx.TextCtrl(self, size=size_value_lattice,
+        self.b_param = wx.TextCtrl(self, style=wx.TE_PROCESS_ENTER,
+                                   size=size_value_lattice,
                                    validator=TextValidator(DIGIT_ONLY))
         self.b_param.SetFont(font_TextCtrl)
 
         c_param_txt = wx.StaticText(self, -1, label=u'c',
                                     size=(10, vStatictextsize))
         c_param_txt.SetFont(font_Statictext)
-        self.c_param = wx.TextCtrl(self, size=size_value_lattice,
+        self.c_param = wx.TextCtrl(self, style=wx.TE_PROCESS_ENTER,
+                                   size=size_value_lattice,
                                    validator=TextValidator(DIGIT_ONLY))
         self.c_param.SetFont(font_TextCtrl)
 
@@ -283,7 +376,8 @@ class InitialDataPanel(scrolled.ScrolledPanel):
                                         label=u'\N{GREEK SMALL LETTER ALPHA}',
                                         size=(10, vStatictextsize))
         alpha_param_txt.SetFont(font_Statictext)
-        self.alpha_param = wx.TextCtrl(self, size=size_value_lattice,
+        self.alpha_param = wx.TextCtrl(self, style=wx.TE_PROCESS_ENTER,
+                                       size=size_value_lattice,
                                        validator=TextValidator(DIGIT_ONLY))
         self.alpha_param.SetFont(font_TextCtrl)
 
@@ -291,7 +385,8 @@ class InitialDataPanel(scrolled.ScrolledPanel):
                                        label=u'\N{GREEK SMALL LETTER BETA}',
                                        size=(10, vStatictextsize))
         beta_param_txt.SetFont(font_Statictext)
-        self.beta_param = wx.TextCtrl(self, size=size_value_lattice,
+        self.beta_param = wx.TextCtrl(self, style=wx.TE_PROCESS_ENTER,
+                                      size=size_value_lattice,
                                       validator=TextValidator(DIGIT_ONLY))
         self.beta_param.SetFont(font_TextCtrl)
 
@@ -299,7 +394,8 @@ class InitialDataPanel(scrolled.ScrolledPanel):
                                         label=u'\N{GREEK SMALL LETTER GAMMA}',
                                         size=(10, vStatictextsize))
         gamma_param_txt.SetFont(font_Statictext)
-        self.gamma_param = wx.TextCtrl(self, size=size_value_lattice,
+        self.gamma_param = wx.TextCtrl(self, style=wx.TE_PROCESS_ENTER,
+                                       size=size_value_lattice,
                                        validator=TextValidator(DIGIT_ONLY))
         self.gamma_param.SetFont(font_TextCtrl)
 
@@ -390,7 +486,8 @@ class InitialDataPanel(scrolled.ScrolledPanel):
                                             label=u'Basis functions',
                                             size=(95, vStatictextsize))
         StrainBfunction_txt.SetFont(font_Statictext)
-        self.StrainBfunction = wx.TextCtrl(self, size=size_value_lattice,
+        self.StrainBfunction = wx.TextCtrl(self, style=wx.TE_PROCESS_ENTER,
+                                           size=size_value_lattice,
                                            validator=TextValidator(DIGIT_ONLY))
         self.StrainBfunction.SetFont(font_TextCtrl)
 
@@ -416,15 +513,15 @@ class InitialDataPanel(scrolled.ScrolledPanel):
                                           label=u'Damaged depth (\u212B)',
                                           size=(size_damdept, vStatictextsize))
         damaged_depth_txt.SetFont(font_Statictext)
-        self.damaged_depth = wx.TextCtrl(self, size=size_damaged_depth,
-                                         validator=TextValidator(DIGIT_ONLY))
+        self.damaged_depth = myTextCtrl(self, -1, size=size_damaged_depth)
         self.damaged_depth.SetFont(font_TextCtrl)
 
         Nb_slice_txt = wx.StaticText(self, -1,
                                      label=u'Number of slices',
                                      size=(size_noslice, vStatictextsize))
         Nb_slice_txt.SetFont(font_Statictext)
-        self.Nb_slice = wx.TextCtrl(self, size=size_value_lattice,
+        self.Nb_slice = wx.TextCtrl(self, style=wx.TE_PROCESS_ENTER,
+                                    size=size_value_lattice,
                                     validator=TextValidator(DIGIT_ONLY))
         self.Nb_slice.SetFont(font_TextCtrl)
 
@@ -542,8 +639,10 @@ class InitialDataPanel(scrolled.ScrolledPanel):
             self.Textcontrolhide[i].Show(False)
         self.eta_txt.SetLabelText("")
 
-        self.Textcontrol = [self.wavelength, self.resolution, self.shape,
-                            self.bckground, self.h_direction, self.k_direction,
+        self.Textcontrol = [self.wavelength, self.bckground,
+                            self.fwhml, self.fwhmr,
+                            self.shapel, self.shaper, self.b_bell,
+                            self.h_direction, self.k_direction,
                             self.l_direction, self.symmetry_txt_hide,
                             self.a_param, self.b_param, self.c_param,
                             self.alpha_param, self.beta_param,
@@ -553,6 +652,19 @@ class InitialDataPanel(scrolled.ScrolledPanel):
 
         Textcontrolen = range(len(self.Textcontrol))
         self.data_fields = dict(zip(Textcontrolen, self.Textcontrol))
+
+        for name in self.Textcontrol:
+            self.Bind(wx.EVT_TEXT_ENTER, self.on_press_enter, name)
+
+        for num in range(len(self.func_list)):
+            if num & 1:
+                name = self.func_list[num]
+                self.Bind(wx.EVT_TEXT_ENTER, self.on_press_enter, name)
+        self.Bind(wx.EVT_LEFT_DOWN, self.on_press_enter)
+
+        self.paramcell = [self.a_param, self.b_param, self.c_param,
+                          self.alpha_param, self.beta_param,
+                          self.gamma_param]
 
         self.load_data = 0
         self.load_init = 0
@@ -582,9 +694,10 @@ class InitialDataPanel(scrolled.ScrolledPanel):
         pub.subscribe(self.on_change_update_button_state, pubsub_change_update_btn_state)
         pub.subscribe(self.on_update_sp_DW, pubsub_update_sp_dwp_eta)
         pub.subscribe(self.on_launch_calc4Fit, pubsub_Read_field_paramters_panel)
-        pub.subscribe(self.limit_reach, pubsub_On_Limit_Before_Graph)
         pub.subscribe(self.on_read_sp_DW, pubsub_Read_sp_dwp)
         pub.subscribe(self.on_apply_color_field, pubsub_changeColor_field4Save)
+        pub.subscribe(self.on_change_color_damaged_depth, pubsub_change_damaged_depth_color)
+        pub.subscribe(self.on_update, pubsub_update_from_damaged)
 
         self.SetSizer(mastersizer)
         self.SetAutoLayout(1)
@@ -592,8 +705,10 @@ class InitialDataPanel(scrolled.ScrolledPanel):
 
     def on_page_changed(self, event):
         self.update_Btn.SetFocus()
-        if self.load_data == 1:
-            self.on_update(event)
+
+    def on_press_enter(self, event):
+        self.on_update()
+        event.Skip()
 
     def on_new_project(self):
         a = P4Rm()
@@ -643,6 +758,13 @@ class InitialDataPanel(scrolled.ScrolledPanel):
 
             indexx = a.crystal_list.index(a.PathDict['Compound_name'])
             self.cb_crystalname.SetStringSelection(a.crystal_list[indexx])
+
+
+            funky = int(float(a.AllDataDict['function_profile']))
+            self.cb_fitfunction.SetStringSelection(p4R.FitFunction[funky])
+            self.on_change_function(None, p4R.FitFunction[funky])
+            P4Rm.ParamDict['func_profile'] = p4R.FitFunction_choice[funky]
+
             self.on_update_sp_DW()
             self.update_Btn.Enable()
             self.update_Btn.SetFocus()
@@ -655,25 +777,23 @@ class InitialDataPanel(scrolled.ScrolledPanel):
         self.load_data = 1
         self.load_init = 1
 
-    def on_read_data_field(self, case=None):
-        P4Rm.checkInitialField = 0
-        check_empty = self.on_search_empty_fields()
-        if check_empty is True:
-            data_float = self.is_data_float()
-            if data_float is True:
-                P4Rm.checkInitialField = 1
-
     def on_test_some_field(self):
         self.on_test_model()
         self.on_check_data_value()
 
     def on_update(self, event=None):
         a = P4Rm()
-        if not a.ParamDict['th'].any():
-            return
-        else:
-            b = Calcul4Radmax()
-            b.on_update()
+        try:
+            if not a.ParamDict['th'].any():
+                return
+            else:
+                sym_name = self.cb_crystalsymmetry.GetStringSelection()
+                sym_num = self.symmetry_choice.index(sym_name)
+                P4Rm.AllDataDict['crystal_symmetry'] = int(sym_num)
+                b = Calcul4Radmax()
+                b.on_update()
+        except AttributeError:
+            pass
 
     def on_update_panel(self):
         a = P4Rm()
@@ -698,13 +818,53 @@ class InitialDataPanel(scrolled.ScrolledPanel):
         self.damaged_depth.SetValue(str(tmp[2]))
         self.dwBfunction.SetValue(str(tmp[3]))
         self.Nb_slice.SetValue(str(tmp[4]))
-        P4Rm.AllDataDict['strain_basis_func'] = int(float(self.StrainBfunction.GetValue()))
+        val = float(self.StrainBfunction.GetValue())
+        P4Rm.AllDataDict['strain_basis_func'] = int(val)
         self.dwBfunction_hide.SetValue(str(tmp[3]))
         P4Rm.AllDataDict['dw_basis_func'] = int(tmp[3])
 
+    def on_change_function(self, event=None, choice=None):
+        a = P4Rm()
+        if choice is not None:
+            func = choice
+            funky = p4R.FitFunction.index(func)
+        else:
+            func = event.GetString()
+            funky = p4R.FitFunction.index(func)
+        if func == "Gaussian" or func == "Lorentzian":
+            l = ["S", "S", "H", "H", "H", "H", "H", "H", "H", "H"]
+        elif func == "Pseudo-Voigt":
+            l = ["S", "S", "H", "H", "S", "S", "H", "H", "H", "H"]
+        elif func == "Generalized bell":
+            l = ["S", "S", "H", "H", "H", "H", "H", "H", "S", "S"]
+            self.b_bell.SetValue(str(a.AllDataDict['b_bell']))
+        elif func == "Split-PV":
+            l = ["S", "S", "S", "S", "S", "S", "S", "S", "H", "H"]
+            self.fwhmr.SetValue(str(a.AllDataDict['width_right']))
+            self.shaper.SetValue(str(a.AllDataDict['shape_right']))
+        for i in range(len(self.func_list)):
+            if l[i] is "S":
+                self.func_list[i].Show()
+            elif l[i] is "H":
+                self.func_list[i].Hide()
+        if func == "Split-PV":
+            self.fwhml_txt.SetLabel(u'Width left (°)')
+            self.shapel_txt.SetLabel(u'Shape left')
+        else:
+            self.fwhml_txt.SetLabel(u'Width (°)')
+            self.shapel_txt.SetLabel(u'Shape')
+        P4Rm.AllDataDict['function_profile'] = funky
+        P4Rm.ParamDict['func_profile'] = p4R.FitFunction_choice[funky]
+        self.Layout()
+#        wx.Yield()
+        if choice is None:
+            self.on_update(event)
+
     def key_pressed(self, event, case):
-        """ctrl+U emulate the update button
-        ctrl+I reload the last open project"""
+        """
+        ctrl+U update bouton
+        ctrl+I recharge le dernier projet
+        """
         a = P4Rm()
         if case == 0:
             self.on_update(event)
@@ -718,39 +878,33 @@ class InitialDataPanel(scrolled.ScrolledPanel):
     def on_select_symmetry(self, event=None, choice=None):
         """
         Symmetry combobox selection
-        quite simple choice selection according to the symmetry condition
+        choice selection according to the symmetry condition
+        E=Enable, D=Disable
         """
         if choice is not None:
             i = choice
         else:
             i = event.GetString()
 
-        cubique_text_state = ["Enable", "Disable", "Disable", "Disable",
-                              "Disable", "Disable"]
+        cubique_text_state = ["E", "D", "D", "D", "D", "D"]
         cubique_text_value = ["None", 0, 0, 90, 90, 90]
 
-        hexa_text_state = ["Enable", "Disable", "Enable", "Disable", "Disable",
-                           "Disable"]
+        hexa_text_state = ["E", "D", "E", "D", "D", "D"]
         hexa_text_value = ["None", 0, "None", 90, 90, 120]
 
-        tetra_text_state = ["Enable", "Disable", "Enable", "Disable",
-                            "Disable", "Disable"]
+        tetra_text_state = ["E", "D", "E", "D", "D", "D"]
         tetra_text_value = ["None", 0, "None", 90, 90, 90]
 
-        ortho_text_state = ["Enable", "Enable", "Enable", "Disable", "Disable",
-                            "Disable"]
+        ortho_text_state = ["E", "E", "E", "D", "D", "D"]
         ortho_text_value = ["None", 0, "None", 90, 90, 90]
 
-        rhombo_text_state = ["Enable", "Disable", "Disable", "Enable",
-                             "Disable", "Disable"]
+        rhombo_text_state = ["E", "D", "D", "E", "D", "D"]
         rhombo_text_value = ["None", 0, 0, "None", 3, 3]
 
-        mono_text_state = ["Enable", "Enable", "Enable", "Disable", "Enable",
-                           "Disable"]
+        mono_text_state = ["E", "E", "E", "D", "E", "D"]
         mono_text_value = ["None", "None", "None", 90, "None", 90]
 
-        tri_text_state = ["Enable", "Enable", "Enable", "Enable", "Enable",
-                          "Enable"]
+        tri_text_state = ["E", "E", "E", "E", "E", "E"]
         tri_text_value = ["None", "None", "None", "None", "None", 90]
 
         if i == "cubic":
@@ -782,50 +936,71 @@ class InitialDataPanel(scrolled.ScrolledPanel):
             temp_value = deepcopy(tri_text_value)
             self.symmetry_txt_hide.SetValue(str(6))
 
-        num = 8
         for i in range(6):
-            if temp_state[i] == "Enable":
-                self.data_fields[num+i].Enable()
+            if temp_state[i] == "E":
+                self.paramcell[i].Enable()
             else:
-                self.data_fields[num+i].Disable()
+                self.paramcell[i].Disable()
             if i in range(0, 3):
                 if temp_value[i] != "None":
-                    self.data_fields[num+i].SetValue(str(self.data_fields[num +
-                                                     temp_value[i]].GetValue()))
+                    val = self.paramcell[temp_value[i]].GetValue()
+                    self.paramcell[i].SetValue(str(val))
             elif i in range(3, 6):
                 if temp_value[i] != "None":
                     if temp_value[i] == 90 or temp_value[i] == 120:
-                        self.data_fields[num+i].Clear()
-                        self.data_fields[num+i].SetValue(str(temp_value[i]))
+                        self.paramcell[i].Clear()
+                        self.paramcell[i].SetValue(str(temp_value[i]))
                     elif temp_value[i] == 3:
-                        self.data_fields[num+i].Clear()
-                        temp = str(self.data_fields[num +
-                                   temp_value[i]].GetValue())
-                        self.data_fields[num+i].SetValue(temp)
+                        self.paramcell[i].Clear()
+                        temp = str(self.paramcell[temp_value[i]].GetValue())
+                        self.paramcell[i].SetValue(temp)
+
+    def on_read_data_field(self, case=None):
+        """
+        lecture des champs
+        test si float
+        """
+        P4Rm.checkInitialField = 0
+        check_empty = self.on_search_empty_fields()
+        if check_empty is True:
+            data_float = self.is_data_float()
+            if data_float is True:
+                P4Rm.checkInitialField = 1
 
     def on_apply_color_field(self, color):
+        """
+        permet de changer la couleur des champs lors du lancement du fit
+        bleu: sauvegarde des données
+        wx.NullColour= si white alors le textctrl scintille apres à chaque
+        update
+        """
+        if color == (255, 255, 255):
+            color = wx.NullColour
         for ii in range(len(self.data_fields)):
             self.data_fields[ii].SetBackgroundColour(color)
         self.Refresh()
-        wx.Yield()
+
+    def on_change_color_damaged_depth(self, color):
+        self.damaged_depth.SetBorderColour(color)
+        self.Refresh()
 
     def on_check_data_value(self):
         """
         Check if some data are not off limit for the program
         """
         a = P4Rm()
-        if a.AllDataDict['resolution'] == 0:
-            P4Rm.AllDataDict['resolution'] = 1e-4
+        if a.AllDataDict['width_left'] == 0:
+            P4Rm.AllDataDict['width_left'] = 1e-4
             self.data_fields[1].Clear()
-            self.data_fields[1].AppendText(str(a.AllDataDict['resolution']))
-        if a.AllDataDict['shape'] <= 0:
-            P4Rm.AllDataDict['shape'] = 1e-5
+            self.data_fields[1].AppendText(str(a.AllDataDict['width_left']))
+        if a.AllDataDict['shape_left'] <= 0:
+            P4Rm.AllDataDict['shape_left'] = 1e-5
             self.data_fields[2].Clear()
-            self.data_fields[2].AppendText(str(a.AllDataDict['shape']))
-        elif a.AllDataDict['shape'] > 1:
-            P4Rm.AllDataDict['shape'] = 1
+            self.data_fields[2].AppendText(str(a.AllDataDict['shape_left']))
+        elif a.AllDataDict['shape_left'] > 1:
+            P4Rm.AllDataDict['shape_left'] = 1
             self.data_fields[2].Clear()
-            self.data_fields[2].AppendText(str(a.AllDataDict['shape']))
+            self.data_fields[2].AppendText(str(a.AllDataDict['shape_left']))
         else:
             return
         self.Refresh()
@@ -855,23 +1030,6 @@ class InitialDataPanel(scrolled.ScrolledPanel):
             self.empty_field = 0
             self.not_a_float = 0
 
-    def limit_reach(self, limit):
-        limit_list = [16, 17, 19, 20]
-        for i in range(len(limit)):
-            if limit[i] == False:
-                self.data_fields[limit_list[i]].SetBackgroundColour('yellow')
-                self.Refresh()
-        msg_ = (u"Deformation values are off limits\n" +
-                "Please check the yellow field before launching the fit")
-        dlg = GMD.GenericMessageDialog(None, msg_, "Attention",
-                                       agwStyle=wx.OK | wx.ICON_INFORMATION |
-                                       wx.CENTRE)
-        dlg.ShowModal()
-        for i in range(len(limit)):
-            if limit[i] == False:
-                self.data_fields[limit_list[i]].SetBackgroundColour('white')
-                self.Refresh()
-
     def on_update_scale(self, event):
         widget = event.GetId()
         if widget == self.m_strain_ID:
@@ -896,12 +1054,11 @@ class InitialDataPanel(scrolled.ScrolledPanel):
             self.cb_strainname.SetSelection(2)
             self.cb_dwname.SetSelection(2)
             P4Rm.ParamDict['strain_sm_ab_bkp'] = a.AllDataDict['strain_basis_func']
-            P4Rm.ParamDict['dw_sm_ab_bkp'] = a.AllDataDict['dw_basis_func']            
+            P4Rm.ParamDict['dw_sm_ab_bkp'] = a.AllDataDict['dw_basis_func']
             P4Rm.ParamDict['sp_' + p4R.Bsplinesave[t]] = a.ParamDict['sp']
             P4Rm.ParamDict['dwp_' + p4R.Bsplinesave[t]] = a.ParamDict['dwp']
             P4Rm.ParamDict['sp'] = a.ParamDict['sp_pv']
             P4Rm.ParamDict['dwp'] = a.ParamDict['dwp_pv']
-            
             P4Rm.ParamDict['state_sp'] = 7*[True]
             P4Rm.ParamDict['state_dwp'] = 7*[True]
 
@@ -942,7 +1099,7 @@ class InitialDataPanel(scrolled.ScrolledPanel):
         self.Layout()
 
     def on_update_sp_DW(self):
-        a = P4Rm()
+        a = P4Rm()        
         for i in range(len(self.Textcontrolhide)):
             self.Textcontrolhide[i].Clear()
         roundval = 3
@@ -1003,6 +1160,7 @@ class InitialDataPanel(scrolled.ScrolledPanel):
                 empty_fields.append(ii)
         if empty_fields != []:
             check_empty = False
+            color = (255, 0, 0)
             for ii in empty_fields:
                 self.data_fields[ii].SetBackgroundColour('red')
             self.Refresh()
@@ -1011,8 +1169,9 @@ class InitialDataPanel(scrolled.ScrolledPanel):
                                            "Attention", agwStyle=wx.OK |
                                            wx.ICON_INFORMATION)
             dlg.ShowModal()
+            color = wx.NullColour
             for ii in empty_fields:
-                self.data_fields[ii].SetBackgroundColour('white')
+                self.data_fields[ii].SetBackgroundColour(color)
             self.Refresh()
         return check_empty
 
@@ -1058,5 +1217,61 @@ class InitialDataPanel(scrolled.ScrolledPanel):
             P4Rm.PathDict['Compound_name'] = self.cb_crystalname.GetStringSelection()
             P4Rm.spline_strain = self.cb_strainname.GetSelection()
             P4Rm.spline_DW = self.cb_dwname.GetSelection()
-
         return dataFloat
+
+
+# -----------------------------------------------------------------------------
+class myTextCtrl(wx.Panel):
+    def __init__(self, parent, id, size):
+        wx.Panel.__init__(self, parent, id=-1)
+        self.ed = wx.TextCtrl(self, -1, "",
+                              style=wx.TE_PROCESS_ENTER | wx.NO_BORDER,
+                              size=size,
+                              validator=TextValidator(DIGIT_ONLY))
+        self.Bind(wx.EVT_TEXT_ENTER, self.on_press_enter, self.ed)
+        self.change_color_border = False
+        self.color = wx.Colour(255, 255, 255)
+        self.Bind(wx.EVT_PAINT, self.OnPaint)
+        self.Bind(wx.EVT_SIZE, self.OnSize)
+
+    def on_press_enter(self, event):
+        pub.sendMessage(pubsub_update_from_damaged)
+
+    def OnSize(self, event):
+        size = event.GetSize()
+        self.ed.SetPosition((1, 1))
+        self.ed.SetSize((size.x-2, size.y-2))
+        event.Skip()
+
+    def OnPaint(self, event):
+        dc = wx.BufferedPaintDC(self)
+        pen = wx.Pen(self.color, 10, wx.SOLID)
+        pen.SetJoin(wx.JOIN_MITER)
+        dc.SetBackground(wx.Brush(self.color, style=wx.BRUSHSTYLE_SOLID))
+        dc.SetPen(pen)
+        dc.Clear()
+
+    def SetBackgroundColour(self, cor):
+        self.ed.SetBackgroundColour(cor)
+
+    def SetForegroundColour(self, cor):
+        self.ed.SetForegroundColour(cor)
+
+    def SetBorderColour(self, color):
+        self.color = color
+        self.Refresh()
+
+    def SetFont(self, font):
+        self.ed.SetFont(font)
+
+    def Clear(self):
+        self.ed.Clear()
+
+    def AppendText(self, val):
+        self.ed.AppendText(val)
+
+    def GetValue(self):
+        return self.ed.GetValue()
+
+    def SetValue(self, val):
+        self.ed.SetValue(val)
