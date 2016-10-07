@@ -14,6 +14,7 @@
 
 import os
 import sys
+from sys import platform as _platform
 import Parameters4Radmax as p4R
 from Parameters4Radmax import P4Rm
 
@@ -22,9 +23,12 @@ try:
     from distutils.version import LooseVersion
     vers = wx.__version__
     if LooseVersion(vers) < LooseVersion("3.0.2.0"):
-        print("You are using wxPython version number %s" % vers)
-        print("To run, RaDMaX needs wxPython version 3.0.2.0 or higher")
-        sys.exit()
+        if _platform == "linux" or _platform == "linux2":
+            pass
+        else:
+            print("You are using wxPython version number %s" % vers)
+            print("To run, RaDMaX needs wxPython version 3.0.2.0 or higher")
+            sys.exit()
 except ImportError:
     raise ImportError("WxPython module is required to run this program")
     sys.exit()
