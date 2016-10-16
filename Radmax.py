@@ -3,50 +3,107 @@
 # Author: A_BOULLE & M_SOUILAH
 # Radmax project
 
-'''
-*Radmax Main Module*
-'''
-from Parameters4Radmax import *
-from Parameters4Radmax import P4Radmax, LogWindow
+# =============================================================================
+# Radmax Main Module
+# =============================================================================
+
+
+# =============================================================================
+# The files are provided "as is" without warranty or support of any kind
+# =============================================================================
+
+import os
+import sys
+from sys import platform as _platform
+import Parameters4Radmax as p4R
+from Parameters4Radmax import P4Rm
+
+try:
+    import wx
+    from distutils.version import LooseVersion
+    vers = wx.__version__
+    if LooseVersion(vers) < LooseVersion("3.0.2.0"):
+        if _platform == "linux" or _platform == "linux2":
+            pass
+        else:
+            print("You are using wxPython version number %s" % vers)
+            print("To run, RaDMaX needs wxPython version 3.0.2.0 or higher")
+            sys.exit()
+except ImportError:
+    raise ImportError("WxPython module is required to run this program")
+    sys.exit()
 
 try:
     import wx
     import wx.html
     import matplotlib
     import scipy
-    import sys
     import numpy
-    print('******************************')
-    print('            RaDMax')
-    print('         Version:%s' % (Application_version))
-    print(' Last modification:%s' % (last_modification))
-    print('******************************\n')
+    sys.path.insert(0, './modules')
+    import ObjectListView as OLV
+    import sqlalchemy
+    print('**********************************')
+    print('             RaDMaX')
+    print('         Version:%s' % p4R.version)
+    print(' Last modification date:%s' % p4R.last_modification)
+    print('***********************************\n')
     if getattr(sys, 'frozen', False):
-        print ("Versions of modules compile for this application:")
+        print ("Versions of modules compiled for this application:")
     else:
-        print ("Cheking of the modules needed to work with RaDMax:")
-        print ("Version founded on this computer:")
-    print ("Python: %s" % (sys.version))
-    print ("Matplotlib: %s" % (matplotlib.__version__))
-    print ("Wxpython: %s" % (wx.__version__))
-    print ("Scipy: %s" % (scipy.__version__))
-    print ("Numpy: %s" % (numpy.__version__))
+        print ("Checking the modules needed to work with RaDMaX:")
+        print ("Version found on this computer:")
+    print ("Python: %s" % sys.version)
+    print ("Wxpython: %s" % wx.__version__)
+    print ("Matplotlib: %s" % matplotlib.__version__)
+    print ("Scipy: %s" % scipy.__version__)
+    print ("Numpy: %s" % numpy.__version__)
+    print ("ObjectListView: %s" % OLV.__version__)
+    print ("sqlalchemy: %s" % sqlalchemy.__version__)
 except ImportError:
-    raise ImportError("WxPython, Matplotlib and scipy modules are required" +
+    raise ImportError("Matplotlib, scipy and numpy modules are required" +
                       "to run this program")
-    exit()
+    sys.exit()
 
+import wx.lib.agw.aui as aui
 from wx.lib.pubsub import pub
+
 import wx.lib.agw.genericmessagedialog as GMD
 
+from sys import platform as _platform
+
 from Icon4Radmax import NewP24, LoadP24, saveP24, saveasP24, shutdown24, logP32
-from Icon4Radmax import prog_icon, About_icon_24, acceleration
+from Icon4Radmax import prog_icon, About_icon_24
+
+from random import randint
+import logging
 
 from Graph4Radmax import GraphPanel
-from Parameters_Panel import InitialDataPanel
-from Fitting_Panel import FittingPanel
+from ExpPanel4Radmax import InitialDataPanel
+from SampleGeometry4Radmax import SampleGeometry
+from FittingPanel4Radmax import FittingPanel
 from OptionParam4Radmax import ParametersWindow
-from GSAParam4Radmax import GSAParametersWindow
+from LimitPanel4Radmax import GSAParametersWindow
+from Color4Radmax import ColorWindow
+from FitReport4Radmax import FitReportWindow
+from Calcul4Radmax import Calcul4Radmax
+from Read4Radmax import SaveFile4Diff
+from DB4Radmax import DataBasePanel, DataBaseManagement
+
+from Settings4Radmax import LogSaver, LogWindow
+from Settings4Radmax import Sound_Launcher
+
+if _platform == 'darwin' or _platform == "linux" or _platform == "linux2":
+    from BoundsValue4Radmax_Unix import DataCoefPanel
+elif _platform == "win32":
+    from BoundsValue4Radmax import DataCoefPanel
+    """Necessaire avec PyInstaller sous windows
+    sinon l'executable ne se lance pas """
+    if getattr(sys, 'frozen', False):
+        import FileDialog
+
+LogSaver()
+
+logger = logging.getLogger(__name__)
 
 if 'phoenix' in wx.PlatformInfo:
     from wx.adv import AboutDialogInfo, AboutBox
@@ -54,18 +111,36 @@ else:
     from wx import AboutDialogInfo, AboutBox
 
 """Pubsub message"""
-pubsub_Load = "LoadP"
-pubsub_New = "NewP"
-pubsub_LoadXRD = "LoadXRD"
-pubsub_LoadStrain = "LoadStrain"
-pubsub_LoadDW = "LoadDW"
 pubsub_Save = "SaveP"
-pubsub_Launch_GUI = "LaunchGUI"
 pubsub_ChangeFrameTitle = "ChangeFrameTitle"
+
 pubsub_Activate_Import = "ActivateImport"
 pubsub_shortcut = "Shortcut"
+
 pubsub_Hide_Show_Option = "HideShowOption"
+pubsub_Open_Option_Window = "OpenOptionWindow"
+pubsub_Fill_List_coef = "FillListCoef"
+
+
 pubsub_Hide_Show_GSA = "HideShowGSA"
+pubsub_Open_GSA_Window = "OpenGSAWindow"
+
+pubsub_Hide_Show_Color = "HideShowColor"
+pubsub_Open_Color_Window = "OpenColorWindow"
+
+pubsub_Hide_Show_FitReport = "HideShowFitReport"
+pubsub_Open_FitReport_Window = "OpenFitReportWindow"
+
+pubsub_Hide_Show_data_coef = "HideShowDataCoef"
+pubsub_Open_data_coef_Window = "OpenDataCoefWindow"
+
+pubsub_enable_dis_database = "EnableDisableDatabase"
+pubsub_save_from_DB = "SaveFromDB"
+
+pubsub_save_project_before_fit = "SaveProjectBeforeFit"
+pubsub_add_damaged_before_fit = "AddDamagedBeforeFit"
+pubsub_show_panel = "ShowPanel"
+pubsub_change_damaged_depth_color = "ChangeDamagedDepthColor"
 
 
 # -----------------------------------------------------------------------------
@@ -74,17 +149,21 @@ class MainFrame(wx.Frame):
     Main Frame launcher
     The aui manager module is used to build the main architecture
     """
-    def __init__(self, parent, id=-1):
+    def __init__(self, parent):
         pos = wx.DefaultPosition
-#        print(wx.GetDisplaySize())  # returns a tuple
-        size = (1120, 970)
+        screen_size = wx.GetDisplaySize()
+        if screen_size[1] <= 1000:
+            size = (1000, 900)
+        else:
+            size = (1180, 1035)
         no_resize = wx.DEFAULT_FRAME_STYLE
 
-        wx.Frame.__init__(self, None, wx.ID_ANY, Application_name, pos, size,
-                          style=no_resize)
+        wx.Frame.__init__(self, None, wx.ID_ANY, p4R.Application_name,
+                          pos, size, style=no_resize)
         wx.Frame.CenterOnScreen(self)
         self.Bind(wx.EVT_CLOSE, self.on_close)
 #        self.Bind(wx.EVT_SIZE, self.on_size)
+        self.locale = wx.Locale(wx.LANGUAGE_ENGLISH)
 
         self.sb = wx.StatusBar(self, -1)
         self.sb.SetFieldsCount(3)
@@ -100,10 +179,14 @@ class MainFrame(wx.Frame):
         self.Load_XRD_ID = wx.NewId()
         self.Load_Strain_ID = wx.NewId()
         self.Load_DW_ID = wx.NewId()
+        self.Export_data_ID = wx.NewId()
         self.Save_ID = wx.NewId()
         self.SaveP_ID = wx.NewId()
         self.log_ID = wx.NewId()
         self.paramoption_ID = wx.NewId()
+        self.spdwpvalues_ID = wx.NewId()
+        self.fitreport_ID = wx.NewId()
+        self.colorwindow_ID = wx.NewId()
         self.Update = wx.NewId()
         self.Reloadini = wx.NewId()
         self.About = wx.NewId()
@@ -136,6 +219,11 @@ class MainFrame(wx.Frame):
                                         u"Import DW", wx.EmptyString,
                                         wx.ITEM_NORMAL)
 
+        self.m_menuexportData = wx.MenuItem(self.m_menufile,
+                                            self.Export_data_ID,
+                                            u"Export Strain - DW - XRD fit",
+                                            wx.EmptyString, wx.ITEM_NORMAL)
+
         self.m_menusave = wx.MenuItem(self.m_menufile, self.Save_ID, u"Save" +
                                       u"\t" + u"Ctrl+S", wx.EmptyString,
                                       wx.ITEM_NORMAL)
@@ -155,39 +243,45 @@ class MainFrame(wx.Frame):
 
         """Option menu"""
         self.m_menuoptions = wx.Menu()
-        choose_acc = wx.Menu()
 
         self.m_menubar.Append(self.m_menuoptions, u"O&ptions")
         self.m_menulog = wx.MenuItem(self.m_menuoptions, self.log_ID,
                                      u"Log file", u"Open log file",
                                      wx.ITEM_NORMAL)
         self.m_menulog.SetBitmap(logP32.GetBitmap())
+        text_ = u"Open Color and style graph window"
+        self.m_menucolor = wx.MenuItem(self.m_menuoptions, self.colorwindow_ID,
+                                       u"Graph Style", text_,
+                                       wx.ITEM_NORMAL)
+
+        self.HideShowDatabase = wx.NewId()
+        self.m_menuhide_show_database = wx.MenuItem(self.m_menufile,
+                                                    self.HideShowDatabase,
+                                                    u"Use Database",
+                                                    wx.EmptyString,
+                                                    wx.ITEM_CHECK)
 
         """Fit menu"""
         self.m_menufit = wx.Menu()
-        choose_acc = wx.Menu()
 
         self.m_menubar.Append(self.m_menufit, u"F&it")
         self.m_menu_fit = wx.MenuItem(self.m_menufit, self.paramoption_ID,
-                                      u"Fit Parameters",
+                                      u"Fitting options",
                                       u"Open Parameters window",
                                       wx.ITEM_NORMAL)
 
-        self.acc_numpy_Id = wx.NewId()
-        self.acc_numba_Id = wx.NewId()
-        self.menuoptionsId = wx.NewId()
-        self.acc_icon_ID = wx.NewId()
-        self.m_menuacc = wx.MenuItem(self.m_menufit, self.acc_icon_ID,
-                                     u"Fit Acceleration", u"",
-                                     wx.ITEM_NORMAL)
-        self.m_menuacc.SetBitmap(acceleration.GetBitmap())
-        self.acc_numpy = choose_acc.AppendRadioItem(self.acc_numpy_Id,
-                                                    "Numpy", "")
-        self.acc_numba = choose_acc.AppendRadioItem(self.acc_numba_Id,
-                                                    "Numba", "")
-        choose_acc.Check(self.acc_numpy_Id, True)
-        P4Radmax.acc_choice = "Numpy"
+        self.m_menu_strain_dw = wx.MenuItem(self.m_menufit,
+                                            self.spdwpvalues_ID,
+                                            (u"Strain and DW Values" +
+                                             u"\t" + u"Ctrl+G"),
+                                            u"Open Strain & DW Values window",
+                                            wx.ITEM_NORMAL)
 
+        self.m_menu_report_fit = wx.MenuItem(self.m_menufit, self.fitreport_ID,
+                                             (u"Fitting report" +
+                                              u"\t" + u"Ctrl+R"),
+                                             u"Open Lmfit report window",
+                                             wx.ITEM_NORMAL)
 
         """About menu"""
         self.m_menuhelp = wx.Menu()
@@ -206,15 +300,20 @@ class MainFrame(wx.Frame):
             self.m_menufile.Append(self.m_menuloadStrain)
             self.m_menufile.Append(self.m_menuloadDW)
             self.m_menufile.AppendSeparator()
+            self.m_menufile.Append(self.m_menuexportData)
+            self.m_menufile.AppendSeparator()
             self.m_menufile.Append(self.m_menusave)
             self.m_menufile.Append(self.m_menusaveas)
             self.m_menufile.Append(self.m_menuexit)
+
             self.m_menuoptions.Append(self.m_menulog)
+            self.m_menuoptions.Append(self.m_menuhide_show_database)
+            self.m_menuoptions.Append(self.m_menucolor)
+
             self.m_menufit.Append(self.m_menu_fit)
-            self.m_menufit.AppendSeparator()
-            self.m_menufit.Append(self.m_menuacc)
+            self.m_menufit.Append(self.m_menu_strain_dw)
+            self.m_menufit.Append(self.m_menu_report_fit)
             self.m_menuhelp.Append(self.m_menuabout)
-            self.m_menufit.Append(self.menuoptionsId, "&Choice", choose_acc)
         else:
             self.m_menufile.AppendItem(self.m_menunewproject)
             self.m_menufile.AppendItem(self.m_menuload)
@@ -223,16 +322,20 @@ class MainFrame(wx.Frame):
             self.m_menufile.AppendItem(self.m_menuloadStrain)
             self.m_menufile.AppendItem(self.m_menuloadDW)
             self.m_menufile.AppendSeparator()
+            self.m_menufile.AppendItem(self.m_menuexportData)
+            self.m_menufile.AppendSeparator()
             self.m_menufile.AppendItem(self.m_menusave)
             self.m_menufile.AppendItem(self.m_menusaveas)
             self.m_menufile.AppendItem(self.m_menuexit)
+
             self.m_menuoptions.AppendItem(self.m_menulog)
+            self.m_menuoptions.AppendItem(self.m_menuhide_show_database)
+            self.m_menuoptions.AppendItem(self.m_menucolor)
+
             self.m_menufit.AppendItem(self.m_menu_fit)
-            self.m_menufit.AppendSeparator()
-            self.m_menufit.AppendItem(self.m_menuacc)
+            self.m_menufit.AppendItem(self.m_menu_strain_dw)
+            self.m_menufit.AppendItem(self.m_menu_report_fit)
             self.m_menuhelp.AppendItem(self.m_menuabout)
-            self.m_menufit.AppendMenu(self.menuoptionsId, "&Choice",
-                                      choose_acc)
 
         self.SetMenuBar(self.m_menubar)
 
@@ -250,29 +353,90 @@ class MainFrame(wx.Frame):
         self.SetAcceleratorTable(self.accel_tbl)
 
         self.frame_Fit_Param_window = None
-        self.Fit_Param_window_launch = 0
+        self.frame_Fit_Report_window = None
         self.frame_GSA_window = None
+        self.frame_color_window = None
+        self.frame_data_coef_window = None
+
+        self.Fit_Param_window_launch = 0
+        self.Fit_Report_window_launch = 0
         self.GSA_window_launch = 0
+        self.color_window_launch = 0
+        self.data_coef_window_launch = 0
 
         try:
             import lmfit
-            print ("Lmfit: %s" % (lmfit.__version__))
+            vers = lmfit.__version__
+            if LooseVersion(vers) < LooseVersion("0.9.0"):
+                print("\nYou are using Lmfit version number %s" % vers)
+                print("To run, RaDMaX needs Lmfit version 0.9.0 or higher")
+                print("Please, install a new Lmfit version to be able" +
+                      " to use it with RaDMaX")
+                print("Lmfit will not be used in this session\n")
+                P4Rm.lmfit_install = False
+            else:
+                print ("Lmfit: %s" % (lmfit.__version__))
+                P4Rm.lmfit_install = True
         except ImportError:
             print ("\nLmfit module is recommanded but not mandatory")
 
-        try:
-            import numba
-            print ("Numba: %s" % (numba.__version__))
-        except ImportError:
-            self.m_menufit.Enable(self.menuoptionsId, False)
+        pub.subscribe(self.on_change_title,
+                      pubsub_ChangeFrameTitle)
+        pub.subscribe(self.on_activate_import,
+                      pubsub_Activate_Import)
+        pub.subscribe(self.on_display_option_window,
+                      pubsub_Hide_Show_Option)
+        pub.subscribe(self.on_display_GSA_window,
+                      pubsub_Hide_Show_GSA)
+        pub.subscribe(self.on_display_Color_window,
+                      pubsub_Hide_Show_Color)
+        pub.subscribe(self.on_display_fit_report_window,
+                      pubsub_Hide_Show_FitReport)
+        pub.subscribe(self.on_display_data_coef_window,
+                      pubsub_Hide_Show_data_coef)
+        pub.subscribe(self.on_save,
+                      pubsub_save_from_DB)
+        pub.subscribe(self.on_save_before_fit,
+                      pubsub_save_project_before_fit)
+        pub.subscribe(self.on_add_damaged,
+                      pubsub_add_damaged_before_fit)
 
-        pub.subscribe(self.on_change_title, pubsub_ChangeFrameTitle)
-        pub.subscribe(self.on_activate_import, pubsub_Activate_Import)
-        pub.subscribe(self.on_display_option_window, pubsub_Hide_Show_Option)
-        pub.subscribe(self.on_display_GSA_window, pubsub_Hide_Show_GSA)
+        from Read4Radmax import ReadFile
+        b = ReadFile()
+        b.on_read_init_parameters(os.path.join(p4R.current_dir,
+                                               p4R.filename + '.ini'),
+                                  p4R.RadmaxFile)
+        config_File_extraction = b.read_result_value()
+
+        i = 2
+        a = P4Rm()
+        for k, v in a.DefaultDict.items():
+            P4Rm.DefaultDict[k] = config_File_extraction[i]
+            i += 1
+        for k, v in p4R.FitParamDefault.items():
+            if k == 'maxfev':
+                P4Rm.DefaultDict[k] = int(float(a.DefaultDict[k]))
+            elif k in p4R.s_radmax_7:
+                P4Rm.DefaultDict[k] = a.DefaultDict[k]
+            elif k in p4R.s_radmax_8:
+                if a.DefaultDict[k] == 'True':
+                    P4Rm.DefaultDict[k] = True
+                else:
+                    P4Rm.DefaultDict[k] = False
+            else:
+                P4Rm.DefaultDict[k] = float(a.DefaultDict[k])
+        if os.listdir(p4R.structures_name):
+            P4Rm.crystal_list = sorted(list(os.listdir(p4R.structures_name)))
+
+        if a.DefaultDict['use_database']:
+            self.m_menuhide_show_database.Check(True)
+        else:
+            self.m_menuhide_show_database.Check(False)
+
+        load_random_voice = randint(0, 3)
+        Sound_Launcher(self, 2, load_random_voice)
 
         MainPanel(self, self.sb)
-
         self.Show()
 
     def on_size(self, event):
@@ -280,10 +444,10 @@ class MainFrame(wx.Frame):
         print ("%s, %s" % (sizet.width, sizet.height))
         event.Skip()
 
-    def some_method(self, event):
-        self.statusbar.SetStatusText('', 0)
-        self.statusbar.SetStatusText('', 1)
-        self.statusbar.SetStatusText('', 2)
+    def some_method(self):
+        self.sb.SetStatusText('', 0)
+        self.sb.SetStatusText('', 1)
+        self.sb.SetStatusText('', 2)
 
     def on_activate_import(self):
         self.m_menuloadStrain.Enable(True)
@@ -294,57 +458,242 @@ class MainFrame(wx.Frame):
     def set_menu_all(self, event):
         widget = event.GetId()
         if widget == self.NewP_ID:
-            pub.sendMessage(pubsub_New, event=event)
+            self.on_new_project()
         elif widget == self.LoadP_ID:
-            pub.sendMessage(pubsub_Load, event=event)
+            self.on_load_project()
         elif widget == self.Load_XRD_ID:
-            pub.sendMessage(pubsub_LoadXRD, event=event)
+            self.on_load_XRD()
         elif widget == self.Load_Strain_ID:
-            pub.sendMessage(pubsub_LoadStrain, event=event)
+            self.on_load_strain()
         elif widget == self.Load_DW_ID:
-            pub.sendMessage(pubsub_LoadDW, event=event)
+            self.on_load_DW()
+        elif widget == self.Export_data_ID:
+            self.on_export_data()
         elif widget == self.Save_ID:
-            pub.sendMessage(pubsub_Save, event=event, case=0)
+            self.on_save(0)
         elif widget == self.SaveP_ID:
-            pub.sendMessage(pubsub_Save, event=event, case=1)
+            self.on_save(1)
         elif widget == self.log_ID:
             self.on_display_log_file()
+        elif widget == self.HideShowDatabase:
+            if self.m_menuhide_show_database.IsChecked():
+                pub.sendMessage(pubsub_enable_dis_database, case=0)
+                P4Rm.DefaultDict['use_database'] = True
+            else:
+                pub.sendMessage(pubsub_enable_dis_database, case=1)
+                P4Rm.DefaultDict['use_database'] = False
+            b = SaveFile4Diff()
+            path_ = os.path.join(p4R.current_dir, p4R.filename + '.ini')
+            b.on_update_config_file_parameters(path_)
         elif widget == self.paramoption_ID:
             self.on_display_option_window()
+        elif widget == self.fitreport_ID:
+            self.on_display_fit_report_window()
+        elif widget == self.colorwindow_ID:
+            self.on_display_Color_window()
+        elif widget == self.spdwpvalues_ID:
+            self.on_display_data_coef_window()
         elif widget == self.Update:
             pub.sendMessage(pubsub_shortcut, event=event, case=0)
         elif widget == self.Reloadini:
             pub.sendMessage(pubsub_shortcut, event=event, case=1)
-        elif (widget == self.acc_numpy_Id) or (widget == self.acc_numba_Id):
-            if self.acc_numpy.IsChecked():
-                P4Radmax.acc_choice = "Numpy"
-            elif self.acc_numba.IsChecked():
-                P4Radmax.acc_choice = "Numba"
+
+    def on_new_project(self):
+        b = Calcul4Radmax()
+        b.on_new_project()
+
+    def on_calc_dialog_pos(self, dlg_size):
+        originx, originy = self.GetPosition()
+        sizex, sizey = self.GetSize()
+        dlgpos = (originx + sizex/2 - dlg_size[0]/2,
+                  originy + sizey/2 - dlg_size[1]/2)
+        return dlgpos
+
+    def on_load_project(self):
+        """
+        Loading of project with '.ini' extension,
+        format created for the RaDMax application
+        """
+        a = P4Rm()
+        wildcard = "text file (*.ini)|*.ini|" \
+                   "All files (*.*)|*.*"
+        dlgpos = self.on_calc_dialog_pos(p4R.dlg_size)
+        dlg = wx.FileDialog(
+            self, message="Select ini file",
+            defaultDir=a.DefaultDict['project_folder'],
+            defaultFile="",
+            wildcard=wildcard,
+            style=wx.FD_OPEN | wx.FD_CHANGE_DIR
+            )
+        dlg.SetSize(p4R.dlg_size)
+        dlg.SetPosition(dlgpos)
+        if dlg.ShowModal() == wx.ID_OK:
+            paths = dlg.GetPaths()
+            dlg.Destroy()
+            P4Rm.pathfromDB = 0
+            self.some_method()
+            b = Calcul4Radmax()
+            b.on_load_project(paths[0])
+
+    def on_load_XRD(self):
+        """
+        Loading and extracting XRD data file with no default extension,
+        but needed a two columns format file
+        """
+        a = P4Rm()
+        wildcard = "All files (*.*)|*.*"
+        dlgpos = self.on_calc_dialog_pos(p4R.dlg_size)
+        dlg = wx.FileDialog(
+            self, message="Select one file",
+            defaultDir=a.DefaultDict['XRD_folder'],
+            defaultFile="",
+            wildcard=wildcard,
+            style=wx.OPEN | wx.CHANGE_DIR
+            )
+        dlg.SetSize(p4R.dlg_size)
+        dlg.SetPosition(dlgpos)
+        if dlg.ShowModal() == wx.ID_OK:
+            paths = dlg.GetPaths()
+            dlg.Destroy()
+            b = Calcul4Radmax()
+            b.calc_XRD(paths)
+
+    def on_load_strain(self):
+        """
+        Loading of Strain data file with no default extension,
+        but needed a two columns format file
+        """
+        a = P4Rm()
+        wildcard = "All files (*.*)|*.*"
+        dlgpos = self.on_calc_dialog_pos(p4R.dlg_size)
+        dlg = wx.FileDialog(
+            self, message="Import Strain file",
+            defaultDir=a.DefaultDict['Strain_folder'],
+            defaultFile="",
+            wildcard=wildcard,
+            style=wx.FD_OPEN | wx.FD_CHANGE_DIR
+            )
+        dlg.SetSize(p4R.dlg_size)
+        dlg.SetPosition(dlgpos)
+        if dlg.ShowModal() == wx.ID_OK:
+            paths = dlg.GetPaths()
+            dlg.Destroy()
+            b = Calcul4Radmax()
+            b.calc_strain(paths, 0)
+
+    def on_load_DW(self):
+        """
+        Loading of DW data file with no default extension,
+        but needed a two columns format file
+        """
+        a = P4Rm()
+        wildcard = "All files (*.*)|*.*"
+        dlgpos = self.on_calc_dialog_pos(p4R.dlg_size)
+        dlg = wx.FileDialog(
+            self, message="Import DW file",
+            defaultDir=a.DefaultDict['DW_folder'],
+            defaultFile="",
+            wildcard=wildcard,
+            style=wx.FD_OPEN | wx.FD_CHANGE_DIR
+            )
+        dlg.SetSize(p4R.dlg_size)
+        dlg.SetPosition(dlgpos)
+        if dlg.ShowModal() == wx.ID_OK:
+            paths = dlg.GetPaths()
+            dlg.Destroy()
+            b = Calcul4Radmax()
+            b.calc_DW(paths, 0)
+
+    def on_export_data(self):
+        """
+        Manual export data to file containing Strain, Dw and XRD fit
+        """
+        a = P4Rm()
+        b = SaveFile4Diff()
+        if a.PathDict['project_name'] == "":
+            return
+        else:
+            b.on_export_data()
+
+    def on_save(self, case):
+        """
+        Saving project, save or save as depending of the action
+        """
+        a = P4Rm()
+        b = SaveFile4Diff()
+        if a.PathDict['project_name'] == "":
+            case = 1
+        wildcard = "data file (*.ini)|*.ini|" \
+                   "All files (*.*)|*.*"
+        textmessage = "Save file as ..."
+        if case is 1:
+            defaultdir_ = a.DefaultDict['Save_as_folder']
+            dlgpos = self.on_calc_dialog_pos(p4R.dlg_size)
+            dlg = wx.FileDialog(self, message=textmessage,
+                                defaultDir=defaultdir_, defaultFile="",
+                                wildcard=wildcard, style=wx.FD_SAVE)
+            dlg.SetSize(p4R.dlg_size)
+            dlg.SetPosition(dlgpos)
+            if dlg.ShowModal() == wx.ID_OK:
+                paths = dlg.GetPaths()
+                b.on_save_project(case, paths)
+            else:
+                return
+        else:
+            b.on_save_project(case)
+
+    def on_save_before_fit(self):
+        text = "Please, save the project to continue"
+        dlg = GMD.GenericMessageDialog(None, text,
+                                       "Attention", agwStyle=wx.OK |
+                                       wx.ICON_INFORMATION)
+        dlg.ShowModal()
+        if dlg.ShowModal() == wx.ID_OK:
+            self.on_save(1)
+
+    def on_add_damaged(self):
+        pub.sendMessage(pubsub_show_panel)
+        color = (255, 0, 0)
+        pub.sendMessage(pubsub_change_damaged_depth_color, color=color)
+        text = "Please, add some damaged to fit the data"
+        dlg = GMD.GenericMessageDialog(None, text,
+                                       "Attention", agwStyle=wx.OK |
+                                       wx.ICON_INFORMATION)
+        dlg.ShowModal()
+        dlg.Destroy()
+        color = (255, 255, 255)
+        pub.sendMessage(pubsub_change_damaged_depth_color, color=color)
 
     def on_about_box(self, event):
         info = AboutDialogInfo()
-        info.SetName(Application_name)
-        info.SetVersion(str(Application_version))
-        info.SetCopyright(copyright_)
-        info.SetDescription(description)
-        info.SetWebSite(website_)
+        info.SetName(p4R.Application_name)
+        info.SetVersion(p4R.Application_version)
+        info.SetCopyright(p4R.copyright_)
+        info.SetDescription(p4R.description)
+        info.SetWebSite(p4R.website_)
         info.AddDeveloper('Alexandre Boulle')
         info.AddDeveloper('Marc Souilah')
-        info.SetLicence(licence)
+        info.SetLicence(p4R.licence)
         AboutBox(info)
 
     def on_change_title(self, NewTitle):
-        """Change title when create a new project"""
+        """
+        Change title when create a new project
+        """
         self.SetTitle(NewTitle)
 
     def on_display_log_file(self):
-        """Open Log file"""
-        if P4Radmax.log_window_status is False:
+        """
+        Open Log file
+        """
+        if P4Rm.log_window_status is False:
             LogWindow().Show()
-            P4Radmax.log_window_status = True
+            P4Rm.log_window_status = True
 
     def on_display_option_window(self, test=None):
-        """Open Parameters window"""
+        """
+        Open Parameters window
+        """
         if test is None:
             if self.Fit_Param_window_launch == 0:
                 self.Fit_Param_window_launch = 1
@@ -352,12 +701,31 @@ class MainFrame(wx.Frame):
                 self.frame_Fit_Param_window.Show()
             else:
                 self.frame_Fit_Param_window.Show()
+            pub.sendMessage(pubsub_Open_Option_Window)
         elif test is 1:
             self.frame_Fit_Param_window.Hide()
             self.SetFocus()
 
+    def on_display_fit_report_window(self, test=None):
+        """
+        Open Fit Report window
+        """
+        if test is None:
+            if self.Fit_Report_window_launch == 0:
+                self.Fit_Report_window_launch = 1
+                self.frame_Fit_Report_window = FitReportWindow(self)
+                self.frame_Fit_Report_window.Show()
+            else:
+                self.frame_Fit_Report_window.Show()
+            pub.sendMessage(pubsub_Open_FitReport_Window)
+        elif test is 1:
+            self.frame_Fit_Report_window.Hide()
+            self.SetFocus()
+
     def on_display_GSA_window(self, test=None):
-        """Open GSA Parameters window"""
+        """
+        Open GSA Parameters window
+        """
         if test is None:
             if self.GSA_window_launch == 0:
                 self.GSA_window_launch = 1
@@ -365,8 +733,42 @@ class MainFrame(wx.Frame):
                 self.frame_GSA_window.Show()
             else:
                 self.frame_GSA_window.Show()
+            pub.sendMessage(pubsub_Open_GSA_Window)
         else:
             self.frame_GSA_window.Hide()
+            self.SetFocus()
+
+    def on_display_Color_window(self, test=None):
+        """
+        Open Graph option window
+        """
+        if test is None:
+            if self.color_window_launch == 0:
+                self.color_window_launch = 1
+                self.frame_color_window = ColorWindow(self)
+                self.frame_color_window.Show()
+            else:
+                self.frame_color_window.Show()
+            pub.sendMessage(pubsub_Open_Color_Window)
+        else:
+            self.frame_color_window.Hide()
+            self.SetFocus()
+
+    def on_display_data_coef_window(self, test=None):
+        """
+        Open sp dwp coefficients value window
+        """
+        if test is None:
+            if self.data_coef_window_launch == 0:
+                self.data_coef_window_launch = 1
+                self.frame_data_coef_window = DataCoefPanel(self)
+                self.frame_data_coef_window.Show()
+            else:
+                self.frame_data_coef_window.Show()
+            pub.sendMessage(pubsub_Open_data_coef_Window)
+            pub.sendMessage(pubsub_Fill_List_coef)
+        else:
+            self.frame_data_coef_window.Hide()
             self.SetFocus()
 
     def on_close(self, event):
@@ -381,7 +783,7 @@ class MainFrame(wx.Frame):
                 dlg.Destroy()
                 if result == wx.ID_OK:
                     logger.log(logging.INFO, "End of the project\n")
-                    exit()
+                    sys.exit()
             else:
                 _msg = ("Project has not been saved\n" +
                         "Do you want to save it now ?")
@@ -394,11 +796,11 @@ class MainFrame(wx.Frame):
                     logger.log(logging.INFO, "Saving on going project")
                     pub.sendMessage(pubsub_Save, event=event, case=1)
                     logger.log(logging.INFO, "End of the project\n")
-                    exit()
+                    sys.exit()
                 else:
                     logger.log(logging.INFO, "Project not saved")
                     logger.log(logging.INFO, "End of the project\n")
-                    exit()
+                    sys.exit()
         else:
             _msg = "Do you really want to close this application?"
             dlg = GMD.GenericMessageDialog(None, _msg, "Confirm Exit",
@@ -408,7 +810,7 @@ class MainFrame(wx.Frame):
             dlg.Destroy()
             if result == wx.ID_OK:
                 logger.log(logging.INFO, "End of the project\n")
-                exit()
+                sys.exit()
 
 
 # -----------------------------------------------------------------------------
@@ -427,12 +829,14 @@ class MainPanel(wx.Panel):
         ''' add notebook to AUI manager '''
         self.aui_mgr.AddPane(self.notebook, aui.AuiPaneInfo().CenterPane().
                              Name("notebook_content").PaneBorder(False).
-                             Position(1).MaximizeButton(False))
+                             Position(1))
 
         all_panes = self.aui_mgr.GetAllPanes()
-        '''Theme for Notebook
+        '''
+        Theme for Notebook
         aui.AuiDefaultTabArt(), aui.AuiSimpleTabArt(), aui.VC71TabArt()
-        aui.FF2TabArt(), aui.VC8TabArt(), aui.ChromeTabArt()'''
+        aui.FF2TabArt(), aui.VC8TabArt(), aui.ChromeTabArt()
+        '''
         # for apply theme to all notebook
         for pane in all_panes:
             nb = pane.window
@@ -441,28 +845,68 @@ class MainPanel(wx.Panel):
             self._notebook_theme = 1
             nb.Refresh()
             nb.Update()
-
         self.aui_mgr.AddPane(GraphPanel(self, self.statusbar),
                              aui.AuiPaneInfo().Name("Graph_Window").
-                             CenterPane().PaneBorder(False).Position(1).
-                             MaximizeButton(False))
-        self.aui_mgr.GetPane("notebook_content").dock_proportion = 70
+                             CenterPane().PaneBorder(False).Position(1))
+        self.aui_mgr.GetPane("notebook_content").dock_proportion = 75
         self.aui_mgr.GetPane("Graph_Window").dock_proportion = 100
+        screen_size = wx.GetDisplaySize()
+        if screen_size[1] >= 1000:
+            self.parent.SetSizeHints(minW=1180, minH=1035)
         self.Layout()
-        self.parent.SetSizeHints(minW=1120, minH=970)
         self.Fit()
         self.Centre(wx.BOTH)
         self.aui_mgr.Update()
-        P4Radmax.logfile_Radmax_path = current_dir
-        P4Radmax.log_window_status = False
-        P4Radmax.Option_window_status = False
-        LogSaver(self)
-        pub.sendMessage(pubsub_Launch_GUI)
+        P4Rm.log_window_status = False
+
+        pub.subscribe(self.OnAddDelete, pubsub_enable_dis_database)
+        pub.subscribe(self.on_show_panel, pubsub_show_panel)
+
+        a = P4Rm()
+        if a.DefaultDict['use_database'] is True:
+            self.OnAddDelete(0)
+        else:
+            self.OnAddDelete(1)
+
+        b = Calcul4Radmax()
+        b.on_new_project()
+
+    def OnAddDelete(self, case):
+        if case == 0:
+            if not _platform == 'darwin':
+                self.Freeze()
+                page4 = DataBasePanel(self.parent, self.statusbar)
+                page5 = DataBaseManagement(self.parent, self.statusbar)
+                self.notebook.AddPage(page4, "DataBase")
+                self.notebook.AddPage(page5, "DataBase Management")
+                self.notebook.SetCloseButton(3, False)
+                self.notebook.SetCloseButton(4, False)
+                self.Thaw()
+            else:
+                self.notebook.EnableTab(3, True)
+                self.notebook.EnableTab(4, True)
+        elif case == 1:
+            if not _platform == 'darwin':
+                if self.notebook.GetPageCount() > 3:
+                    self.Freeze()
+                    page4 = DataBasePanel(self.parent, self.statusbar)
+                    page5 = DataBaseManagement(self.parent, self.statusbar)
+                    self.notebook.DeletePage(3)
+                    self.notebook.DeletePage(3)
+                    self.Thaw()
+            else:
+                self.notebook.EnableTab(3, False)
+                self.notebook.EnableTab(4, False)
+
+    def on_show_panel(self):
+        self.notebook.SetSelection(0)
 
 
 # -----------------------------------------------------------------------------
 class AUINotebook(aui.AuiNotebook):
-    """ AUI Notebook class """
+    """
+    AUI Notebook class
+    """
     def __init__(self, parent, statusbar):
         aui.AuiNotebook.__init__(self, parent=parent)
         self.parent = parent
@@ -473,14 +917,25 @@ class AUINotebook(aui.AuiNotebook):
 
         """create the page windows as children of the notebook"""
         page1 = InitialDataPanel(self.parent, self.statusbar)
-        page2 = FittingPanel(self.parent, self.statusbar)
+        page2 = SampleGeometry(self.parent, self.statusbar)
+        page3 = FittingPanel(self.parent, self.statusbar)
 
         """add the pages to the notebook with the label to show on the tab"""
         self.AddPage(page1, "Initial Parameters")
-        self.AddPage(page2, "Fitting window")
+        self.AddPage(page2, "Sample Geometry")
+        self.AddPage(page3, "Fitting window")
 
         self.SetCloseButton(0, False)
         self.SetCloseButton(1, False)
+        self.SetCloseButton(2, False)
+
+        if _platform == 'darwin':
+            page4 = DataBasePanel(self.parent, self.statusbar)
+            page5 = DataBaseManagement(self.parent, self.statusbar)
+            self.AddPage(page4, "DataBase")
+            self.AddPage(page5, "DataBase Management")
+            self.SetCloseButton(3, False)
+            self.SetCloseButton(4, False)
 
 
 # -----------------------------------------------------------------------------

@@ -4,6 +4,16 @@ RaDMaX is a program that allows to retrieve strain and damage profiles in ion-ir
 M. Souilah, A. Boulle, A. Debelle, "RaDMaX: a graphical program for the determination of strain and damage profiles in irradiated crystals", _J. Appl.Cryst._ **49**, 311-316 (2016). [Link to article.] (http://dx.doi.org/10.1107/S1600576715021019)
 
 #What's new
+## October 2016:
+- XRD profile function is now available
+- new features or improvment:
+  * update project by key enter or single left-click outside the editable cell
+  * manual export strain, DW and XRD data
+  * GSA current cycle is now indicated
+  * standard time to localtime in database
+
+- Bugs and errors corrections
+
 ## July 2016:
 - irradiated films are now supported. The option can be selected from the "Sample Geometry" tab. In case where the film thickness is larger than the film thickness, the latter should be provided by the user in the corresponding field. When relevant, the substrate characteristics should be provided (structure factor, lattice parameters and Miller indices).
 - for all strain/DW models, selected fitting parameters can now be held fixed during the fitting procedure.
@@ -39,9 +49,9 @@ RaDMaX requires python 2.7, SciPy, Matplotlib and wxPython. For the moment, the 
 For other distributions please visit the [python 2.7] (http://www.python.org), [SciPy](http://www.scipy.org), [Matplotlib](http://www.matplotlib.org) and [wxPython] (http://www.wxpython.org) websites.
 
 ## Mac OSX
-1. Mac OS doesn’t come with a package manager. You can use a third party package manager like [Macports](http://www.macports.org/) to install SciPy and Matplotlib.
+1. Mac OS does not come with a package manager. You can use a third party package manager like [Macports](http://www.macports.org/) to install SciPy and Matplotlib.
 Run (as root): `port install py27-numpy py27-scipy py27-matplotlib py27-ipython +notebook py27-pandas py27-sympy py27-nose`.
-2. Download and install [wxPython](http://www.wxpython.org/download.php#osx), choose the install that fits your system, if OSX < 10.5, [wxPython](http://sourceforge.net/projects/wxpython/files/wxPython/3.0.2.0/wxPython3.0-osx-3.0.2.0-carbon-py2.7.dmg/download?use_mirror=kent)
+2. Download and install the Mac OSX Binaries [wxPython](http://www.wxpython.org/download.php#osx), choose the install that fits your system, if OSX < 10.5, [wxPython](http://sourceforge.net/projects/wxpython/files/wxPython/3.0.2.0/wxPython3.0-osx-3.0.2.0-carbon-py2.7.dmg/download?use_mirror=kent)
 or OSX > 10.5 [wxPython](http://sourceforge.net/projects/wxpython/files/wxPython/3.0.2.0/wxPython3.0-osx-3.0.2.0-cocoa-py2.7.dmg/download?use_mirror=vorboss) 
 3. In a terminal, run the Radmax.py file with `python Radmax.py`.
 
