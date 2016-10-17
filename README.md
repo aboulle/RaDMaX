@@ -3,12 +3,15 @@ RaDMaX is a program that allows to retrieve strain and damage profiles in ion-ir
 **If you use this program in academic work, please cite:**
 M. Souilah, A. Boulle, A. Debelle, "RaDMaX: a graphical program for the determination of strain and damage profiles in irradiated crystals", _J. Appl.Cryst._ **49**, 311-316 (2016). [Link to article.] (http://dx.doi.org/10.1107/S1600576715021019)
 
+#NEW VERSION FOR WINDOWS: RaDMaX is now available as a simple .exe file.
+Go to our [download page] (http://www.unilim.fr/pages_perso/alexandre.boulle/radmax.html), download and extract the zip archive to your hard drive and run Radmax.exe. Everything is included. Manual installation of Python and dependencies is no more required.
+
 #What's new
 ## October 2016:
 - XRD profile function is now available
-- new features or improvment:
-  * update project by key enter or single left-click outside the editable cell
-  * manual export strain, DW and XRD data
+- new features or improvements:
+  * update project by hitting enter or left-click outside the editable cell
+  * manual export strain and DW profiles and XRD simulation (no fit required)
   * GSA current cycle is now indicated
   * standard time to localtime in database
 
