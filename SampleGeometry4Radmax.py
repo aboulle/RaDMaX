@@ -414,20 +414,23 @@ class SampleGeometry(scrolled.ScrolledPanel):
 
     def on_set_val(self, event):
         a = P4Rm()
-        if not a.ParamDict['th'].any():
-            return
-        else:
-            self.Freeze()
-            self.state = []
-            state1 = self.rb1.GetValue()
-            state2 = self.rb2.GetValue()
-            state3 = self.rb3.GetValue()
-            state4 = self.rb4.GetValue()
-            self.state = [state1, state2, state3, state4]
-            P4Rm.AllDataDict['geometry'] = self.state.index(True)
-            pub.sendMessage(pubsub_Re_Read_field_paramters_panel)
-            self.Thaw()
-            self.on_apply_rb()
+        try:
+            if not a.ParamDict['th'].any():
+                return
+            else:
+                self.Freeze()
+                self.state = []
+                state1 = self.rb1.GetValue()
+                state2 = self.rb2.GetValue()
+                state3 = self.rb3.GetValue()
+                state4 = self.rb4.GetValue()
+                self.state = [state1, state2, state3, state4]
+                P4Rm.AllDataDict['geometry'] = self.state.index(True)
+                pub.sendMessage(pubsub_Re_Read_field_paramters_panel)
+                self.Thaw()
+                self.on_apply_rb()
+        except (AttributeError):
+            pass
 
     def on_apply_rb(self):
         self.Freeze()

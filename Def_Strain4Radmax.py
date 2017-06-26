@@ -126,7 +126,7 @@ def f_strain(alt, sp, t, choice):
 
 
 def old2new_strain(alt, sp, t, new_size, choice):
-    sp_guess = ones(new_size)
+    sp_guess = ones(int(new_size))
     strain_old = f_strain(alt, sp, t, choice)
 
     def errfunc(sp, alt, strain, t):

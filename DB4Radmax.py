@@ -402,7 +402,8 @@ class DataBaseManagement(scrolled.ScrolledPanel):
 
         bmp = _bp_btn2.GetBitmap()
         self.nb_lines_btn = wx.BitmapButton(self, -1, bmp)
-        self.nb_lines_btn.SetToolTipString("Update database list")
+        self.nb_lines_btn.SetToolTip("Update database list")
+        # self.nb_lines_btn.SetToolTipString("Update database list")
         self.Bind(wx.EVT_BUTTON, self.nb_lines_DB, id=self.nb_lines_btn.GetId())
         self.Bind(wx.EVT_TEXT_ENTER, self.nb_lines_DB, self.db_nb_lines)
 

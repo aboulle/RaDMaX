@@ -175,8 +175,7 @@ class InitialDataPanel(scrolled.ScrolledPanel):
                                           size=function_combobox)
         self.cb_fitfunction.SetStringSelection(p4R.FitFunction[2])
         self.cb_fitfunction.SetFont(font_combobox)
-        self.Bind(wx.EVT_COMBOBOX, self.on_change_function,
-                  self.cb_fitfunction)
+        self.Bind(wx.EVT_COMBOBOX, self.on_change_function, self.cb_fitfunction)
 
         """parametre FWHM=Resolution"""
         self.fwhml_txt = wx.StaticText(self, -1, label=u'Width (°)',
@@ -759,7 +758,6 @@ class InitialDataPanel(scrolled.ScrolledPanel):
             indexx = a.crystal_list.index(a.PathDict['Compound_name'])
             self.cb_crystalname.SetStringSelection(a.crystal_list[indexx])
 
-
             funky = int(float(a.AllDataDict['function_profile']))
             self.cb_fitfunction.SetStringSelection(p4R.FitFunction[funky])
             self.on_change_function(None, p4R.FitFunction[funky])
@@ -856,7 +854,6 @@ class InitialDataPanel(scrolled.ScrolledPanel):
         P4Rm.AllDataDict['function_profile'] = funky
         P4Rm.ParamDict['func_profile'] = p4R.FitFunction_choice[funky]
         self.Layout()
-#        wx.Yield()
         if choice is None:
             self.on_update(event)
 
