@@ -231,7 +231,11 @@ class Calcul4Radmax():
             
             P4Rm.ParamDict['sp_smooth'] = int(a.AllDataDict['strain_basis_func'])*[1]
             P4Rm.ParamDict['dwp_smooth'] = int(a.AllDataDict['dw_basis_func'])*[1]
-            
+
+            funky = 2  # pseudo-voigt
+            P4Rm.AllDataDict['function_profile'] = funky
+            P4Rm.ParamDict['func_profile'] = p4R.FitFunction_choice[funky]
+
             self.on_init_sp_dwp()
 
             pub.sendMessage(pubsub_Draw_XRD, b=2)

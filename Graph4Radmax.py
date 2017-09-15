@@ -10,6 +10,10 @@
 
 import wx
 import wx.lib.scrolledpanel as scrolled
+from distutils.version import LooseVersion
+
+import matplotlib
+matplotlib_vers = matplotlib.__version__
 
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_wxagg import \
@@ -46,8 +50,11 @@ colorBackgroundGraph = '#F0F0F0'
 font = {'family': 'serif',
         'color': 'darkred',
         'weight': 'normal',
-        'size': 14,
+        'size': 14
         }
+
+# permet d'afficher les graphes en mode reduit
+matplotlib.rcParams['figure.dpi'] = 80
 
 if 'phoenix' in wx.PlatformInfo:
     from wx import Cursor
@@ -79,7 +86,7 @@ class GraphPanel(scrolled.ScrolledPanel):
         Graph_XRD_box = wx.StaticBox(self, wx.ID_ANY, " XRD profile ", size=(0,1))
         Graph_XRD_box.SetFont(fontStaticBox)
         Graph_XRD_box_sizer = wx.StaticBoxSizer(Graph_XRD_box, wx.VERTICAL)
-        Graph_XRD_box_sizer.Add(panelThree, 1, wx.EXPAND| wx.ALL)
+        Graph_XRD_box_sizer.Add(panelThree, 1, wx.EXPAND | wx.ALL)
 
         mastersizer = wx.BoxSizer(wx.HORIZONTAL)
         mastersizer.Add(Graph_Strain_DW_box_sizer, 1, wx.ALL|wx.EXPAND, 5)
@@ -121,9 +128,9 @@ class LeftGraphTop(wx.Panel):
         self.new_coord = {'indice': 0, 'x': 0, 'y': 0}
         self.modelpv = False
 
-        xs = [-1]
-        ys = [-1]
-        poly = Polygon(list(zip(xs, ys)),
+        xs = [1]
+        ys = [1]
+        poly = Polygon(list(zip(xs, ys)), ls='solid',
                        fill=False, closed=False, animated=True)
         self.ax.set_xlim([0, 1])
         self.ax.set_ylim([0, 1])
@@ -170,8 +177,8 @@ class LeftGraphTop(wx.Panel):
             self.ax.text(0.5, 0.5, "No Damage", size=30, rotation=0.,
                          ha="center", va="center",
                          bbox=dict(boxstyle="round",
-                                   ec='red',
-                                   fc=self.c_strain,))
+                         ec='red',
+                         fc=self.c_strain,))
             xs = [-1]
             ys = [-1]
             x_sp = [-1]
@@ -201,7 +208,7 @@ class LeftGraphTop(wx.Panel):
                 ys = [-1]
                 self.ax.set_xlim([0, 1])
                 self.ax.set_ylim([-1, 1])
-        poly = Polygon(list(zip(x_sp, y_sp)), lw=0, ls='dashdot',
+        poly = Polygon(list(zip(x_sp, y_sp)), lw=0, ls='solid',
                        color=self.c_strain, fill=False, closed=False,
                        animated=True)
         if self.modelpv is True:
@@ -213,10 +220,13 @@ class LeftGraphTop(wx.Panel):
                      ls=self.l_strain)
         self.ax.set_ylabel("Strain", fontdict=font)
         self.ax.set_xticklabels([])
-        self.ax.set_axis_bgcolor(self.c_bkg)
+        if LooseVersion(matplotlib_vers) < LooseVersion("2.0.0"):
+            self.ax.set_axis_bgcolor(self.c_bkg)
+        else:
+            self.ax.set_facecolor(self.c_bkg)
         self.poly = data
         xs, ys = zip(*self.poly.xy)
-        self.line = Line2D(xs, ys, lw=0, ls='-.', color=self.c_strain,
+        self.line = Line2D(xs, ys, lw=0, ls='solid', color=self.c_strain,
                            marker='.', ms=32, markerfacecolor=self.c_strain,
                            markeredgecolor='k', mew=1.0)
         self.ax.add_line(self.line)
@@ -441,7 +451,7 @@ class LeftGraphBottom(wx.Panel):
 
         xs = [-1]
         ys = [-1]
-        poly = Polygon(list(zip(xs, ys)),
+        poly = Polygon(list(zip(xs, ys)), ls='solid',
                        fill=False, closed=False, animated=True)
         self.ax.set_xlim([0, 1])
         self.ax.set_ylim([0, 1])
@@ -521,7 +531,7 @@ class LeftGraphBottom(wx.Panel):
                 ys = [-1]
                 self.ax.set_xlim([0, 1])
                 self.ax.set_ylim([0, 1])
-        poly = Polygon(list(zip(x_dwp, y_dwp)), lw=0, ls='dashdot',
+        poly = Polygon(list(zip(x_dwp, y_dwp)), lw=0, ls='solid',
                        color=self.c_dw, fill=False,
                        closed=False, animated=True)
         if self.modelpv is True:
@@ -529,13 +539,16 @@ class LeftGraphBottom(wx.Panel):
         self.draw_c(poly, xs, ys)
 
     def draw_c(self, data, x, y):
-        self.ax.plot(x, y, color=self.c_dw, lw=2., ls=self.l_dw)
+        self.ax.plot(x, y, color=self.c_dw, lw=2., ls='solid')
         self.ax.set_ylabel("DW", fontdict=font)
         self.ax.set_xlabel("Depth ($\AA$)", fontdict=font)
-        self.ax.set_axis_bgcolor(self.c_bkg)
+        if LooseVersion(matplotlib_vers) < LooseVersion("2.0.0"):
+            self.ax.set_axis_bgcolor(self.c_bkg)
+        else:
+            self.ax.set_facecolor(self.c_bkg)
         self.poly = data
         xs, ys = zip(*self.poly.xy)
-        self.line = Line2D(xs, ys, lw=0, ls='-.', color=self.c_dw, marker='.',
+        self.line = Line2D(xs, ys, lw=0, ls='solid', color=self.c_dw, marker='.',
                            ms=32, markerfacecolor=self.c_dw,
                            markeredgecolor='k', mew=1.0)
         self.ax.add_line(self.line)
@@ -833,7 +846,10 @@ class RightGraph(wx.Panel):
             self.lx = self.ax.axhline(color='r', lw=0.0)  # the horiz line
         self.ax.set_ylabel("Intensity (a.u.)", fontdict=font)
         self.ax.set_xlabel(r'2$\theta$ (deg.)', fontdict=font)
-        self.ax.set_axis_bgcolor(self.c_bkg)
+        if LooseVersion(matplotlib_vers) < LooseVersion("2.0.0"):
+            self.ax.set_axis_bgcolor(self.c_bkg)
+        else:
+            self.ax.set_facecolor(self.c_bkg)
         self.CheckedGrid()
         self.CursorMove()
 

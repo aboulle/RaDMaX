@@ -3,12 +3,20 @@ RaDMaX is a program that allows to retrieve strain and damage profiles in ion-ir
 **If you use this program in academic work, please cite:**
 M. Souilah, A. Boulle, A. Debelle, "RaDMaX: a graphical program for the determination of strain and damage profiles in irradiated crystals", _J. Appl.Cryst._ **49**, 311-316 (2016). [Link to article.] (http://dx.doi.org/10.1107/S1600576715021019)
 
+#NEW VERSION FOR WINDOWS: RaDMaX is now available as a simple .exe file.
+Go to our [download page] (http://www.unilim.fr/pages_perso/alexandre.boulle/radmax.html), download and extract the zip archive to your hard drive and run Radmax.exe. Everything is included. Manual installation of Python and dependencies is no more required.
+
 #What's new
+## June 2017:
+- Works now with matplotlib 2.0.0 and higher (and also with previous 1.5 version)
+- For expert users, RaDMaX is also working with python 3 and [wxPython Phoenix](https://github.com/wxWidgets/Phoenix)  (alpha version [4.0.0a#](https://pypi.python.org/pypi/wxPython))
+- Bugs and errors corrections
+
 ## October 2016:
 - XRD profile function is now available
-- new features or improvment:
-  * update project by key enter or single left-click outside the editable cell
-  * manual export strain, DW and XRD data
+- new features or improvements:
+  * update project by hitting enter or left-click outside the editable cell
+  * manual export strain and DW profiles and XRD simulation (no fit required)
   * GSA current cycle is now indicated
   * standard time to localtime in database
 
@@ -22,7 +30,7 @@ M. Souilah, A. Boulle, A. Debelle, "RaDMaX: a graphical program for the determin
 ## April 2016:
 - version 2.0. **IMPORTANT: if you encounter an error upon opening an former project or creating a new one, delete the Radmax.ini file in the Radmax folder.**
 - a new strain/DW model has been added to simulate high-velocity ion irradiation, where a narrow damage peak is formed deep below the surface. It is based on an asymmetric pseudo-Voigt function to model the damage peak + a constant on the left-side of the peak to simulate the region of constant damage. The control points allow to modify the magnitude and location of strain/DW peak, its width (left /right side independently), and the magnitude of the constant strain/DW region. The left/right shape factors of the pseudo-Voigt are accessible through the "eta" fields.
-- the least-square fitting algorithm now uses [LmFit] (https://lmfit.github.io/lmfit-py/) if it is installed on your computer (recommended). Among other features, LmFit allows to set limits on the fitting parameters. Otherwise, SciPy's leastsq algorithm is used.
+- the least-square fitting algorithm now uses [LmFit](https://lmfit.github.io/lmfit-py/) if it is installed on your computer (recommended). Among other features, LmFit allows to set limits on the fitting parameters. Otherwise, SciPy's leastsq algorithm is used.
 - the fitting options (GSA and least-squares) and parameter limits are now accessible through the "Fit" menu.
 
 # Installation instructions

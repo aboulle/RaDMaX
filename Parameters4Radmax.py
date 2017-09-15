@@ -19,9 +19,9 @@ from Functions4Radmax import f_Gauss, f_Lorentz, f_pVoigt, f_gbell, f_splitpV
 
 Application_name = "RaDMaX"
 filename = "Radmax"
-version = "2016.10"
+version = "2017.06"
 Application_version = " - " + version
-last_modification = "07/10/2016"
+last_modification = "23/06/2017"
 log_filename = "activity"
 ExperimentFile = 'ExperimentFile'
 RadmaxFile = 'RadmaxFile'
@@ -31,7 +31,7 @@ description = ("RaDMaX: Radiation Damage in Materials analyzed with X-ray" +
                "diffraction")
 licence = ("RaDMaX is distributed freely under the CeCILL license" +
            "(see LICENSE.txt and COPYRIGHT.txt).")
-copyright_ = "(C) 2016 SPCTS"
+copyright_ = "(C) SPCTS"
 website_ = "http://aboulle.github.io/RaDMaX/"
 
 output_name = {'out_strain': 'output_strain_coeff.txt',
