@@ -53,6 +53,8 @@ def structure_factor(h, k, l, wl, thB_S, alt, crystal_name):
     f, f0 = [None]*len(el), [None]*len(el)
     FH, FmH, F0 = [None]*len(el), [None]*len(el), [None]*len(el)
     while i < len(el):
+        if len(shape(xyz[i]))==1:
+            xyz[i]=xyz[i].reshape(1,3)
         f[i], f0[i] = asf(thB_S, wl, el[i])
         FH[i] = f[i]*exp(-2j*pi*(h*xyz[i][:, 0] + k*xyz[i][:, 1] +
                          l*xyz[i][:, 2])).sum()
