@@ -1,0 +1,67 @@
+database/*
+__pycache__/*
+/modules/*.pyc
+/modules/ObjectListView/*.pyc
+/modules/sqlalchemy/*/*.pyc
+/modules/sqlalchemy/*.pyc
+**/*.pyc
+local_examples/**
+# /B_Splines.pyc
+# /Fitting_Panel.pyc
+# /Graph4Diff.pyc
+# /Parameters4Diff.pyc
+# /Parameters_Panel.pyc
+# /Read4Diff.pyc
+# /def_DW.pyc
+# /def_Fh.pyc
+# /def_XRD.pyc
+# /def_strain.pyc
+# /examples/SiC-3C/B_Splines.pyc
+# /myIcon.pyc
+# /sim_anneal.pyc
+# /tools.pyc
+# /Graph4Radmax.pyc
+# /Icon4Radmax.pyc
+# /Parameters4Radmax.pyc
+# /Read4Radmax.pyc
+/examples/UO2/S403.dat.interp
+/examples/UO2/def_parameters403.py
+/examples/UO2/dw.xy
+/examples/UO2/input_DW_coeff.txt
+/examples/UO2/input_strain_coeff.txt
+/examples/UO2/output_DW_coeff.txt
+/examples/UO2/output_strain_DW.txt
+/examples/UO2/output_strain_coeff.txt
+/examples/UO2/strain.xy
+/examples/UO2/test.ini
+/examples/YSZ/test_output_DW.txt
+/examples/YSZ/test_output_DW_coeff.txt
+/examples/YSZ/test_output_strain.txt
+/examples/YSZ/test_output_strain_coeff.txt
+# /local_examples/SiC-3C/SiC-XRD.txt
+# /local_examples/SiC-3C/input_DW_coeff.txt
+# /local_examples/SiC-3C/input_strain_coeff.txt
+# /local_examples/SiC-3C/test.ini
+# /local_examples/UO2/S403.dat.interp
+# /local_examples/UO2/def_parameters403.py
+# /local_examples/UO2/dw.xy
+# /local_examples/UO2/input_DW_coeff.txt
+# /local_examples/UO2/input_strain_coeff.txt
+# /local_examples/UO2/output_DW_coeff.txt
+# /local_examples/UO2/output_strain_DW.txt
+# /local_examples/UO2/output_strain_coeff.txt
+# /local_examples/UO2/strain.xy
+# /local_examples/UO2/test.ini
+# /local_examples/YSZ/YSZ-XRD.txt
+# /local_examples/YSZ/input_DW_coeff.txt
+# /local_examples/YSZ/input_strain_coeff.txt
+# /local_examples/YSZ/test.ini
+# /local_examples/YSZ/test_output_DW.txt
+# /local_examples/YSZ/test_output_DW_coeff.txt
+# /local_examples/YSZ/test_output_strain.txt
+# /local_examples/YSZ/test_output_strain_coeff.txt
+Radmax.ini
+activity.log
+_Radmax.ini
+activity.log.1
+
