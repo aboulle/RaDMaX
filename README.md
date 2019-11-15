@@ -1,12 +1,12 @@
 RaDMaX is a program that allows to retrieve strain and damage profiles in ion-irradiated materials from the simulation of X-ray diffraction data recorded in symmetric thêta-2thêta geometry. It is distributed freely under the CeCILL license (see LICENSE.txt and COPYRIGHT.txt).
 
 **If you use this program in academic work, please cite:**
-M. Souilah, A. Boulle, A. Debelle, "RaDMaX: a graphical program for the determination of strain and damage profiles in irradiated crystals", _J. Appl.Cryst._ **49**, 311-316 (2016). [Link to article.] (http://dx.doi.org/10.1107/S1600576715021019)
+M. Souilah, A. Boulle, A. Debelle, "RaDMaX: a graphical program for the determination of strain and damage profiles in irradiated crystals", _J. Appl.Cryst._ **49**, 311-316 (2016). [Link to article.](http://dx.doi.org/10.1107/S1600576715021019)
 
 A windows exe file is available. Visit http://www.unilim.fr/pages_perso/alexandre.boulle/radmax.html for more details.
 
-#What's new
-## November 2019
+# What's new
+## November 2019:
 - RaDMaX is now available as web application. No more installation required. Visit [RaDMaX online](https://aboulle.github.io/RaDMaX-online/) for more details.
 
 ## 2018:
