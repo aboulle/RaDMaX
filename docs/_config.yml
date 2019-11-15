@@ -1,5 +1,5 @@
 title: RaDMaX
-description:
+description: A graphical user inferface for the determination of strain and damage profiles in irradiated crystals from X-ray diffraction data.
 google_analytics:
 show_downloads: true
 theme: jekyll-theme-cayman
