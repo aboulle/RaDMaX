@@ -3,10 +3,15 @@ RaDMaX is a program that allows to retrieve strain and damage profiles in ion-ir
 **If you use this program in academic work, please cite:**
 M. Souilah, A. Boulle, A. Debelle, "RaDMaX: a graphical program for the determination of strain and damage profiles in irradiated crystals", _J. Appl.Cryst._ **49**, 311-316 (2016). [Link to article.] (http://dx.doi.org/10.1107/S1600576715021019)
 
-#NEW VERSION FOR WINDOWS: RaDMaX is now available as a simple .exe file.
-Go to our [download page] (http://www.unilim.fr/pages_perso/alexandre.boulle/radmax.html), download and extract the zip archive to your hard drive and run Radmax.exe. Everything is included. Manual installation of Python and dependencies is no more required.
+A windows exe file is available. Visit http://www.unilim.fr/pages_perso/alexandre.boulle/radmax.html for more details.
 
 #What's new
+## November 2019
+- RaDMaX is now available as web application. No more installation required. Visit [RaDMaX online](https://aboulle.github.io/RaDMaX-online/) for more details.
+
+## 2018:
+- Full Python 3 compatibility
+
 ## June 2017:
 - Works now with matplotlib 2.0.0 and higher (and also with previous 1.5 version)
 - For expert users, RaDMaX is also working with python 3 and [wxPython Phoenix](https://github.com/wxWidgets/Phoenix)  (alpha version [4.0.0a#](https://pypi.python.org/pypi/wxPython))
@@ -40,7 +45,7 @@ RaDMaX requires python 2.7, SciPy, Matplotlib and wxPython. For the moment, the 
 
 ## MS Windows
 1. For most users, especially on Windows and Mac, the easiest way to install scientific Python is to download **one** of these Python distributions, which includes most of the key packages:
- 
+
  * [Anaconda](http://continuum.io/downloads) (recommended): A free distribution for the SciPy stack. Supports Linux, Windows and Mac. [Download.](https://3230d63b5fc54e62148e-c95ac804525aac4b6dba79b00b39d1d3.ssl.cf1.rackcdn.com/Anaconda-2.3.0-Windows-x86.exe)
  * [Python(x,y)](http://python-xy.github.io/) (not tested): A free distribution including the SciPy stack, based around the Spyder IDE. Windows only. [Download.](http://ftp.ntua.gr/pub/devel/pythonxy/Python(x,y)-2.7.10.0.exe)
  * [WinPython](http://winpython.github.io/) (not tested): A free distribution including the SciPy stack. Windows only. [Download.] (http://sourceforge.net/projects/winpython/files/WinPython_2.7/2.7.9.5/WinPython-32bit-2.7.9.5.exe/download)
@@ -51,16 +56,16 @@ RaDMaX requires python 2.7, SciPy, Matplotlib and wxPython. For the moment, the 
 
 
 ## GNU / Linux
-1. On most Linux systems the dependencies are available in the software repositories. For debian based systems run (as root): `apt-get install python python-scipy python-matplolib python-wxgtk3.0`. 
+1. On most Linux systems the dependencies are available in the software repositories. For debian based systems run (as root): `apt-get install python python-scipy python-matplolib python-wxgtk3.0`.
 2. In a terminal, run the Radmax.py file with `python Radmax.py`.
- 
+
 For other distributions please visit the [python 2.7] (http://www.python.org), [SciPy](http://www.scipy.org), [Matplotlib](http://www.matplotlib.org) and [wxPython] (http://www.wxpython.org) websites.
 
 ## Mac OSX
 1. Mac OS does not come with a package manager. You can use a third party package manager like [Macports](http://www.macports.org/) to install SciPy and Matplotlib.
 Run (as root): `port install py27-numpy py27-scipy py27-matplotlib py27-ipython +notebook py27-pandas py27-sympy py27-nose`.
 2. Download and install the Mac OSX Binaries [wxPython](http://www.wxpython.org/download.php#osx), choose the install that fits your system, if OSX < 10.5, [wxPython](http://sourceforge.net/projects/wxpython/files/wxPython/3.0.2.0/wxPython3.0-osx-3.0.2.0-carbon-py2.7.dmg/download?use_mirror=kent)
-or OSX > 10.5 [wxPython](http://sourceforge.net/projects/wxpython/files/wxPython/3.0.2.0/wxPython3.0-osx-3.0.2.0-cocoa-py2.7.dmg/download?use_mirror=vorboss) 
+or OSX > 10.5 [wxPython](http://sourceforge.net/projects/wxpython/files/wxPython/3.0.2.0/wxPython3.0-osx-3.0.2.0-cocoa-py2.7.dmg/download?use_mirror=vorboss)
 3. In a terminal, run the Radmax.py file with `python Radmax.py`.
 
 ## Development environment
@@ -83,7 +88,7 @@ It also has been tested on a MacMini running OSX Yosemite 10.10.5 with python 2.
 * The strain and damage profile can be scaled up or down with the mouse wheel + pressing the "u" key. The XRD curve is updated when the "u" key is released.
 * Calculated XRD curves can be fitted to experimental data in the "Fitting window" tab.
 * Conventional least-squares (recommended) or generalized simulated annealing algorithm can be used.
-* The fitted curve, the strain and damage profiles are automatically saved (*.txt) in the folder selected above. 
+* The fitted curve, the strain and damage profiles are automatically saved (*.txt) in the folder selected above.
 
 # Data format
 XRD data can be loaded from the "File" menu. The data should be provided as a two-columns (2thêta, intensity) ASCII file in space- (or tab-) separated format. The 2thêta values have to be equally spaced (constant step). For the moment RaDMaX can only handle data recorded in symmetric coplanar geometry (conventional thêta-2thêta scan), as this is the most commonly used geometry in the analysis of irradiated materials.
