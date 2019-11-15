@@ -1,9 +1,9 @@
-RaDMaX is now available as web application. No more installation required. Visit [RaDMaX online](https://aboulle.github.io/RaDMaX-online/) for more details.
+**RaDMaX is now available as a web application. Visit [RaDMaX online](https://aboulle.github.io/RaDMaX-online/) for more details.**
+
+A windows exe file is available. Visit http://www.unilim.fr/pages_perso/alexandre.boulle/radmax.html for more details.
 
 **If you use this program in academic work, please cite:**
 M. Souilah, A. Boulle, A. Debelle, "RaDMaX: a graphical program for the determination of strain and damage profiles in irradiated crystals", _J. Appl.Cryst._ **49**, 311-316 (2016). [Link to article.](http://dx.doi.org/10.1107/S1600576715021019)
-
-A windows exe file is available. Visit http://www.unilim.fr/pages_perso/alexandre.boulle/radmax.html for more details.
 
 # What's new
 ## November 2019:
