@@ -40,8 +40,6 @@ try:
     import matplotlib
     import scipy
     import numpy
-    # import ObjectListView as OLV
-    # import sqlalchemy
     sys.path.insert(0, './modules')
     import ObjectListView as OLV
     import sqlalchemy
