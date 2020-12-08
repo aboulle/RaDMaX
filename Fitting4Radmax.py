@@ -7,9 +7,11 @@
 # Fitting Module
 # =============================================================================
 
-
+import sys
 import wx
-from wx.lib.pubsub import pub
+
+sys.path.insert(0, './modules')
+from pubsub import pub
 
 import Parameters4Radmax as p4R
 from Parameters4Radmax import P4Rm
@@ -24,6 +26,8 @@ from scipy import convolve, in1d, log10
 from time import sleep
 
 import numpy as np
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
 from numpy import around, array, arange, asarray
 
 from Def_XRD4Radmax import f_Refl, f_Refl_fit
@@ -60,8 +64,8 @@ class Fitting4Radmax():
 
         if a.PathDict['namefromini'] != "":
             logger.log(logging.INFO, "Start Fit")
-            if (a.checkInitialField is 1 and a.checkGeometryField is 1 and
-                        a.checkFittingField is 1):
+            if (a.checkInitialField == 1 and a.checkGeometryField == 1 and
+                        a.checkFittingField == 1):
                 P4Rm.allparameters = (a.initial_parameters +
                                       a.fitting_parameters +
                                       a.sample_geometry)
@@ -189,7 +193,7 @@ class Fitting4Radmax():
         case = state.index(True)
         if a.AllDataDict['model'] == 0. or a.AllDataDict['model'] == 1.:
             value = 0.1
-            if case is 0:
+            if case == 0:
                 ''' Modify input'''
                 i = 0
                 for val_dwp, val_sp in zip(a.ParamDict['dwp'],
@@ -208,7 +212,7 @@ class Fitting4Radmax():
                         P4Rm.ParamDict['sp'][i] = val_
                     i += 1
                 self.on_launch_thread()
-            elif case is 1:
+            elif case == 1:
                 ''' Modify limits '''
                 roundval = 4
                 t_min_dw = [False] * len(a.ParamDict['dwp'])
@@ -240,12 +244,12 @@ class Fitting4Radmax():
                     round_ = round(max(a.ParamDict['sp']) + value, roundval)
                     P4Rm.AllDataDict['strain_max'] = round_
                 self.on_launch_thread()
-            elif case is 2:
+            elif case == 2:
                 return 0
 
         elif a.AllDataDict['model'] == 2.:
             value = 0.5
-            if case is 0:
+            if case == 0:
                 ''' Modify input'''
                 i = 0
                 ls_ = [0, 4, 5, 6]
@@ -289,7 +293,7 @@ class Fitting4Radmax():
                             P4Rm.ParamDict['dwp'][i] = val_
                     i += 1
                 self.on_launch_thread()
-            elif case is 1:
+            elif case == 1:
                 ''' Modify limits '''
                 dict_min_ = ['strain_height_min', 'strain_eta_min',
                              'strain_eta_min', 'strain_bkg_min',
@@ -365,7 +369,7 @@ class Fitting4Radmax():
                             index_ = dict_max_[v_ + 4]
                             P4Rm.AllDataDict[index_] = round_
                 self.on_launch_thread()
-            elif case is 2:
+            elif case == 2:
                 return 0
 
     def on_test_lmfit(self):
@@ -702,7 +706,7 @@ class Fit_launcher(Thread):
             for ii in range(len_dwp):
                 name = 'dwp_' + str(ii)
                 const.append(vals[name])
-        self.pars_value = np.asarray(const, dtype=np.float64, order={'C'})
+        self.pars_value = np.asarray(const, dtype=np.float64)
 
     def on_pass_data_to_thread(self, y_cal, p, E_min, nb_minima):
         self.count += 1
@@ -746,7 +750,7 @@ class Fit_launcher(Thread):
                                           iter_cb=self.per_iteration,
                                           scale_covar=True,
                                           kws={'y': a.ParamDict['Iobs']},
-                                          maxfev=(maxfev_),
+                                          max_nfev=(maxfev_),
                                           ftol=a.AllDataDict['ftol'],
                                           xtol=a.AllDataDict['xtol'])
         elif self.choice == 0:

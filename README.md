@@ -6,6 +6,9 @@ M. Souilah, A. Boulle, A. Debelle, "RaDMaX: a graphical program for the determin
 A windows exe file is available. Visit http://www.unilim.fr/pages_perso/alexandre.boulle/radmax.html for more details.
 
 # What's new
+## December 2020:
+- Problem in wxpython = 4.1.1 with python 3.7-3.8 on windows 7-8-10. Please use wxpython 4.0.7 until patch is founded.
+
 ## November 2019:
 - RaDMaX is now available as web application. No more installation required. Visit [RaDMaX online](https://aboulle.github.io/RaDMaX-online/) for more details.
 

@@ -3,10 +3,13 @@
 # Author: A_BOULLE & M_SOUILAH
 # Radmax project
 
+import sys
 import wx
 import wx.lib.agw.aui as aui
-from wx.lib.pubsub import pub
 import wx.lib.agw.genericmessagedialog as GMD
+
+sys.path.insert(0, './modules')
+from pubsub import pub
 
 import Parameters4Radmax as p4R
 from Parameters4Radmax import P4Rm

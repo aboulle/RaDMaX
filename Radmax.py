@@ -45,10 +45,11 @@ try:
     sys.path.insert(0, './modules')
     import ObjectListView as OLV
     import sqlalchemy
+    from pubsub import pub
     print('**********************************')
     print('             RaDMaX')
     print('         Version:%s' % p4R.version)
-    print(' Last modification date:%s' % p4R.last_modification)
+    print(' Last modification date: %s' % p4R.last_modification)
     print('***********************************\n')
     if getattr(sys, 'frozen', False):
         print ("Versions of modules compiled for this application:")
@@ -61,14 +62,13 @@ try:
     print ("Scipy: %s" % scipy.__version__)
     print ("Numpy: %s" % numpy.__version__)
     print ("ObjectListView: %s" % OLV.__version__)
-    print ("sqlalchemy: %s" % sqlalchemy.__version__)
+    print ("Sqlalchemy: %s" % sqlalchemy.__version__)
 except ImportError:
     raise ImportError("Matplotlib, scipy and numpy modules are required" +
                       "to run this program")
     sys.exit()
 
 import wx.lib.agw.aui as aui
-from wx.lib.pubsub import pub
 
 import wx.lib.agw.genericmessagedialog as GMD
 
@@ -166,6 +166,9 @@ class MainFrame(wx.Frame):
         wx.Frame.CenterOnScreen(self)
         self.Bind(wx.EVT_CLOSE, self.on_close)
 #        self.Bind(wx.EVT_SIZE, self.on_size)
+
+        import locale
+        locale.setlocale(locale.LC_ALL, 'en_US')
         self.locale = wx.Locale(wx.LANGUAGE_ENGLISH)
 
         self.sb = wx.StatusBar(self, -1)
@@ -177,23 +180,40 @@ class MainFrame(wx.Frame):
 
         self.m_menubar = wx.MenuBar()
 
-        self.NewP_ID = wx.ID_NEW
-        self.LoadP_ID = wx.NewId()
-        self.Load_XRD_ID = wx.NewId()
-        self.Load_Strain_ID = wx.NewId()
-        self.Load_DW_ID = wx.NewId()
-        self.Export_data_ID = wx.NewId()
-        self.Save_ID = wx.NewId()
-        self.SaveP_ID = wx.NewId()
-        self.log_ID = wx.NewId()
-        self.paramoption_ID = wx.NewId()
-        self.spdwpvalues_ID = wx.NewId()
-        self.fitreport_ID = wx.NewId()
-        self.colorwindow_ID = wx.NewId()
-        self.Update = wx.NewId()
-        self.Reloadini = wx.NewId()
-        self.About = wx.NewId()
-        self.Exit = wx.NewId()
+        n_menu_value = 1
+        self.NewP_ID = n_menu_value
+        n_menu_value += 1
+        self.LoadP_ID = n_menu_value
+        n_menu_value += 1
+        self.Load_XRD_ID = n_menu_value
+        n_menu_value += 1
+        self.Load_Strain_ID = n_menu_value
+        n_menu_value += 1
+        self.Load_DW_ID = n_menu_value
+        n_menu_value += 1
+        self.Export_data_ID = n_menu_value
+        n_menu_value += 1
+        self.Save_ID = n_menu_value
+        n_menu_value += 1
+        self.SaveP_ID = n_menu_value
+        n_menu_value += 1
+        self.log_ID = n_menu_value
+        n_menu_value += 1
+        self.paramoption_ID = n_menu_value
+        n_menu_value += 1
+        self.spdwpvalues_ID = n_menu_value
+        n_menu_value += 1
+        self.fitreport_ID = n_menu_value
+        n_menu_value += 1
+        self.colorwindow_ID = n_menu_value
+        n_menu_value += 1
+        self.Update = n_menu_value
+        n_menu_value += 1
+        self.Reloadini = n_menu_value
+        n_menu_value += 1
+        self.About = n_menu_value
+        n_menu_value += 1
+        self.Exit = n_menu_value
 
         """File menu"""
         self.m_menufile = wx.Menu()
@@ -257,7 +277,8 @@ class MainFrame(wx.Frame):
                                        u"Graph Style", text_,
                                        wx.ITEM_NORMAL)
 
-        self.HideShowDatabase = wx.NewId()
+        n_menu_value += 1
+        self.HideShowDatabase = n_menu_value
         self.m_menuhide_show_database = wx.MenuItem(self.m_menufile,
                                                     self.HideShowDatabase,
                                                     u"Use Database",
@@ -413,7 +434,7 @@ class MainFrame(wx.Frame):
 
         i = 2
         a = P4Rm()
-        for k, v in a.DefaultDict.items():
+        for k,v in a.DefaultDict.items():
             P4Rm.DefaultDict[k] = config_File_extraction[i]
             i += 1
         for k, v in p4R.FitParamDefault.items():
@@ -508,9 +529,9 @@ class MainFrame(wx.Frame):
     def on_calc_dialog_pos(self, dlg_size):
         originx, originy = self.GetPosition()
         sizex, sizey = self.GetSize()
-        dlgpos = (originx + sizex/2 - dlg_size[0]/2,
-                  originy + sizey/2 - dlg_size[1]/2)
-        return dlgpos
+        posx = int(originx + sizex/2 - dlg_size[0]/2)
+        posy = int(originy + sizey/2 - dlg_size[1]/2)
+        return (posx, posy)
 
     def on_load_project(self):
         """
@@ -547,11 +568,11 @@ class MainFrame(wx.Frame):
         wildcard = "All files (*.*)|*.*"
         dlgpos = self.on_calc_dialog_pos(p4R.dlg_size)
         dlg = wx.FileDialog(
-            self, message="Select one file",
+            self, message="Import XRD file",
             defaultDir=a.DefaultDict['XRD_folder'],
             defaultFile="",
             wildcard=wildcard,
-            style=wx.OPEN | wx.CHANGE_DIR
+            style=wx.FD_OPEN | wx.FD_CHANGE_DIR
             )
         dlg.SetSize(p4R.dlg_size)
         dlg.SetPosition(dlgpos)
@@ -629,7 +650,7 @@ class MainFrame(wx.Frame):
         wildcard = "data file (*.ini)|*.ini|" \
                    "All files (*.*)|*.*"
         textmessage = "Save file as ..."
-        if case is 1:
+        if case == 1:
             defaultdir_ = a.DefaultDict['Save_as_folder']
             dlgpos = self.on_calc_dialog_pos(p4R.dlg_size)
             dlg = wx.FileDialog(self, message=textmessage,
@@ -705,7 +726,7 @@ class MainFrame(wx.Frame):
             else:
                 self.frame_Fit_Param_window.Show()
             pub.sendMessage(pubsub_Open_Option_Window)
-        elif test is 1:
+        elif test == 1:
             self.frame_Fit_Param_window.Hide()
             self.SetFocus()
 
@@ -721,7 +742,7 @@ class MainFrame(wx.Frame):
             else:
                 self.frame_Fit_Report_window.Show()
             pub.sendMessage(pubsub_Open_FitReport_Window)
-        elif test is 1:
+        elif test == 1:
             self.frame_Fit_Report_window.Hide()
             self.SetFocus()
 

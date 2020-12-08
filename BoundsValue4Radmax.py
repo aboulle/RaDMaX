@@ -3,8 +3,11 @@
 # Author: A_BOULLE & M_SOUILAH
 # Radmax project
 
+import sys
 import wx
-from wx.lib.pubsub import pub
+
+sys.path.insert(0, './modules')
+from pubsub import pub
 
 import Parameters4Radmax as p4R
 from Parameters4Radmax import P4Rm
@@ -171,9 +174,9 @@ class DataCoefPanel(wx.Frame):
         self.Thaw()
 
     def update_param_dict(self, currentline, currentCol, val):
-        if currentCol is 1:
+        if currentCol == 1:
             P4Rm.ParamDict['sp'][currentline] = float(val)
-        if currentCol is 2:
+        if currentCol == 2:
             P4Rm.ParamDict['dwp'][currentline] = float(val)
         self.read_and_update()
 
@@ -190,7 +193,7 @@ class DataCoefPanel(wx.Frame):
         currentCol = self.GetOLVColClicked(event)
         if currentline == -1:
             self.Freeze()
-            if currentCol is 1 or currentCol is 2:
+            if currentCol == 1 or currentCol == 2:
                 if self.col2checkstatus[currentCol] == 0:
                     val = False
                     self.col2checkstatus[currentCol] = 1

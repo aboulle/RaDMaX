@@ -4,7 +4,8 @@
 # Radmax project
 
 import wx
-from wx.lib.pubsub import pub
+sys.path.insert(0, './modules')
+from pubsub import pub
 
 import Parameters4Radmax as p4R
 from Parameters4Radmax import P4Rm

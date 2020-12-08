@@ -7,12 +7,14 @@
 # Radmax Cell Parameters module
 # =============================================================================
 
-
+import sys
 import wx
 import wx.lib.agw.aui as aui
 import wx.lib.scrolledpanel as scrolled
 
-from wx.lib.pubsub import pub
+sys.path.insert(0, './modules')
+from pubsub import pub
+
 import wx.lib.agw.genericmessagedialog as GMD
 
 from copy import deepcopy
@@ -272,9 +274,9 @@ class InitialDataPanel(scrolled.ScrolledPanel):
 
         l = ["S", "S", "H", "H", "S", "S", "H", "H", "H", "H"]
         for i in range(len(self.func_list)):
-            if l[i] is "S":
+            if l[i] == "S":
                 self.func_list[i].Show()
-            elif l[i] is "H":
+            elif l[i] == "H":
                 self.func_list[i].Hide()
         funky = p4R.FitFunction.index("Pseudo-Voigt")
         P4Rm.ParamDict['func_profile'] = p4R.FitFunction_choice[funky]
@@ -841,9 +843,9 @@ class InitialDataPanel(scrolled.ScrolledPanel):
             self.fwhmr.SetValue(str(a.AllDataDict['width_right']))
             self.shaper.SetValue(str(a.AllDataDict['shape_right']))
         for i in range(len(self.func_list)):
-            if l[i] is "S":
+            if l[i] == "S":
                 self.func_list[i].Show()
-            elif l[i] is "H":
+            elif l[i] == "H":
                 self.func_list[i].Hide()
         if func == "Split-PV":
             self.fwhml_txt.SetLabel(u'Width left (°)')

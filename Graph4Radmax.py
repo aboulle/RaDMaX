@@ -7,10 +7,13 @@
 # Radmax Graph module
 # =============================================================================
 
-
+import sys
 import wx
 import wx.lib.scrolledpanel as scrolled
 from distutils.version import LooseVersion
+
+sys.path.insert(0, './modules')
+from pubsub import pub
 
 import matplotlib
 matplotlib_vers = matplotlib.__version__
@@ -23,9 +26,10 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Polygon
 
 from copy import deepcopy
-from wx.lib.pubsub import pub
 
 import numpy as np
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
 from numpy import where
 from scipy import multiply
 
@@ -198,7 +202,7 @@ class LeftGraphTop(wx.Panel):
                 ymin = min(ys) - min(ys)*10/100
                 ymax = max(ys) + max(ys)*10/100
                 self.ax.set_ylim([ymin, ymax])
-                if a.ParamDict['x_sp'] is not "":
+                if a.ParamDict['x_sp'] != "":
                     self.ax.set_xlim([a.ParamDict['depth'][-1],
                                       a.ParamDict['depth'][0]])
             elif b == 2:
@@ -521,7 +525,7 @@ class LeftGraphBottom(wx.Panel):
                 ymin = min(ys) - min(ys)*10/100
                 ymax = max(ys) + max(ys)*10/100
                 self.ax.set_ylim([ymin, ymax])
-                if a.ParamDict['x_dwp'] is not "":
+                if a.ParamDict['x_dwp'] != "":
                     self.ax.set_xlim([a.ParamDict['depth'][-1],
                                       a.ParamDict['depth'][0]])
             elif b == 2:
@@ -890,8 +894,8 @@ class RightGraph(wx.Panel):
         a = P4Rm()
         if a.fitlive == 1:
             return
-        if event.inaxes is not None:
-            if a.ParamDict['Iobs'] is not "":
+        if event.inaxes != None:
+            if a.ParamDict['Iobs'] != "":
                 xlim = self.ax.get_xlim()
                 xlim_min = xlim[0]*np.pi/(2*180)
                 xlim_max = xlim[1]*np.pi/(2*180)

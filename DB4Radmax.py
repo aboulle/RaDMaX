@@ -7,11 +7,13 @@
 # Radmax Database panel module
 # =============================================================================
 
-
+import sys
 import wx
-from wx.lib.pubsub import pub
 import wx.lib.agw.genericmessagedialog as GMD
 import wx.lib.scrolledpanel as scrolled
+
+sys.path.insert(0, './modules')
+from pubsub import pub
 
 import Parameters4Radmax as p4R
 from Parameters4Radmax import P4Rm

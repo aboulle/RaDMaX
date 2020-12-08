@@ -7,9 +7,12 @@
 # Radmax Calcul module
 # =============================================================================
 
-
+import sys
 import wx
-from wx.lib.pubsub import pub
+
+sys.path.insert(0, './modules')
+from pubsub import pub
+
 import wx.lib.agw.genericmessagedialog as GMD
 
 from copy import deepcopy
@@ -141,8 +144,8 @@ class Calcul4Radmax():
         pub.sendMessage(pubsub_Load_project)
         pub.sendMessage(pubsub_Read_field4Save)
 
-        if (a.checkInitialField is 1 and a.checkGeometryField is 1 and
-            a.checkFittingField is 1):
+        if (a.checkInitialField == 1 and a.checkGeometryField == 1 and
+            a.checkFittingField == 1):
             P4Rm.allparameters = (a.initial_parameters +
                                   a.fitting_parameters +
                                   a.sample_geometry)
@@ -199,8 +202,8 @@ class Calcul4Radmax():
                         
         pub.sendMessage(pubsub_Read_field4Save)
 
-        if (a.checkInitialField is 1 and a.checkGeometryField is 1 and
-            a.checkFittingField is 1):
+        if (a.checkInitialField == 1 and a.checkGeometryField == 1 and
+            a.checkFittingField == 1):
             P4Rm.allparameters = (a.initial_parameters +
                                   a.fitting_parameters +
                                   a.sample_geometry)
@@ -366,13 +369,13 @@ class Calcul4Radmax():
         etar = a.AllDataDict['shape_right']
         b_bell = a.AllDataDict['b_bell']
         pos = (a.ParamDict['th'].min() + a.ParamDict['th'].max())/2
-        if func.__name__ is "f_Gauss" or func.__name__ is "f_Lorentz":
+        if func.__name__ == "f_Gauss" or func.__name__ == "f_Lorentz":
             param_func = [1, pos, fwhml]
-        elif func.__name__ is "f_pVoigt":
+        elif func.__name__ == "f_pVoigt":
             param_func = [1, pos, fwhml, etal]
-        elif func.__name__ is "f_gbell":
+        elif func.__name__ == "f_gbell":
             param_func = [1, pos, fwhml, b_bell]
-        elif func.__name__ is "f_splitpV":
+        elif func.__name__ == "f_splitpV":
             param_func = [1, pos, fwhml, fwhmr, etal, etar]
         P4Rm.ParamDict['param_func_profile'] = param_func
 
@@ -839,8 +842,8 @@ class Calcul4Radmax():
 
         pub.sendMessage(pubsub_Read_field4Save)
 
-        if (a.checkInitialField is 1 and a.checkGeometryField is 1 and
-            a.checkFittingField is 1):
+        if (a.checkInitialField == 1 and a.checkGeometryField == 1 and
+            a.checkFittingField == 1):
             P4Rm.allparameters = (a.initial_parameters +
                                   a.fitting_parameters +
                                   a.sample_geometry)

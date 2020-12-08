@@ -7,11 +7,15 @@
 # Radmax read module
 # =============================================================================
 
-from wx.lib.pubsub import pub
+
 
 import os
+import sys
 from sys import exit
 from sys import platform as _platform
+
+sys.path.insert(0, './modules')
+from pubsub import pub
 
 import Parameters4Radmax as p4R
 from Parameters4Radmax import P4Rm
