@@ -30,6 +30,7 @@ from copy import deepcopy
 import numpy as np
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
+warnings.filterwarnings(action='ignore', category=UserWarning)
 from numpy import where
 from scipy import multiply
 

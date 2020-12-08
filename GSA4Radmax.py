@@ -202,7 +202,7 @@ def gsa(energy, LimitExceeded, count_cycle, data, args=()):
     depassements = zeros(D, dtype=float)
 
 #    définition du tableau de cycle
-    cycle = linspace(1, data['nb_cycle_max'], data['nb_cycle_max'])
+    cycle = linspace(1, int(data['nb_cycle_max']), int(data['nb_cycle_max']))
     cycle = [int(ii) for ii in cycle]
     cycle = np.asarray(cycle, dtype=np.int32)
 
